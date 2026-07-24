@@ -23,6 +23,7 @@ fleet_management/
 │   ├── CONTRIBUTION_GUIDE.md   # Guidelines for pull requests and code standards
 │   ├── DEVELOPMENT_GUIDE.md    # Developer setup and testing workflows
 │   ├── DIGITAL_ASSET_MANAGEMENT.md # Digital Asset & Document Subsystem, Rule IDs ASSET-001..008
+│   ├── FLEET_COST_INTELLIGENCE_ARCHITECTURE.md # Fleet Cost Subsystem Design & Rule IDs COST-001..006
 │   ├── FOLDER_STRUCTURE.md     # Directory breakdown documentation
 │   ├── FUEL_INTELLIGENCE_ARCHITECTURE.md # Fuel Intelligence Pipeline & Rule IDs FUEL-001..010
 │   ├── FUEL_PRODUCTION_READINESS_REPORT.md # Executive Fuel Intelligence Production Readiness Report
@@ -37,6 +38,7 @@ fleet_management/
 │   │   ├── __init__.py
 │   │   ├── assignment_api.py    # Assignment Whitelisted API Endpoints Implementation
 │   │   ├── base.py              # Whitelisted API wrapper (@api_endpoint decorator)
+│   │   ├── cost_api.py          # Fleet Cost Whitelisted API Endpoints Implementation
 │   │   ├── fuel_api.py          # Fuel Whitelisted API Endpoints Implementation
 │   │   ├── maintenance_api.py   # Maintenance Whitelisted API Endpoints Implementation
 │   │   ├── responses.py         # Standardized success, error & pagination envelopes
@@ -118,11 +120,12 @@ fleet_management/
 │   │   ├── assignment_service.py # AssignmentService Implementation
 │   │   ├── audit_service.py     # AuditService
 │   │   ├── base_service.py      # Abstract Base Service & Transaction management
+│   │   ├── fleet_cost_service.py # FleetCostService Non-Redundant Cost Aggregation Engine
 │   │   ├── fuel_average_service.py # FuelAverageService
 │   │   ├── fuel_service.py      # FuelService Implementation
 │   │   ├── maintenance_due_service.py # MaintenanceDueEngine
 │   │   ├── maintenance_lock_service.py # MaintenanceLockService
-│   │   ├── maintenance_service.py # MaintenanceService Implementation & Analytics Helpers
+│   │   ├── maintenance_service.py # MaintenanceService Implementation
 │   │   ├── settings_service.py   # SettingsService with Redis caching
 │   │   └── vehicle_service.py   # Vehicle Single Source of Truth Service
 │   ├── templates/               # Public Web Jinja templates
@@ -134,6 +137,7 @@ fleet_management/
 │   │   ├── test_assignment_production_readiness.py
 │   │   ├── test_business_rules.py
 │   │   ├── test_constants_enums.py
+│   │   ├── test_fleet_cost_service.py # Fleet Cost Intelligence Engine Tests
 │   │   ├── test_foundation.py
 │   │   ├── test_fuel_architecture.py
 │   │   ├── test_fuel_entry_doctype.py
@@ -143,7 +147,7 @@ fleet_management/
 │   │   ├── test_maintenance_architecture.py
 │   │   ├── test_maintenance_doctypes.py
 │   │   ├── test_maintenance_intelligence_engine.py
-│   │   ├── test_maintenance_production_readiness.py # Master Maintenance Production Readiness Test Suite
+│   │   ├── test_maintenance_production_readiness.py
 │   │   ├── test_master_doctypes.py
 │   │   ├── test_settings_service.py
 │   │   ├── test_validators.py
@@ -169,7 +173,7 @@ fleet_management/
 │   │   ├── vehicle_asset_validator.py # VehicleAssetValidator (ASSET-001..008)
 │   │   └── vehicle_validator.py # VehicleValidator (Rule IDs VEH-001..VEH-010)
 │   ├── constants.py             # System domain string constants & Lifecycles
-│   ├── enums.py                 # Strong Python Enum classes & Maintenance Enums
+│   ├── enums.py                 # Strong Python Enum classes
 │   ├── desktop.py               # Desk Module icon definition
 │   ├── hooks.py                 # App registration & fixture declarations
 │   └── modules.txt              # Registered Modules List
