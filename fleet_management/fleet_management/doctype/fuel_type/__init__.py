@@ -1,0 +1,3 @@
+"""
+Fuel Type DocType Package
+"""

@@ -17,63 +17,59 @@ app_license = "mit"
 # app_include_css = "/assets/fleet_management/css/fleet_management.css"
 # app_include_js = "/assets/fleet_management/js/fleet_management.js"
 
-# include js, css files in header of web template
-# web_include_css = "/assets/fleet_management/css/fleet_management.css"
-# web_include_js = "/assets/fleet_management/js/fleet_management.js"
-
-# Desk Notifications
-# ------------------
-# See frappe.core.notifications.get_notification_config
-
-# Permissions
-# -----------
-# permission_query_conditions = {
-# 	"Event": "frappe.desk.doctype.event.event.get_permission_query_conditions",
-# }
-#
-# has_permission = {
-# 	"Event": "frappe.desk.doctype.event.event.has_permission",
-# }
-
-# DocType Class Overrides
-# -----------------------
-# override_doctype_class = {
-# 	"ToDo": "custom_app.overrides.CustomToDo"
-# }
-
-# Document Events
-# ---------------
-# doc_events = {
-# 	"*": {
-# 		"on_update": "fleet_management.permissions.audit.audit_document_change",
-# 	}
-# }
+# Document Events Hooks
+# ---------------------
+doc_events = {
+	"*": {
+		"on_update": "fleet_management.permissions.audit.audit_document_change",
+	}
+}
 
 # Scheduled Tasks
 # ---------------
-# scheduler_events = {
-# 	"all": [
-# 		"fleet_management.services.base_service.scheduled_health_check"
-# 	],
-# 	"daily": [],
-# 	"hourly": [],
-# 	"weekly": [],
-# 	"monthly": [],
-# }
-
-# Testing
-# -------
-# before_tests = "fleet_management.tests.conftest.before_tests"
+scheduler_events = {
+	"all": [
+		"fleet_management.services.base_service.scheduled_health_check"
+	],
+	"daily": [],
+	"hourly": [],
+	"weekly": [],
+	"monthly": [],
+}
 
 # Boot Session
 # ------------
-# boot_session = "fleet_management.api.base.boot_session"
+boot_session = "fleet_management.api.base.boot_session"
 
-# Fixtures
-# --------
+# Fixtures Export Declarations
+# ----------------------------
 fixtures = [
 	{
 		"dt": "Workspace",
 		"filters": [["name", "=", "Fleet Management"]]
+	},
+	{
+		"dt": "Vehicle Category",
+		"filters": [["is_active", "=", 1]]
+	},
+	{
+		"dt": "Fuel Type",
+		"filters": [["is_active", "=", 1]]
+	},
+	{
+		"dt": "Maintenance Type",
+		"filters": [["is_active", "=", 1]]
+	},
+	{
+		"dt": "Expense Category",
+		"filters": [["is_active", "=", 1]]
+	},
+	{
+		"dt": "Distance Unit",
+		"filters": [["is_active", "=", 1]]
+	},
+	{
+		"dt": "Fuel Unit",
+		"filters": [["is_active", "=", 1]]
 	}
 ]

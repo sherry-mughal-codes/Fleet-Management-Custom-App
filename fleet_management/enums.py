@@ -84,3 +84,21 @@ class FleetRole(str, Enum):
 	MECHANIC = constants.ROLE_FLEET_MECHANIC
 	AUDITOR = constants.ROLE_FLEET_AUDITOR
 	USER = constants.ROLE_FLEET_USER
+
+
+class AuditEvent(str, Enum):
+	CREATE = "CREATE"
+	UPDATE = "UPDATE"
+	DELETE = "DELETE"
+	ENABLE = "ENABLE"
+	DISABLE = "DISABLE"
+	IMPORT = "IMPORT"
+	EXPORT = "EXPORT"
+
+
+class TransmissionType(str, Enum):
+	MANUAL = "Manual"
+	AUTOMATIC = "Automatic"
+	SEMI_AUTOMATIC = "Semi-Automatic"
+	CVT = "CVT"
+	DUAL_CLUTCH = "Dual-Clutch"

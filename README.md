@@ -6,32 +6,19 @@
 
 ## 🚗 Project Overview
 
-The **Fleet Management System** is a reusable, enterprise-ready Frappe application designed for multi-tenant and multi-company fleet management. It provides complete infrastructure for scalability, security, rate limiting, role-based access control (RBAC), central logging, service-oriented architecture, and containerized deployment.
+The **Fleet Management System** is a reusable, enterprise-ready Frappe application designed for multi-tenant and multi-company fleet management. It provides complete infrastructure for scalability, security, rate limiting, role-based access control (RBAC), central logging, service-oriented architecture, master data management, and containerized deployment.
 
 ---
 
-## 🏗️ Core Foundation & Architecture (Phase 2 Completed)
+## 🏗️ Architecture & Master Data (Phase 3 Completed)
 
 This app strictly follows enterprise software engineering principles:
 - **SOLID & DRY Architecture**: Zero magic strings. Centralized `constants.py` and strongly typed Python `enums.py`.
+- **Master Data Architecture**: 11 production-ready reusable Master DocTypes (`Vehicle Brand`, `Vehicle Model`, `Vehicle Category`, `Fuel Type`, `Maintenance Type`, `Expense Category`, `Fuel Station`, `Maintenance Vendor`, `Vehicle Colour`, `Distance Unit`, `Fuel Unit`).
+- **Base Document Controller (`BaseFleetDocument`)**: Subclasses inherit timestamp, audit tracking, state machine status, and permission mixins.
+- **Business Rule ID Catalog (`MASTER-001` .. `MASTER-020`)**: All validations tied to documented Rule IDs.
 - **Fleet Settings Singleton**: Centralized system configuration via `Fleet Settings` single DocType with Redis caching via `SettingsService`.
-- **Global Validation Framework**: Reusable validators for positive numbers, date ranges, odometer progression, required fields, unique duplicates, and state machine status transitions.
-- **Common Mixins**: `TimestampMixin`, `AuditMixin`, `StatusMixin`, `PermissionMixin`.
-- **Business Rules Architecture**: Decoupled rule engine (`BaseBusinessRule`) separating business invariants from controllers.
 - **Services Architecture**: `SettingsService`, `AuditService`, `NotificationService`, `PermissionService`.
-- **API Envelope & Standard Responses**: Whitelisted API endpoints utilize `@api_endpoint` and `api/responses.py` envelopes.
-
----
-
-## 🛠️ Stack & Infrastructure
-
-- **Framework**: Frappe Framework v15
-- **Language**: Python 3.10+
-- **Database**: MariaDB 10.6+
-- **Cache**: Redis Cache
-- **Queue**: Redis Queue (Default, Short, Long workers)
-- **WebSockets**: Redis SocketIO & Frappe Socket.io
-- **Orchestration**: Docker Compose & VS Code DevContainers
 
 ---
 
@@ -44,35 +31,36 @@ fleet_management/
 │   ├── business_rules/      # Decoupled Business Invariant Rule Engine
 │   ├── config/              # Desk Sidebar & Module Configurations
 │   ├── dashboard/           # Desk Dashboard Charts & Analytics Definitions
-│   ├── fleet_management/    # Desk Workspace & Fleet Settings Single DocType
+│   ├── events/              # Document Event Registry & Dispatcher
+│   ├── fleet_management/    # Desk Workspace & Master DocTypes
 │   │   └── doctype/
-│   │       └── fleet_settings/ # Fleet Settings Singleton DocType
-│   ├── mixins/              # Reusable Document Mixins (Timestamp, Audit, Status, Permission)
+│   │       ├── distance_unit/      # Distance Unit Master
+│   │       ├── expense_category/   # Expense Category Master
+│   │       ├── fleet_settings/     # Fleet Settings Singleton
+│   │       ├── fuel_station/       # Fuel Station Master
+│   │       ├── fuel_type/          # Fuel Type Master
+│   │       ├── fuel_unit/          # Fuel Unit Master
+│   │       ├── maintenance_type/   # Maintenance Type Master
+│   │       ├── maintenance_vendor/ # Maintenance Vendor Master
+│   │       ├── vehicle_brand/      # Vehicle Brand Master
+│   │       ├── vehicle_category/   # Vehicle Category Master
+│   │       ├── vehicle_colour/     # Vehicle Colour Master
+│   │       └── vehicle_model/      # Vehicle Model Master
+│   ├── mixins/              # Reusable Document Mixins
 │   ├── notifications/       # Multi-Channel Notification Engine & Service
-│   ├── patches/             # Database Migration & Patch Scripts
 │   ├── permissions/         # Security Evaluators, Audit Logging & Permission Service
-│   ├── public/              # Static Frontend Assets (JS, CSS)
-│   ├── reports/             # Analytics Reports Placeholders
 │   ├── services/            # Base Service, SettingsService, AuditService
-│   ├── templates/           # Web Templates & Pages
 │   ├── tests/               # Pytest Unit Test Suite
-│   ├── utils/               # Central Logger, Exception Hierarchy, Shared Helpers
+│   ├── utils/               # BaseFleetDocument, Logger, Exception Hierarchy, Helpers
 │   ├── validators/          # Input, Entity & Common Validation Framework
 │   ├── constants.py         # Shared Domain String Constants & Defaults
-│   ├── enums.py             # Python Strong Enum Definitions
-│   ├── desktop.py           # Desk Icon Definition
-│   ├── hooks.py             # Frappe App Registration Hooks
+│   ├── enums.py             # Python Strong Enum Definitions & Audit Events
+│   ├── hooks.py             # App Registration & Fixture Declarations
 │   └── modules.txt          # Registered Modules List
 ├── docs/                    # Complete Enterprise Documentation Suite
-├── .devcontainer/           # DevContainer Environment Specs
-├── .editorconfig            # Code Formatting Standards
-├── .gitignore               # Strict Enterprise Git Exclusions
-├── .pre-commit-config.yaml  # Pre-commit Quality Pipeline
 ├── Dockerfile               # Multi-stage Docker Build
 ├── docker-compose.yml       # Production/Dev Docker Stack
-├── pyproject.toml           # Ruff, Black, Pytest Configuration
-├── requirements.txt         # App Python Dependencies
-├── setup.py                 # Setuptools Package Builder
+├── pyproject.toml           # Toolchain Specs
 └── README.md                # Main System Overview
 ```
 
@@ -85,13 +73,10 @@ fleet_management/
 git clone https://github.com/sherry-mughal-codes/Fleet-Management-Custom-App.git
 cd Fleet-Management-Custom-App
 
-# 2. Copy environment template
-cp .env.example .env
-
-# 3. Launch Docker Compose Stack
+# 2. Launch Docker Compose Stack
 docker compose up -d
 
-# 4. Create Frappe Site & Install App (inside backend container)
+# 3. Create Frappe Site & Install App (inside backend container)
 docker compose exec backend bench new-site fleet.localhost --admin-password admin
 docker compose exec backend bench --site fleet.localhost install-app fleet_management
 ```

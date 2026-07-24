@@ -1,0 +1,83 @@
+{
+ "actions": [],
+ "autoname": "field:colour_name",
+ "creation": "2026-07-24 15:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "colour_name",
+  "hex_code",
+  "is_active"
+ ],
+ "fields": [
+  {
+   "fieldname": "colour_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Colour Name",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "hex_code",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Hex Code (e.g. #FFFFFF)"
+  },
+  {
+   "default": "1",
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Is Active"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-07-24 15:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Fleet Management",
+ "name": "Vehicle Colour",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "role": "Fleet Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "role": "Fleet User",
+   "share": 0,
+   "write": 0
+  }
+ ],
+ "search_fields": "colour_name",
+ "sort_field": "colour_name",
+ "sort_order": "ASC",
+ "states": []
+}

@@ -1,0 +1,3 @@
+"""
+Vehicle Category DocType Package
+"""

@@ -21,7 +21,8 @@ fleet_management/
 │   ├── CONTRIBUTION_GUIDE.md   # Guidelines for pull requests and code standards
 │   ├── DEVELOPMENT_GUIDE.md    # Developer setup and testing workflows
 │   ├── FOLDER_STRUCTURE.md     # Directory breakdown documentation
-│   └── INSTALLATION_GUIDE.md   # Bench deployment & site installation
+│   ├── INSTALLATION_GUIDE.md   # Bench deployment & site installation
+│   └── MASTER_DATA_ARCHITECTURE.md # Master Data ER diagram, indexes & Rule IDs
 ├── fleet_management/
 │   ├── api/
 │   │   ├── __init__.py
@@ -40,14 +41,25 @@ fleet_management/
 │   │   └── fleet_management.py  # Desk sidebar configuration
 │   ├── dashboard/
 │   │   └── __init__.py          # Desk Dashboard charts placeholder
+│   ├── events/
+│   │   ├── __init__.py
+│   │   └── registry.py          # Document Event Registry
 │   ├── fixtures/
 │   │   └── __init__.py          # Fixtures package
 │   ├── fleet_management/
 │   │   ├── doctype/
-│   │   │   └── fleet_settings/
-│   │   │       ├── __init__.py
-│   │   │       ├── fleet_settings.json # Fleet Settings Single DocType schema
-│   │   │       └── fleet_settings.py   # Fleet Settings Document class
+│   │   │   ├── distance_unit/
+│   │   │   ├── expense_category/
+│   │   │   ├── fleet_settings/
+│   │   │   ├── fuel_station/
+│   │   │   ├── fuel_type/
+│   │   │   ├── fuel_unit/
+│   │   │   ├── maintenance_type/
+│   │   │   ├── maintenance_vendor/
+│   │   │   ├── vehicle_brand/
+│   │   │   ├── vehicle_category/
+│   │   │   ├── vehicle_colour/
+│   │   │   └── vehicle_model/
 │   │   └── workspace/
 │   │       └── fleet_management/
 │   │           └── fleet_management.json # Desk Workspace fixture definition
@@ -84,10 +96,12 @@ fleet_management/
 │   │   ├── test_constants_enums.py
 │   │   ├── test_foundation.py
 │   │   ├── test_helpers_mixins.py
+│   │   ├── test_master_doctypes.py
 │   │   ├── test_settings_service.py
 │   │   └── test_validators.py
 │   ├── utils/
 │   │   ├── __init__.py
+│   │   ├── base_document.py     # BaseFleetDocument controller
 │   │   ├── exceptions.py        # Domain exception hierarchy & aliases
 │   │   ├── helpers.py           # Reusable date, number, string, doc & format helpers
 │   │   └── logger.py            # Central logger & execution timer
@@ -97,9 +111,8 @@ fleet_management/
 │   │   └── common_validators.py # Global reusable validators
 │   ├── constants.py             # System domain string constants
 │   ├── enums.py                 # Strong Python Enum classes
-│   ├── __init__.py              # App version metadata
 │   ├── desktop.py               # Desk Module icon definition
-│   ├── hooks.py                 # App registration & lifecycle hooks
+│   ├── hooks.py                 # App registration & fixture declarations
 │   └── modules.txt              # Desk module list
 ├── .editorconfig                # Universal indentation and whitespace rules
 ├── .env.example                 # Environment variables template
