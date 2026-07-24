@@ -1,0 +1,380 @@
+{
+ "actions": [],
+ "autoname": "naming_series:",
+ "creation": "2026-07-24 16:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "basic_assignment_section",
+  "naming_series",
+  "vehicle",
+  "vehicle_status_indicator",
+  "employee",
+  "column_break_basic",
+  "assignment_date",
+  "expected_return_date",
+  "purpose",
+  "company",
+  "status",
+  "vehicle_details_section",
+  "vehicle_number",
+  "vehicle_name",
+  "vehicle_brand",
+  "vehicle_model",
+  "column_break_veh",
+  "vehicle_category",
+  "fuel_type",
+  "current_odometer",
+  "employee_details_section",
+  "employee_name",
+  "department",
+  "column_break_emp",
+  "designation",
+  "branch",
+  "odometer_handover_section",
+  "opening_odometer",
+  "odometer_photo",
+  "handover_notes",
+  "return_info_section",
+  "closing_odometer",
+  "distance_travelled",
+  "return_date",
+  "column_break_return",
+  "return_notes",
+  "return_condition",
+  "attachments_section",
+  "system_info_section"
+ ],
+ "fields": [
+  {
+   "fieldname": "basic_assignment_section",
+   "fieldtype": "Section Break",
+   "label": "Assignment Information"
+  },
+  {
+   "default": "ASSIGN-.YYYY.-.#####",
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Naming Series",
+   "options": "ASSIGN-.YYYY.-.#####"
+  },
+  {
+   "fieldname": "vehicle",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Vehicle",
+   "options": "Vehicle",
+   "reqd": 1
+  },
+  {
+   "fieldname": "vehicle_status_indicator",
+   "fieldtype": "Data",
+   "label": "Vehicle Current Status",
+   "read_only": 1
+  },
+  {
+   "fieldname": "employee",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Assigned Employee / User",
+   "options": "User",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_basic",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "assignment_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Assignment Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "expected_return_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Expected Return Date"
+  },
+  {
+   "fieldname": "purpose",
+   "fieldtype": "Small Text",
+   "label": "Purpose of Assignment"
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Company",
+   "options": "Company",
+   "reqd": 1
+  },
+  {
+   "default": "Draft",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Assignment Status",
+   "options": "Draft\nPending Approval\nApproved\nAssigned\nIn Use\nReturned\nClosed\nCancelled"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "vehicle_details_section",
+   "fieldtype": "Section Break",
+   "label": "Auto-Fetched Vehicle Details"
+  },
+  {
+   "fieldname": "vehicle_number",
+   "fieldtype": "Data",
+   "label": "Vehicle Number",
+   "read_only": 1
+  },
+  {
+   "fieldname": "vehicle_name",
+   "fieldtype": "Data",
+   "label": "Vehicle Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "vehicle_brand",
+   "fieldtype": "Link",
+   "label": "Brand",
+   "options": "Vehicle Brand",
+   "read_only": 1
+  },
+  {
+   "fieldname": "vehicle_model",
+   "fieldtype": "Link",
+   "label": "Model",
+   "options": "Vehicle Model",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_veh",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "vehicle_category",
+   "fieldtype": "Link",
+   "label": "Vehicle Category",
+   "options": "Vehicle Category",
+   "read_only": 1
+  },
+  {
+   "fieldname": "fuel_type",
+   "fieldtype": "Link",
+   "label": "Fuel Type",
+   "options": "Fuel Type",
+   "read_only": 1
+  },
+  {
+   "fieldname": "current_odometer",
+   "fieldtype": "Float",
+   "label": "Vehicle Current Odometer (KM)",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "employee_details_section",
+   "fieldtype": "Section Break",
+   "label": "Auto-Fetched Employee Details"
+  },
+  {
+   "fieldname": "employee_name",
+   "fieldtype": "Data",
+   "label": "Employee Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "department",
+   "fieldtype": "Data",
+   "label": "Department",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_emp",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "designation",
+   "fieldtype": "Data",
+   "label": "Designation",
+   "read_only": 1
+  },
+  {
+   "fieldname": "branch",
+   "fieldtype": "Data",
+   "label": "Branch / Location",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "odometer_handover_section",
+   "fieldtype": "Section Break",
+   "label": "Odometer Handover"
+  },
+  {
+   "fieldname": "opening_odometer",
+   "fieldtype": "Float",
+   "label": "Opening Odometer (KM)"
+  },
+  {
+   "fieldname": "odometer_photo",
+   "fieldtype": "Attach Image",
+   "label": "Odometer Handover Photo"
+  },
+  {
+   "fieldname": "handover_notes",
+   "fieldtype": "Small Text",
+   "label": "Handover Notes"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "return_info_section",
+   "fieldtype": "Section Break",
+   "label": "Return Information (System Managed)"
+  },
+  {
+   "fieldname": "closing_odometer",
+   "fieldtype": "Float",
+   "label": "Closing Odometer (KM)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "distance_travelled",
+   "fieldtype": "Float",
+   "label": "Distance Travelled (KM)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "return_date",
+   "fieldtype": "Date",
+   "label": "Return Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_return",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "return_notes",
+   "fieldtype": "Small Text",
+   "label": "Return Notes",
+   "read_only": 1
+  },
+  {
+   "fieldname": "return_condition",
+   "fieldtype": "Small Text",
+   "label": "Return Condition Notes",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "attachments_section",
+   "fieldtype": "Section Break",
+   "label": "Attachments & Files"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "system_info_section",
+   "fieldtype": "Section Break",
+   "label": "System Information"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-07-24 16:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Fleet Management",
+ "name": "Vehicle Assignment",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "role": "Fleet Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "role": "Fleet Officer",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "role": "Fleet User",
+   "share": 0,
+   "write": 0
+  }
+ ],
+ "search_fields": "name, vehicle, vehicle_number, employee, employee_name, company, status",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [
+  {
+   "color": "Gray",
+   "title": "Draft"
+  },
+  {
+   "color": "Orange",
+   "title": "Pending Approval"
+  },
+  {
+   "color": "Yellow",
+   "title": "Approved"
+  },
+  {
+   "color": "Green",
+   "title": "Assigned"
+  },
+  {
+   "color": "Blue",
+   "title": "In Use"
+  },
+  {
+   "color": "Purple",
+   "title": "Returned"
+  },
+  {
+   "color": "Dark Gray",
+   "title": "Closed"
+  },
+  {
+   "color": "Red",
+   "title": "Cancelled"
+  }
+ ]
+}

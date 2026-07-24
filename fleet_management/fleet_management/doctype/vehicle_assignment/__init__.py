@@ -1,0 +1,3 @@
+"""
+Vehicle Assignment DocType Package
+"""
