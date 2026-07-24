@@ -90,19 +90,26 @@ class VehicleEventType(str, Enum):
 	RESTORED = constants.VEHICLE_EVENT_RESTORED
 
 
+class FuelEntryStatus(str, Enum):
+	DRAFT = constants.FUEL_STATUS_DRAFT
+	SUBMITTED = constants.FUEL_STATUS_SUBMITTED
+	CANCELLED = constants.FUEL_STATUS_CANCELLED
+	VERIFIED = constants.FUEL_STATUS_VERIFIED
+
+
+class FuelEventType(str, Enum):
+	CREATED = "Fuel Entry Created"
+	SUBMITTED = "Fuel Entry Submitted"
+	VERIFIED = "Fuel Entry Verified"
+	CANCELLED = "Fuel Entry Cancelled"
+
+
 class MaintenanceStatus(str, Enum):
 	SCHEDULED = constants.MAINTENANCE_STATUS_SCHEDULED
 	IN_PROGRESS = constants.MAINTENANCE_STATUS_IN_PROGRESS
 	COMPLETED = constants.MAINTENANCE_STATUS_COMPLETED
 	CANCELLED = constants.MAINTENANCE_STATUS_CANCELLED
 	OVERDUE = constants.MAINTENANCE_STATUS_OVERDUE
-
-
-class FuelEntryStatus(str, Enum):
-	DRAFT = constants.FUEL_STATUS_DRAFT
-	SUBMITTED = constants.FUEL_STATUS_SUBMITTED
-	CANCELLED = constants.FUEL_STATUS_CANCELLED
-	VERIFIED = constants.FUEL_STATUS_VERIFIED
 
 
 class ApprovalStatus(str, Enum):

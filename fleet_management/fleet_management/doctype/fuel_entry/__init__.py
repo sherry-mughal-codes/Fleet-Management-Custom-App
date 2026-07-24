@@ -1,0 +1,3 @@
+"""
+Fuel Entry DocType Package
+"""
