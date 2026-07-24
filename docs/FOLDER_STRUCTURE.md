@@ -23,6 +23,7 @@ fleet_management/
 │   ├── CONTRIBUTION_GUIDE.md   # Guidelines for pull requests and code standards
 │   ├── DEVELOPMENT_GUIDE.md    # Developer setup and testing workflows
 │   ├── DIGITAL_ASSET_MANAGEMENT.md # Digital Asset & Document Subsystem, Rule IDs ASSET-001..008
+│   ├── FLEET_COMMAND_CENTER_ARCHITECTURE.md # Command Center, Workspace & Reports Architecture
 │   ├── FLEET_COST_INTELLIGENCE_ARCHITECTURE.md # Fleet Cost Subsystem Design & Rule IDs COST-001..006
 │   ├── FOLDER_STRUCTURE.md     # Directory breakdown documentation
 │   ├── FUEL_INTELLIGENCE_ARCHITECTURE.md # Fuel Intelligence Pipeline & Rule IDs FUEL-001..010
@@ -36,6 +37,7 @@ fleet_management/
 ├── fleet_management/
 │   ├── api/
 │   │   ├── __init__.py
+│   │   ├── analytics_api.py   # Command Center & Workspace Whitelisted API Endpoints Implementation
 │   │   ├── assignment_api.py    # Assignment Whitelisted API Endpoints Implementation
 │   │   ├── base.py              # Whitelisted API wrapper (@api_endpoint decorator)
 │   │   ├── cost_api.py          # Fleet Cost Whitelisted API Endpoints Implementation
@@ -88,9 +90,14 @@ fleet_management/
 │   │   │   ├── vehicle_document_detail/ # Child Table DocType
 │   │   │   ├── vehicle_image_detail/    # Child Table DocType
 │   │   │   └── vehicle_model/
+│   │   ├── report/
+│   │   │   ├── fleet_cost_summary_report/ # Production Script Report
+│   │   │   ├── fuel_efficiency_report/    # Production Script Report
+│   │   │   ├── maintenance_summary_report/ # Production Script Report
+│   │   │   └── vehicle_summary_report/    # Production Script Report
 │   │   └── workspace/
 │   │       └── fleet_management/
-│   │           └── fleet_management.json # Desk Workspace fixture definition
+│   │           └── fleet_management.json # Desk Workspace homepage fixture definition
 │   ├── mixins/
 │   │   ├── __init__.py
 │   │   ├── audit_mixin.py       # Document mutation audit tracking mixin
@@ -120,7 +127,8 @@ fleet_management/
 │   │   ├── assignment_service.py # AssignmentService Implementation
 │   │   ├── audit_service.py     # AuditService
 │   │   ├── base_service.py      # Abstract Base Service & Transaction management
-│   │   ├── fleet_cost_service.py # FleetCostService Non-Redundant Cost Aggregation Engine
+│   │   ├── fleet_analytics_service.py # FleetAnalyticsService Command Center Engine
+│   │   ├── fleet_cost_service.py # FleetCostService Implementation
 │   │   ├── fuel_average_service.py # FuelAverageService
 │   │   ├── fuel_service.py      # FuelService Implementation
 │   │   ├── maintenance_due_service.py # MaintenanceDueEngine
@@ -137,7 +145,8 @@ fleet_management/
 │   │   ├── test_assignment_production_readiness.py
 │   │   ├── test_business_rules.py
 │   │   ├── test_constants_enums.py
-│   │   ├── test_fleet_cost_service.py # Fleet Cost Intelligence Engine Tests
+│   │   ├── test_fleet_analytics_service.py # Fleet Analytics & Command Center Tests
+│   │   ├── test_fleet_cost_service.py
 │   │   ├── test_foundation.py
 │   │   ├── test_fuel_architecture.py
 │   │   ├── test_fuel_entry_doctype.py

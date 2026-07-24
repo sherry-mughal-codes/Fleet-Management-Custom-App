@@ -6,15 +6,16 @@
 
 ## 🚗 Project Overview
 
-The **Fleet Management System** is a reusable, enterprise-ready Frappe application designed for multi-tenant and multi-company fleet management. It provides complete infrastructure for scalability, security, rate limiting, role-based access control (RBAC), central logging, service-oriented architecture, master data management, vehicle domain foundation, digital asset management, 13-state vehicle lifecycle engine, assignment domain subsystem, fuel intelligence engine, maintenance intelligence engine, fleet cost intelligence engine, maintenance lock engine, and containerized deployment.
+The **Fleet Management System** is a reusable, enterprise-ready Frappe application designed for multi-tenant and multi-company fleet management. It provides complete infrastructure for scalability, security, rate limiting, role-based access control (RBAC), central logging, service-oriented architecture, master data management, vehicle domain foundation, digital asset management, 13-state vehicle lifecycle engine, assignment domain subsystem, fuel intelligence engine, maintenance intelligence engine, fleet cost intelligence engine, fleet command center, custom desk workspace homepage, production script reports, maintenance lock engine, and containerized deployment.
 
 ---
 
-## 🏗️ Architecture & Production Readiness (Phases 0 through 7 Completed)
+## 🏗️ Architecture & Production Readiness (Phases 0 through 8 Completed)
 
 This app strictly follows enterprise software engineering principles:
 - **SOLID & DRY Architecture**: Zero magic strings. Centralized `constants.py` and strongly typed Python `enums.py`.
 - **Single Source of Truth Alignment**: All vehicle status transitions occur strictly through `VehicleService.change_status()`.
+- **Fleet Command Center & Workspace (Phase 8)**: Custom Desk Workspace homepage, 7 form sections, executive KPI cards (<30-second understanding), smart severity alerts (`Information`, `Warning`, `Critical`), interactive chart feeds, vehicle health table, quick actions, recent activity timeline, and 4 production script reports (`Vehicle Summary`, `Fuel Efficiency`, `Maintenance Summary`, `Fleet Cost Summary`).
 - **Vehicle Domain Subsystem**: 13-state vehicle lifecycle engine (`Draft` .. `Archived`) certified production ready (`docs/PRODUCTION_READINESS_REPORT.md`).
 - **Assignment Domain Subsystem**: 8-state assignment lifecycle (`Draft` .. `Cancelled`), Handover & Return workflows, Odometer Integrity Engine (`ASSIGN-004`, `ASSIGN-005`), and `Vehicle Assignment` DocType certified production ready (`docs/ASSIGNMENT_PRODUCTION_READINESS_REPORT.md`).
 - **Fuel Intelligence Subsystem**: Fuel Average Engine (`FuelAverageService`), Maintenance Lock Engine (`MaintenanceLockService`), Rule IDs (`FUEL-001` .. `FUEL-010`), and `Fuel Entry` DocType certified production ready (`docs/FUEL_PRODUCTION_READINESS_REPORT.md`).
@@ -30,16 +31,16 @@ This app strictly follows enterprise software engineering principles:
 ```
 fleet_management/
 ├── fleet_management/        # Python Application Package
-│   ├── api/                 # Enterprise Whitelisted API Wrappers (Vehicle, Assignment, Fuel, Maintenance, Cost APIs)
+│   ├── api/                 # Enterprise Whitelisted API Wrappers (Vehicle, Assignment, Fuel, Maintenance, Cost, Analytics APIs)
 │   ├── business_rules/      # Decoupled Business Invariant Engine (Vehicle, Assignment, Fuel, Maintenance Rules)
 │   ├── config/              # Desk Sidebar & Module Configurations
 │   ├── dashboard/           # Desk Dashboard Charts & Analytics Definitions
 │   ├── events/              # Event Registry, Vehicle, Assignment, Fuel & Maintenance Event Dispatchers
-│   ├── fleet_management/    # Desk Workspace, Master DocTypes, Vehicle, Assignment, Fuel & Maintenance DocTypes
+│   ├── fleet_management/    # Desk Workspace, Master DocTypes, Vehicle, Assignment, Fuel & Maintenance DocTypes, Reports
 │   ├── mixins/              # Reusable Document Mixins
 │   ├── notifications/       # Multi-Channel Notification Engine & Service
 │   ├── permissions/         # Security Evaluators (Vehicle, Assignment, Fuel & Maintenance Permissions)
-│   ├── services/            # Base Service, SettingsService, VehicleService, AssignmentService, FuelService, MaintenanceService, FleetCostService
+│   ├── services/            # Base Service, SettingsService, VehicleService, AssignmentService, FuelService, MaintenanceService, FleetCostService, FleetAnalyticsService
 │   ├── tests/               # Pytest Unit & Integration Test Suites
 │   ├── utils/               # BaseFleetDocument, Logger, Exception Hierarchy, Helpers
 │   ├── validators/          # Input, Entity, Vehicle, Asset, Assignment, Fuel & Maintenance Validators
