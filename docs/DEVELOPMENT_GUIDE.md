@@ -22,25 +22,11 @@ docker compose logs -f backend
 docker compose down
 ```
 
-### Option B: Local Frappe Bench Setup
-If running inside an existing local Linux bench environment:
-
-```bash
-# Get app into bench
-bench get-app https://github.com/sherry-mughal-codes/Fleet-Management-Custom-App.git
-
-# Install on target site
-bench --site fleet.localhost install-app fleet_management
-
-# Start bench execution
-bench start
-```
-
 ---
 
-## 🧪 Running Automated Tests
+## 🧪 Running Automated Unit Tests
 
-Run the infrastructure unit test suite with `pytest`:
+Run the complete test suite (constants, enums, settings service, validators, helpers, mixins, business rules):
 
 ```bash
 pytest fleet_management/tests
@@ -54,32 +40,29 @@ bench --site fleet.localhost run-tests --app fleet_management
 
 ---
 
-## 🧹 Code Quality & Formatting Pipeline
+## ⚙️ How to Access Fleet Settings
 
-### Ruff Linter
-```bash
-ruff check fleet_management
-```
+Never call `frappe.get_single("Fleet Settings")` directly inside business modules. Always use `SettingsService`:
 
-### Black Formatter
-```bash
-black --check fleet_management
-```
+```python
+from fleet_management.services.settings_service import SettingsService
 
-### Pre-commit Installation
-```bash
-pre-commit install
-pre-commit run --all-files
+# Get cached settings value
+maintenance_interval = SettingsService.get_maintenance_interval()
+currency = SettingsService.get_value("default_currency", "USD")
 ```
 
 ---
 
-## ⚙️ Bench Commands Cheat Sheet
+## 🧹 Code Quality & Formatting Pipeline
 
-| Command | Purpose |
-| :--- | :--- |
-| `bench start` | Start dev web server, socketio, background workers |
-| `bench enable-scheduler` | Enable background scheduler on active site |
-| `bench doctor` | Check background worker and Redis health |
-| `bench build --app fleet_management` | Compile JS/CSS asset bundle |
-| `bench migrate` | Run database schema updates and patches |
+```bash
+# Ruff Linter
+ruff check fleet_management
+
+# Black Formatter
+black --check fleet_management
+
+# Pre-commit hooks
+pre-commit run --all-files
+```

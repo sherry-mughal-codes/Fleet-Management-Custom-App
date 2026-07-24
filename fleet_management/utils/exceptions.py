@@ -6,6 +6,7 @@ Fleet Management System
 from typing import Any, Dict, Optional
 import frappe
 
+
 class FleetManagementError(frappe.ValidationError):
 	"""Base domain exception for Fleet Management System."""
 
@@ -67,3 +68,24 @@ class FleetRateLimitError(FleetManagementError):
 	"""Raised when rate limits are exceeded."""
 	status_code = 429
 	default_message = "Rate limit exceeded. Please try again later."
+
+
+class FleetConfigurationError(FleetManagementError):
+	"""Raised when application or module configuration is invalid."""
+	status_code = 500
+	default_message = "Fleet application configuration error."
+
+
+class FleetDuplicateEntryError(FleetManagementError):
+	"""Raised when a duplicate record or entity is detected."""
+	status_code = 409
+	default_message = "Duplicate record entry detected."
+
+
+# Aliases for backward compatibility and intuitive imports
+ValidationError = FleetValidationError
+PermissionError = FleetPermissionError
+NotFoundError = FleetNotFoundError
+BusinessRuleError = FleetBusinessLogicError
+ConfigurationError = FleetConfigurationError
+DuplicateEntryError = FleetDuplicateEntryError

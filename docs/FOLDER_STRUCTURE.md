@@ -17,7 +17,7 @@ fleet_management/
 │   ├── launch.json              # Debugging launch configurations
 │   └── settings.json            # Workspace formatting & interpreter settings
 ├── docs/
-│   ├── ARCHITECTURE_OVERVIEW.md # Enterprise layer explanations
+│   ├── ARCHITECTURE_OVERVIEW.md # Enterprise layer & settings architecture
 │   ├── CONTRIBUTION_GUIDE.md   # Guidelines for pull requests and code standards
 │   ├── DEVELOPMENT_GUIDE.md    # Developer setup and testing workflows
 │   ├── FOLDER_STRUCTURE.md     # Directory breakdown documentation
@@ -25,7 +25,15 @@ fleet_management/
 ├── fleet_management/
 │   ├── api/
 │   │   ├── __init__.py
-│   │   └── base.py              # Whitelisted API wrapper (@api_endpoint decorator)
+│   │   ├── base.py              # Whitelisted API wrapper (@api_endpoint decorator)
+│   │   └── responses.py         # Standardized success, error & pagination envelopes
+│   ├── business_rules/
+│   │   ├── __init__.py
+│   │   ├── base_rule.py         # Abstract Base Business Rule engine
+│   │   ├── vehicle_rules.py     # Vehicle availability contract interface
+│   │   ├── assignment_rules.py  # Assignment contract interface
+│   │   ├── fuel_rules.py        # Fuel capacity contract interface
+│   │   └── maintenance_rules.py # Maintenance trigger contract interface
 │   ├── config/
 │   │   ├── __init__.py
 │   │   ├── docs.py              # Documentation configuration
@@ -35,40 +43,60 @@ fleet_management/
 │   ├── fixtures/
 │   │   └── __init__.py          # Fixtures package
 │   ├── fleet_management/
-│   │   ├── __init__.py
+│   │   ├── doctype/
+│   │   │   └── fleet_settings/
+│   │   │       ├── __init__.py
+│   │   │       ├── fleet_settings.json # Fleet Settings Single DocType schema
+│   │   │       └── fleet_settings.py   # Fleet Settings Document class
 │   │   └── workspace/
-│   │       ├── __init__.py
 │   │       └── fleet_management/
-│   │           ├── __init__.py
-│   │           └── fleet_management.json  # Desk Workspace fixture definition
+│   │           └── fleet_management.json # Desk Workspace fixture definition
+│   ├── mixins/
+│   │   ├── __init__.py
+│   │   ├── audit_mixin.py       # Document mutation audit tracking mixin
+│   │   ├── permission_mixin.py  # Document level permission mixin
+│   │   ├── status_mixin.py      # State machine status transition mixin
+│   │   └── timestamp_mixin.py   # Timestamp and date helper mixin
 │   ├── notifications/
 │   │   ├── __init__.py
-│   │   └── engine.py            # Reusable Notification Engine
+│   │   ├── engine.py            # Notification dispatcher engine
+│   │   └── service.py           # Multi-channel NotificationService
 │   ├── patches/
 │   │   └── __init__.py          # Database patches directory
 │   ├── permissions/
 │   │   ├── __init__.py
 │   │   ├── audit.py             # Security audit log decorators
-│   │   └── evaluator.py         # Role-based access control (RBAC) evaluator
+│   │   ├── evaluator.py         # Role-based access control (RBAC) evaluator
+│   │   └── service.py           # PermissionService
 │   ├── public/                  # Static web assets
 │   ├── reports/
 │   │   └── __init__.py          # Analytics reports directory
 │   ├── services/
 │   │   ├── __init__.py
-│   │   └── base_service.py      # Abstract Base Service & Transaction management
+│   │   ├── audit_service.py     # AuditService
+│   │   ├── base_service.py      # Abstract Base Service & Transaction management
+│   │   └── settings_service.py   # SettingsService with Redis caching
 │   ├── templates/               # Public Web Jinja templates
 │   ├── tests/
 │   │   ├── __init__.py
 │   │   ├── conftest.py          # Pytest fixtures configuration
-│   │   └── test_foundation.py   # Infrastructure unit tests
+│   │   ├── test_business_rules.py
+│   │   ├── test_constants_enums.py
+│   │   ├── test_foundation.py
+│   │   ├── test_helpers_mixins.py
+│   │   ├── test_settings_service.py
+│   │   └── test_validators.py
 │   ├── utils/
 │   │   ├── __init__.py
-│   │   ├── exceptions.py        # Domain exception hierarchy
-│   │   ├── helpers.py           # Reusable helpers & caching decorators
-│   │   └── logger.py            # Central logging architecture
+│   │   ├── exceptions.py        # Domain exception hierarchy & aliases
+│   │   ├── helpers.py           # Reusable date, number, string, doc & format helpers
+│   │   └── logger.py            # Central logger & execution timer
 │   ├── validators/
 │   │   ├── __init__.py
-│   │   └── base_validator.py    # Abstract validator interface
+│   │   ├── base_validator.py    # Abstract validator interface
+│   │   └── common_validators.py # Global reusable validators
+│   ├── constants.py             # System domain string constants
+│   ├── enums.py                 # Strong Python Enum classes
 │   ├── __init__.py              # App version metadata
 │   ├── desktop.py               # Desk Module icon definition
 │   ├── hooks.py                 # App registration & lifecycle hooks
@@ -85,11 +113,3 @@ fleet_management/
 ├── requirements.txt             # App python dependencies
 └── setup.py                     # Setuptools installer
 ```
-
----
-
-## 🔑 Core Design Patterns
-
-1. **Separation of Concerns**: Business logic lives strictly in `services/`, input validation in `validators/`, security evaluation in `permissions/`, and whitelisted endpoints in `api/`.
-2. **Standard API Envelope**: Every API endpoint decorated with `@api_endpoint` returns a predictable JSON envelope with `success`, `status_code`, `message`, `data`, and `meta`.
-3. **Domain Exception Safety**: All errors inherit from `FleetManagementError`, producing structured HTTP status responses instead of uncaught 500 HTML tracebacks.

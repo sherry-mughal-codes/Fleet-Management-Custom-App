@@ -10,13 +10,16 @@ The **Fleet Management System** is a reusable, enterprise-ready Frappe applicati
 
 ---
 
-## 🏗️ Architectural Foundations
+## 🏗️ Core Foundation & Architecture (Phase 2 Completed)
 
-This app follows strict software engineering principles:
-- **SOLID Principles**: Single responsibility, open-closed, Liskov substitution, interface segregation, and dependency inversion.
-- **DRY (Don't Repeat Yourself)**: Centralized utilities for logging, exceptions, validation, API wrappers, and permissions.
-- **Layered Architecture**: Decoupled presentation, API, validation, service execution, data persistence, and security audit layers.
-- **Containerized Bench**: Fully integrated `frappe_docker` multi-container stack.
+This app strictly follows enterprise software engineering principles:
+- **SOLID & DRY Architecture**: Zero magic strings. Centralized `constants.py` and strongly typed Python `enums.py`.
+- **Fleet Settings Singleton**: Centralized system configuration via `Fleet Settings` single DocType with Redis caching via `SettingsService`.
+- **Global Validation Framework**: Reusable validators for positive numbers, date ranges, odometer progression, required fields, unique duplicates, and state machine status transitions.
+- **Common Mixins**: `TimestampMixin`, `AuditMixin`, `StatusMixin`, `PermissionMixin`.
+- **Business Rules Architecture**: Decoupled rule engine (`BaseBusinessRule`) separating business invariants from controllers.
+- **Services Architecture**: `SettingsService`, `AuditService`, `NotificationService`, `PermissionService`.
+- **API Envelope & Standard Responses**: Whitelisted API endpoints utilize `@api_endpoint` and `api/responses.py` envelopes.
 
 ---
 
@@ -37,20 +40,26 @@ This app follows strict software engineering principles:
 ```
 fleet_management/
 ├── fleet_management/        # Python Application Package
-│   ├── api/                 # Enterprise Whitelisted API Wrappers & Response Envelopes
+│   ├── api/                 # Enterprise Whitelisted API Wrappers & Standard Responses
+│   ├── business_rules/      # Decoupled Business Invariant Rule Engine
 │   ├── config/              # Desk Sidebar & Module Configurations
 │   ├── dashboard/           # Desk Dashboard Charts & Analytics Definitions
-│   ├── fleet_management/    # Desk Workspace & Fixtures Package
-│   ├── notifications/       # Multi-Channel Notification Engine
+│   ├── fleet_management/    # Desk Workspace & Fleet Settings Single DocType
+│   │   └── doctype/
+│   │       └── fleet_settings/ # Fleet Settings Singleton DocType
+│   ├── mixins/              # Reusable Document Mixins (Timestamp, Audit, Status, Permission)
+│   ├── notifications/       # Multi-Channel Notification Engine & Service
 │   ├── patches/             # Database Migration & Patch Scripts
-│   ├── permissions/         # Security Evaluators & Audit Logging Decorators
+│   ├── permissions/         # Security Evaluators, Audit Logging & Permission Service
 │   ├── public/              # Static Frontend Assets (JS, CSS)
 │   ├── reports/             # Analytics Reports Placeholders
-│   ├── services/            # Base Service & Business Logic Architecture
+│   ├── services/            # Base Service, SettingsService, AuditService
 │   ├── templates/           # Web Templates & Pages
-│   ├── tests/               # Pytest & Frappe Unit Test Suite
-│   ├── utils/               # Central Logger, Exception Hierarchy, Helpers
-│   ├── validators/          # Input & Entity Validation Engine
+│   ├── tests/               # Pytest Unit Test Suite
+│   ├── utils/               # Central Logger, Exception Hierarchy, Shared Helpers
+│   ├── validators/          # Input, Entity & Common Validation Framework
+│   ├── constants.py         # Shared Domain String Constants & Defaults
+│   ├── enums.py             # Python Strong Enum Definitions
 │   ├── desktop.py           # Desk Icon Definition
 │   ├── hooks.py             # Frappe App Registration Hooks
 │   └── modules.txt          # Registered Modules List

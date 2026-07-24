@@ -3,8 +3,10 @@ Centralized Reusable Logging Architecture
 Fleet Management System
 """
 
+from contextlib import contextmanager
 import json
 import logging
+import time
 from typing import Any, Dict, Optional
 import frappe
 
@@ -13,7 +15,7 @@ SENSITIVE_KEYS = {"password", "api_secret", "secret", "token", "auth_header", "j
 class FleetLogger:
 	"""
 	Enterprise logger wrapping frappe.logger with structured metadata,
-	component tagging, and sensitive parameter sanitization.
+	component tagging, sensitive parameter sanitization, and execution timing.
 	"""
 
 	def __init__(self, module_name: str = "fleet_management"):
@@ -33,9 +35,10 @@ class FleetLogger:
 			return [self._sanitize(item) for item in data]
 		return data
 
-	def _format_message(self, message: str, context: Optional[Dict[str, Any]] = None) -> str:
+	def _format_message(self, message: str, context: Optional[Dict[str, Any]] = None, level: str = "INFO") -> str:
 		payload = {
 			"module": self.module_name,
+			"level": level,
 			"message": message,
 			"user": getattr(frappe.session, "user", "System") if hasattr(frappe, "session") else "System",
 		}
@@ -44,13 +47,13 @@ class FleetLogger:
 		return json.dumps(payload)
 
 	def debug(self, message: str, context: Optional[Dict[str, Any]] = None):
-		self._logger.debug(self._format_message(message, context))
+		self._logger.debug(self._format_message(message, context, level="DEBUG"))
 
 	def info(self, message: str, context: Optional[Dict[str, Any]] = None):
-		self._logger.info(self._format_message(message, context))
+		self._logger.info(self._format_message(message, context, level="INFO"))
 
 	def warning(self, message: str, context: Optional[Dict[str, Any]] = None):
-		self._logger.warning(self._format_message(message, context))
+		self._logger.warning(self._format_message(message, context, level="WARNING"))
 
 	def error(self, message: str, context: Optional[Dict[str, Any]] = None, exc: Optional[Exception] = None):
 		if exc and hasattr(frappe, "log_error"):
@@ -58,7 +61,27 @@ class FleetLogger:
 				frappe.log_error(title=f"{self.module_name}: {message}", message=str(exc))
 			except Exception:
 				pass
-		self._logger.error(self._format_message(message, context))
+		self._logger.error(self._format_message(message, context, level="ERROR"))
+
+	def critical(self, message: str, context: Optional[Dict[str, Any]] = None, exc: Optional[Exception] = None):
+		if exc and hasattr(frappe, "log_error"):
+			try:
+				frappe.log_error(title=f"CRITICAL {self.module_name}: {message}", message=str(exc))
+			except Exception:
+				pass
+		self._logger.critical(self._format_message(message, context, level="CRITICAL"))
+
+	@contextmanager
+	def log_execution_time(self, action_name: str, context: Optional[Dict[str, Any]] = None):
+		"""Context manager measuring and logging execution duration."""
+		start = time.time()
+		ctx = context.copy() if context else {}
+		try:
+			yield
+		finally:
+			duration_ms = round((time.time() - start) * 1000, 2)
+			ctx["duration_ms"] = duration_ms
+			self.info(f"Execution completed: {action_name}", ctx)
 
 
 _loggers: Dict[str, FleetLogger] = {}
