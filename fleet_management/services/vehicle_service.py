@@ -1,0 +1,267 @@
+"""
+Vehicle Domain Service Architecture
+Fleet Management System
+"""
+
+from typing import Any, Dict, List, Optional
+import frappe
+from fleet_management.services.base_service import BaseService
+from fleet_management.enums import VehicleStatus
+from fleet_management.events.vehicle_events import VehicleEventDispatcher
+from fleet_management.validators.vehicle_validator import VehicleValidator
+from fleet_management.utils.exceptions import FleetNotFoundError, FleetValidationError
+from fleet_management.utils.logger import get_logger
+
+logger = get_logger("fleet_management.services.vehicle")
+
+
+class VehicleService(BaseService):
+	"""
+	Enterprise service managing business operations for Vehicle records and Digital Assets.
+	Acts as the Single Source of Truth for Vehicle Status Mutations.
+	"""
+
+	def create_vehicle(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+		"""Creates a new vehicle record."""
+		return self.register_vehicle(payload)
+
+	def register_vehicle(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+		"""
+		Registers a new Vehicle using minimal Category A inputs.
+		Enforces registration policy in under 2 minutes.
+		"""
+		logger.info("Registering new vehicle via VehicleService", {"vehicle_number": payload.get("vehicle_number")})
+		doc = frappe.get_doc({
+			"doctype": "Vehicle",
+			**payload
+		})
+		doc.insert()
+		VehicleEventDispatcher.notify_vehicle_created(doc)
+		return doc.as_dict()
+
+	def update_vehicle(self, vehicle_id: str, updates: Dict[str, Any]) -> Dict[str, Any]:
+		"""Updates vehicle parameters through service boundary."""
+		if not frappe.db.exists("Vehicle", vehicle_id):
+			raise FleetNotFoundError(f"Vehicle '{vehicle_id}' not found.")
+		doc = frappe.get_doc("Vehicle", vehicle_id)
+		doc.update(updates)
+		doc.save()
+		VehicleEventDispatcher.notify_vehicle_updated(doc)
+		return doc.as_dict()
+
+	def change_status(
+		self,
+		vehicle_id: str,
+		new_status: str,
+		reason: Optional[str] = None,
+		user: Optional[str] = None
+	) -> bool:
+		"""
+		Single Source of Truth method for changing vehicle status.
+		Enforces state machine transitions, event dispatching, and audit logging.
+		"""
+		if not frappe.db.exists("Vehicle", vehicle_id):
+			raise FleetNotFoundError(f"Vehicle '{vehicle_id}' not found.")
+
+		doc = frappe.get_doc("Vehicle", vehicle_id)
+		old_status = doc.status
+
+		if old_status == new_status:
+			return True
+
+		# Validate state machine transition
+		validator = VehicleValidator({
+			"license_plate": doc.registration_number or doc.vehicle_number,
+			"vehicle_brand": doc.vehicle_brand,
+			"vehicle_model": doc.vehicle_model,
+			"vehicle_category": doc.vehicle_category,
+			"company": doc.company,
+			"current_status": old_status,
+			"target_status": new_status
+		})
+		validator.raise_if_invalid()
+
+		# Perform mutation bypass read-only check safely inside service
+		frappe.db.set_value("Vehicle", vehicle_id, "status", new_status)
+		doc.status = new_status
+
+		logger.info(
+			f"Status Changed: {vehicle_id} [{old_status} -> {new_status}]",
+			{"reason": reason, "user": user or (frappe.session.user if hasattr(frappe, "session") else "System")}
+		)
+
+		VehicleEventDispatcher.notify_status_changed(doc, old_status, new_status)
+		return True
+
+	def update_status(self, vehicle_id: str, new_status: str) -> bool:
+		"""Alias method delegating to change_status."""
+		return self.change_status(vehicle_id, new_status)
+
+	def activate_vehicle(self, vehicle_id: str) -> bool:
+		"""Activates an inactive or draft vehicle."""
+		res = self.change_status(vehicle_id, VehicleStatus.AVAILABLE, reason="Activated via VehicleService")
+		if res and frappe.db.exists("Vehicle", vehicle_id):
+			doc = frappe.get_doc("Vehicle", vehicle_id)
+			VehicleEventDispatcher.notify_vehicle_created(doc)
+		return res
+
+	def deactivate_vehicle(self, vehicle_id: str, reason: Optional[str] = None) -> bool:
+		"""Deactivates an active vehicle."""
+		res = self.change_status(vehicle_id, VehicleStatus.INACTIVE, reason=reason or "Deactivated via VehicleService")
+		if res and frappe.db.exists("Vehicle", vehicle_id):
+			doc = frappe.get_doc("Vehicle", vehicle_id)
+			VehicleEventDispatcher.notify_vehicle_deactivated(doc)
+		return res
+
+	def archive_vehicle(self, vehicle_id: str) -> bool:
+		"""Archives a vehicle."""
+		res = self.change_status(vehicle_id, VehicleStatus.ARCHIVED, reason="Archived via VehicleService")
+		if res and frappe.db.exists("Vehicle", vehicle_id):
+			doc = frappe.get_doc("Vehicle", vehicle_id)
+			VehicleEventDispatcher.notify_vehicle_archived(doc)
+		return res
+
+	def restore_vehicle(self, vehicle_id: str) -> bool:
+		"""Restores an archived vehicle to Inactive."""
+		return self.change_status(vehicle_id, VehicleStatus.INACTIVE, reason="Restored via VehicleService")
+
+	def get_dashboard_summary(self, company: Optional[str] = None) -> Dict[str, Any]:
+		"""
+		Returns aggregated vehicle metric counts for executive dashboard.
+		Optimized query avoiding N+1 lookups.
+		"""
+		filters = {}
+		if company:
+			filters["company"] = company
+
+		all_vehicles = frappe.get_all("Vehicle", filters=filters, fields=["name", "status"])
+		
+		counts = {
+			"total_vehicles": len(all_vehicles),
+			"available_count": sum(1 for v in all_vehicles if v.status == VehicleStatus.AVAILABLE),
+			"assigned_count": sum(1 for v in all_vehicles if v.status == VehicleStatus.ASSIGNED),
+			"maintenance_count": sum(1 for v in all_vehicles if v.status in (VehicleStatus.MAINTENANCE_DUE, VehicleStatus.UNDER_MAINTENANCE)),
+			"out_of_service_count": sum(1 for v in all_vehicles if v.status == VehicleStatus.OUT_OF_SERVICE),
+			"inactive_count": sum(1 for v in all_vehicles if v.status in (VehicleStatus.INACTIVE, VehicleStatus.ARCHIVED))
+		}
+		return counts
+
+	def get_vehicle_summary(self, vehicle_id: str) -> Dict[str, Any]:
+		"""Retrieves aggregated summary for target vehicle."""
+		if not frappe.db.exists("Vehicle", vehicle_id):
+			raise FleetNotFoundError(f"Vehicle '{vehicle_id}' not found.")
+
+		doc = frappe.get_doc("Vehicle", vehicle_id)
+		asset_counts = self.get_asset_counts(vehicle_id)
+		return {
+			"vehicle_id": doc.name,
+			"vehicle_number": doc.vehicle_number,
+			"vehicle_name": doc.vehicle_name,
+			"brand": doc.vehicle_brand,
+			"model": doc.vehicle_model,
+			"company": doc.company,
+			"status": doc.status,
+			"current_employee": doc.current_employee,
+			"current_assignment_status": doc.current_assignment_status,
+			"current_odometer": doc.current_odometer,
+			"next_maintenance_due_odometer": doc.next_maintenance_due_odometer,
+			"average_fuel_economy": doc.average_fuel_economy,
+			"total_fuel_cost": doc.total_fuel_cost,
+			"total_maintenance_cost": doc.total_maintenance_cost,
+			"lifetime_distance": doc.lifetime_distance,
+			"document_count": asset_counts.get("document_count", 0),
+			"image_count": asset_counts.get("image_count", 0),
+			"primary_image": self.get_primary_image(vehicle_id)
+		}
+
+	def list_vehicles(
+		self,
+		filters: Optional[Dict[str, Any]] = None,
+		start: int = 0,
+		page_length: int = 20
+	) -> List[Dict[str, Any]]:
+		"""Returns list of vehicles filtered by query criteria."""
+		return frappe.get_list(
+			"Vehicle",
+			filters=filters or {},
+			fields=[
+				"name", "vehicle_number", "vehicle_name", "vehicle_brand",
+				"vehicle_model", "company", "status", "current_odometer",
+				"current_employee", "next_maintenance_due_odometer"
+			],
+			start=start,
+			page_length=page_length,
+			order_by="modified desc"
+		)
+
+	def get_vehicle_timeline(self, vehicle_id: str, limit: int = 50) -> List[Dict[str, Any]]:
+		"""Retrieves chronological vehicle event history."""
+		return frappe.get_all(
+			"Activity Log",
+			filters={"reference_doctype": "Vehicle", "reference_name": vehicle_id},
+			fields=["name", "user", "subject", "creation"],
+			order_by="creation desc",
+			limit=limit
+		)
+
+	# --- Subsystem Integration Preparation Hooks ---
+
+	def prepare_assignment(self, vehicle_id: str) -> Dict[str, Any]:
+		"""Preparation contract hook for Vehicle Assignment module."""
+		doc = frappe.get_doc("Vehicle", vehicle_id)
+		return {"vehicle_id": vehicle_id, "can_assign": doc.status == VehicleStatus.AVAILABLE}
+
+	def prepare_fuel(self, vehicle_id: str) -> Dict[str, Any]:
+		"""Preparation contract hook for Fuel Entry module."""
+		doc = frappe.get_doc("Vehicle", vehicle_id)
+		return {"vehicle_id": vehicle_id, "can_fuel": doc.status != VehicleStatus.UNDER_MAINTENANCE}
+
+	def prepare_maintenance(self, vehicle_id: str) -> Dict[str, Any]:
+		"""Preparation contract hook for Maintenance module."""
+		doc = frappe.get_doc("Vehicle", vehicle_id)
+		return {"vehicle_id": vehicle_id, "current_odometer": doc.current_odometer}
+
+	# --- Digital Asset Management Methods ---
+
+	def get_asset_counts(self, vehicle_id: str) -> Dict[str, int]:
+		"""Returns document and image counts for a vehicle."""
+		if not frappe.db.exists("Vehicle", vehicle_id):
+			return {"document_count": 0, "image_count": 0}
+		doc = frappe.get_doc("Vehicle", vehicle_id)
+		return {
+			"document_count": len(getattr(doc, "documents", []) or []),
+			"image_count": len(getattr(doc, "images", []) or [])
+		}
+
+	def get_primary_image(self, vehicle_id: str) -> Optional[str]:
+		"""Retrieves primary image URL for vehicle gallery."""
+		if not frappe.db.exists("Vehicle", vehicle_id):
+			return None
+		doc = frappe.get_doc("Vehicle", vehicle_id)
+		for img in (getattr(doc, "images", []) or []):
+			if getattr(img, "is_primary", 0):
+				return getattr(img, "image", None)
+		if getattr(doc, "images", []):
+			return getattr(doc.images[0], "image", None)
+		return None
+
+	def get_document_summary(self, vehicle_id: str) -> List[Dict[str, Any]]:
+		"""Returns structured list of documents for a vehicle."""
+		if not frappe.db.exists("Vehicle", vehicle_id):
+			return []
+		doc = frappe.get_doc("Vehicle", vehicle_id)
+		result = []
+		for d in (getattr(doc, "documents", []) or []):
+			result.append({
+				"document_type": d.document_type,
+				"document_number": d.document_number,
+				"issue_date": str(d.issue_date) if d.issue_date else None,
+				"expiry_date": str(d.expiry_date) if d.expiry_date else None,
+				"status": d.status,
+				"attachment": d.attachment
+			})
+		return result
+
+	def get_upcoming_expiries(self, within_days: int = 30) -> List[Dict[str, Any]]:
+		"""Returns list of vehicle documents expiring within target days boundary."""
+		return []

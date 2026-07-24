@@ -20,18 +20,22 @@ fleet_management/
 │   ├── ARCHITECTURE_OVERVIEW.md # Enterprise layer & settings architecture
 │   ├── CONTRIBUTION_GUIDE.md   # Guidelines for pull requests and code standards
 │   ├── DEVELOPMENT_GUIDE.md    # Developer setup and testing workflows
+│   ├── DIGITAL_ASSET_MANAGEMENT.md # Digital Asset & Document Subsystem, Rule IDs ASSET-001..008
 │   ├── FOLDER_STRUCTURE.md     # Directory breakdown documentation
 │   ├── INSTALLATION_GUIDE.md   # Bench deployment & site installation
-│   └── MASTER_DATA_ARCHITECTURE.md # Master Data ER diagram, indexes & Rule IDs
+│   ├── MASTER_DATA_ARCHITECTURE.md # Master Data ER diagram, indexes & Rule IDs
+│   ├── PRODUCTION_READINESS_REPORT.md # Production Readiness Assessment Report
+│   └── VEHICLE_DOMAIN_ARCHITECTURE.md # Vehicle domain design, 13-state lifecycle & Rule IDs VEH-001..VEH-010
 ├── fleet_management/
 │   ├── api/
 │   │   ├── __init__.py
 │   │   ├── base.py              # Whitelisted API wrapper (@api_endpoint decorator)
-│   │   └── responses.py         # Standardized success, error & pagination envelopes
+│   │   ├── responses.py         # Standardized success, error & pagination envelopes
+│   │   └── vehicle_api.py       # Vehicle, Status & Asset Whitelisted API Endpoints
 │   ├── business_rules/
 │   │   ├── __init__.py
 │   │   ├── base_rule.py         # Abstract Base Business Rule engine
-│   │   ├── vehicle_rules.py     # Vehicle availability contract interface
+│   │   ├── vehicle_rules.py     # Vehicle business invariant rules (VEH-001..VEH-006)
 │   │   ├── assignment_rules.py  # Assignment contract interface
 │   │   ├── fuel_rules.py        # Fuel capacity contract interface
 │   │   └── maintenance_rules.py # Maintenance trigger contract interface
@@ -43,7 +47,8 @@ fleet_management/
 │   │   └── __init__.py          # Desk Dashboard charts placeholder
 │   ├── events/
 │   │   ├── __init__.py
-│   │   └── registry.py          # Document Event Registry
+│   │   ├── registry.py          # Document Event Registry
+│   │   └── vehicle_events.py    # Vehicle Event Dispatcher
 │   ├── fixtures/
 │   │   └── __init__.py          # Fixtures package
 │   ├── fleet_management/
@@ -56,9 +61,12 @@ fleet_management/
 │   │   │   ├── fuel_unit/
 │   │   │   ├── maintenance_type/
 │   │   │   ├── maintenance_vendor/
+│   │   │   ├── vehicle/            # Main Vehicle DocType (JSON, JS, PY)
 │   │   │   ├── vehicle_brand/
 │   │   │   ├── vehicle_category/
 │   │   │   ├── vehicle_colour/
+│   │   │   ├── vehicle_document_detail/ # Child Table DocType
+│   │   │   ├── vehicle_image_detail/    # Child Table DocType
 │   │   │   └── vehicle_model/
 │   │   └── workspace/
 │   │       └── fleet_management/
@@ -79,7 +87,8 @@ fleet_management/
 │   │   ├── __init__.py
 │   │   ├── audit.py             # Security audit log decorators
 │   │   ├── evaluator.py         # Role-based access control (RBAC) evaluator
-│   │   └── service.py           # PermissionService
+│   │   ├── service.py           # PermissionService
+│   │   └── vehicle_permission.py # VehiclePermissionEvaluator
 │   ├── public/                  # Static web assets
 │   ├── reports/
 │   │   └── __init__.py          # Analytics reports directory
@@ -87,7 +96,8 @@ fleet_management/
 │   │   ├── __init__.py
 │   │   ├── audit_service.py     # AuditService
 │   │   ├── base_service.py      # Abstract Base Service & Transaction management
-│   │   └── settings_service.py   # SettingsService with Redis caching
+│   │   ├── settings_service.py   # SettingsService with Redis caching
+│   │   └── vehicle_service.py   # Vehicle Single Source of Truth Service
 │   ├── templates/               # Public Web Jinja templates
 │   ├── tests/
 │   │   ├── __init__.py
@@ -98,7 +108,12 @@ fleet_management/
 │   │   ├── test_helpers_mixins.py
 │   │   ├── test_master_doctypes.py
 │   │   ├── test_settings_service.py
-│   │   └── test_validators.py
+│   │   ├── test_validators.py
+│   │   ├── test_vehicle_architecture.py
+│   │   ├── test_vehicle_asset_management.py
+│   │   ├── test_vehicle_doctype.py
+│   │   ├── test_vehicle_lifecycle_services.py
+│   │   └── test_vehicle_production_readiness.py # Master Production Readiness Test Suite
 │   ├── utils/
 │   │   ├── __init__.py
 │   │   ├── base_document.py     # BaseFleetDocument controller
@@ -108,12 +123,14 @@ fleet_management/
 │   ├── validators/
 │   │   ├── __init__.py
 │   │   ├── base_validator.py    # Abstract validator interface
-│   │   └── common_validators.py # Global reusable validators
-│   ├── constants.py             # System domain string constants
-│   ├── enums.py                 # Strong Python Enum classes
+│   │   ├── common_validators.py # Global reusable validators
+│   │   ├── vehicle_asset_validator.py # VehicleAssetValidator (ASSET-001..008)
+│   │   └── vehicle_validator.py # VehicleValidator (Rule IDs VEH-001..VEH-010)
+│   ├── constants.py             # System domain string constants & 13-State Lifecycle
+│   ├── enums.py                 # Strong Python Enum classes & Vehicle Enums
 │   ├── desktop.py               # Desk Module icon definition
 │   ├── hooks.py                 # App registration & fixture declarations
-│   └── modules.txt              # Desk module list
+│   └── modules.txt              # Registered Modules List
 ├── .editorconfig                # Universal indentation and whitespace rules
 ├── .env.example                 # Environment variables template
 ├── .gitignore                   # Enterprise git ignore exclusions

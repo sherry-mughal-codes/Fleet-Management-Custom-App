@@ -1,0 +1,485 @@
+{
+ "actions": [],
+ "autoname": "naming_series:",
+ "creation": "2026-07-24 15:40:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "basic_info_section",
+  "vehicle_number",
+  "vehicle_name",
+  "vehicle_brand",
+  "vehicle_model",
+  "vehicle_category",
+  "column_break_basic",
+  "registration_number",
+  "vin",
+  "engine_number",
+  "manufacturing_year",
+  "colour",
+  "company",
+  "description",
+  "technical_info_section",
+  "fuel_type",
+  "fuel_unit",
+  "distance_unit",
+  "engine_capacity",
+  "column_break_tech",
+  "transmission",
+  "seating_capacity",
+  "fuel_tank_capacity",
+  "expected_fuel_average",
+  "maintenance_interval_km",
+  "ownership_section",
+  "acquisition_type",
+  "purchase_date",
+  "purchase_price",
+  "supplier",
+  "column_break_warranty",
+  "warranty_start",
+  "warranty_end",
+  "warranty_notes",
+  "operational_summary_section",
+  "status",
+  "current_employee",
+  "current_assignment_status",
+  "initial_odometer",
+  "current_odometer",
+  "column_break_summary",
+  "next_maintenance_due_odometer",
+  "last_maintenance_date",
+  "last_fuel_date",
+  "average_fuel_economy",
+  "total_fuel_cost",
+  "total_maintenance_cost",
+  "lifetime_distance",
+  "documents_section",
+  "documents",
+  "images_section",
+  "images",
+  "system_info_section",
+  "naming_series"
+ ],
+ "fields": [
+  {
+   "fieldname": "basic_info_section",
+   "fieldtype": "Section Break",
+   "label": "Basic Information"
+  },
+  {
+   "fieldname": "vehicle_number",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Vehicle Number / Asset ID",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "vehicle_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Vehicle Name"
+  },
+  {
+   "fieldname": "vehicle_brand",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Brand",
+   "options": "Vehicle Brand",
+   "reqd": 1
+  },
+  {
+   "fieldname": "vehicle_model",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Model",
+   "options": "Vehicle Model",
+   "reqd": 1
+  },
+  {
+   "fieldname": "vehicle_category",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Vehicle Category",
+   "options": "Vehicle Category",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_basic",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "registration_number",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Registration Number / License Plate"
+  },
+  {
+   "fieldname": "vin",
+   "fieldtype": "Data",
+   "in_standard_filter": 1,
+   "label": "VIN / Chassis Number"
+  },
+  {
+   "fieldname": "engine_number",
+   "fieldtype": "Data",
+   "label": "Engine Number"
+  },
+  {
+   "fieldname": "manufacturing_year",
+   "fieldtype": "Int",
+   "label": "Manufacturing Year"
+  },
+  {
+   "fieldname": "colour",
+   "fieldtype": "Link",
+   "label": "Vehicle Colour",
+   "options": "Vehicle Colour"
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Company",
+   "options": "Company",
+   "reqd": 1
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Description"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "technical_info_section",
+   "fieldtype": "Section Break",
+   "label": "Technical Information"
+  },
+  {
+   "fieldname": "fuel_type",
+   "fieldtype": "Link",
+   "label": "Fuel Type",
+   "options": "Fuel Type"
+  },
+  {
+   "fieldname": "fuel_unit",
+   "fieldtype": "Link",
+   "label": "Fuel Unit",
+   "options": "Fuel Unit"
+  },
+  {
+   "fieldname": "distance_unit",
+   "fieldtype": "Link",
+   "label": "Distance Unit",
+   "options": "Distance Unit"
+  },
+  {
+   "fieldname": "engine_capacity",
+   "fieldtype": "Data",
+   "label": "Engine Capacity"
+  },
+  {
+   "fieldname": "column_break_tech",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "transmission",
+   "fieldtype": "Select",
+   "label": "Transmission",
+   "options": "Manual\nAutomatic\nSemi-Automatic\nCVT\nDual-Clutch"
+  },
+  {
+   "fieldname": "seating_capacity",
+   "fieldtype": "Int",
+   "label": "Seating Capacity"
+  },
+  {
+   "fieldname": "fuel_tank_capacity",
+   "fieldtype": "Float",
+   "label": "Fuel Tank Capacity"
+  },
+  {
+   "fieldname": "expected_fuel_average",
+   "fieldtype": "Float",
+   "label": "Expected Fuel Average"
+  },
+  {
+   "fieldname": "maintenance_interval_km",
+   "fieldtype": "Int",
+   "label": "Maintenance Interval (KM)"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "ownership_section",
+   "fieldtype": "Section Break",
+   "label": "Ownership & Financial"
+  },
+  {
+   "default": "Purchased",
+   "fieldname": "acquisition_type",
+   "fieldtype": "Select",
+   "label": "Acquisition Type",
+   "options": "Purchased\nLeased\nRented"
+  },
+  {
+   "fieldname": "purchase_date",
+   "fieldtype": "Date",
+   "label": "Purchase Date"
+  },
+  {
+   "fieldname": "purchase_price",
+   "fieldtype": "Currency",
+   "label": "Purchase Price"
+  },
+  {
+   "fieldname": "supplier",
+   "fieldtype": "Data",
+   "label": "Supplier / Vendor"
+  },
+  {
+   "fieldname": "column_break_warranty",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "warranty_start",
+   "fieldtype": "Date",
+   "label": "Warranty Start Date"
+  },
+  {
+   "fieldname": "warranty_end",
+   "fieldtype": "Date",
+   "label": "Warranty End Date"
+  },
+  {
+   "fieldname": "warranty_notes",
+   "fieldtype": "Small Text",
+   "label": "Warranty Notes"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "operational_summary_section",
+   "fieldtype": "Section Break",
+   "label": "Operational Summary (System Managed)"
+  },
+  {
+   "default": "Available",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Draft\nAvailable\nReserved\nAssigned\nMaintenance Due\nUnder Maintenance\nInspection\nOut of Service\nInactive\nSold\nScrapped\nArchived",
+   "read_only": 1
+  },
+  {
+   "fieldname": "current_employee",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Current Assigned Employee",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "default": "Unassigned",
+   "fieldname": "current_assignment_status",
+   "fieldtype": "Select",
+   "label": "Current Assignment Status",
+   "options": "Unassigned\nAssigned\nIn Transit",
+   "read_only": 1
+  },
+  {
+   "default": "0.0",
+   "fieldname": "initial_odometer",
+   "fieldtype": "Float",
+   "label": "Initial Odometer (KM)"
+  },
+  {
+   "default": "0.0",
+   "fieldname": "current_odometer",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Current Odometer (KM)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_summary",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "next_maintenance_due_odometer",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Next Maintenance Due (KM)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_maintenance_date",
+   "fieldtype": "Date",
+   "label": "Last Maintenance Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_fuel_date",
+   "fieldtype": "Date",
+   "label": "Last Fuel Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "average_fuel_economy",
+   "fieldtype": "Float",
+   "label": "Average Fuel Economy",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_fuel_cost",
+   "fieldtype": "Currency",
+   "label": "Total Fuel Cost",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_maintenance_cost",
+   "fieldtype": "Currency",
+   "label": "Total Maintenance Cost",
+   "read_only": 1
+  },
+  {
+   "fieldname": "lifetime_distance",
+   "fieldtype": "Float",
+   "label": "Lifetime Distance (KM)",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "documents_section",
+   "fieldtype": "Section Break",
+   "label": "Vehicle Documents"
+  },
+  {
+   "fieldname": "documents",
+   "fieldtype": "Table",
+   "label": "Documents List",
+   "options": "Vehicle Document Detail"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "images_section",
+   "fieldtype": "Section Break",
+   "label": "Vehicle Images"
+  },
+  {
+   "fieldname": "images",
+   "fieldtype": "Table",
+   "label": "Images Gallery",
+   "options": "Vehicle Image Detail"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "system_info_section",
+   "fieldtype": "Section Break",
+   "label": "System Information"
+  },
+  {
+   "default": "VEH-.YYYY.-.#####",
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Naming Series",
+   "options": "VEH-.YYYY.-.#####"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-07-24 15:40:00.000000",
+ "modified_by": "Administrator",
+ "module": "Fleet Management",
+ "name": "Vehicle",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "role": "Fleet Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "role": "Fleet Officer",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "role": "Fleet User",
+   "share": 0,
+   "write": 0
+  }
+ ],
+ "search_fields": "vehicle_number, vehicle_name, registration_number, vin, vehicle_brand, vehicle_model, company, status",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [
+  {
+   "color": "Green",
+   "title": "Available"
+  },
+  {
+   "color": "Blue",
+   "title": "Assigned"
+  },
+  {
+   "color": "Orange",
+   "title": "Under Maintenance"
+  },
+  {
+   "color": "Yellow",
+   "title": "Maintenance Due"
+  },
+  {
+   "color": "Red",
+   "title": "Out of Service"
+  },
+  {
+   "color": "Gray",
+   "title": "Draft"
+  },
+  {
+   "color": "Purple",
+   "title": "Reserved"
+  },
+  {
+   "color": "Dark Gray",
+   "title": "Inactive"
+  }
+ ]
+}

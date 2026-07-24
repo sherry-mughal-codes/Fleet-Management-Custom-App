@@ -1,0 +1,3 @@
+"""
+Vehicle Main DocType Package
+"""
