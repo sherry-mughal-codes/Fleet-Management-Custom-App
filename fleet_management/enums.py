@@ -112,6 +112,28 @@ class MaintenanceStatus(str, Enum):
 	OVERDUE = constants.MAINTENANCE_STATUS_OVERDUE
 
 
+class MaintenanceType(str, Enum):
+	PREVENTIVE = "Preventive"
+	CORRECTIVE = "Corrective"
+	EMERGENCY = "Emergency"
+	INSPECTION = "Inspection"
+
+
+class MaintenancePriority(str, Enum):
+	LOW = "Low"
+	MEDIUM = "Medium"
+	HIGH = "High"
+	CRITICAL = "Critical"
+
+
+class MaintenanceEventType(str, Enum):
+	CREATED = "Maintenance Created"
+	SCHEDULED = "Maintenance Scheduled"
+	IN_PROGRESS = "Maintenance In Progress"
+	COMPLETED = "Maintenance Completed"
+	CANCELLED = "Maintenance Cancelled"
+
+
 class ApprovalStatus(str, Enum):
 	PENDING = constants.APPROVAL_STATUS_PENDING
 	APPROVED = constants.APPROVAL_STATUS_APPROVED

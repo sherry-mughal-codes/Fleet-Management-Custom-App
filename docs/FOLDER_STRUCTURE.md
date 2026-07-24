@@ -27,6 +27,8 @@ fleet_management/
 │   ├── FUEL_INTELLIGENCE_ARCHITECTURE.md # Fuel Intelligence Pipeline & Rule IDs FUEL-001..010
 │   ├── FUEL_PRODUCTION_READINESS_REPORT.md # Executive Fuel Intelligence Production Readiness Report
 │   ├── INSTALLATION_GUIDE.md   # Bench deployment & site installation
+│   ├── MAINTENANCE_INTELLIGENCE_ARCHITECTURE.md # Maintenance Domain Design & Rule IDs MAINT-001..010
+│   ├── MAINTENANCE_PRODUCTION_READINESS_REPORT.md # Executive Maintenance Production Readiness Report
 │   ├── MASTER_DATA_ARCHITECTURE.md # Master Data ER diagram, indexes & Rule IDs
 │   ├── PRODUCTION_READINESS_REPORT.md # Executive Vehicle Domain Production Readiness Report
 │   └── VEHICLE_DOMAIN_ARCHITECTURE.md # Vehicle domain design, 13-state lifecycle & Rule IDs VEH-001..VEH-010
@@ -36,6 +38,7 @@ fleet_management/
 │   │   ├── assignment_api.py    # Assignment Whitelisted API Endpoints Implementation
 │   │   ├── base.py              # Whitelisted API wrapper (@api_endpoint decorator)
 │   │   ├── fuel_api.py          # Fuel Whitelisted API Endpoints Implementation
+│   │   ├── maintenance_api.py   # Maintenance Whitelisted API Endpoints Implementation
 │   │   ├── responses.py         # Standardized success, error & pagination envelopes
 │   │   └── vehicle_api.py       # Vehicle, Status & Asset Whitelisted API Endpoints
 │   ├── business_rules/
@@ -43,7 +46,7 @@ fleet_management/
 │   │   ├── assignment_rules.py  # Assignment Business Rules (ASN-001..ASN-010)
 │   │   ├── base_rule.py         # Abstract Base Business Rule engine
 │   │   ├── fuel_rules.py        # Fuel Business Rules (FUEL-001..FUEL-010)
-│   │   ├── maintenance_rules.py # Maintenance trigger contract interface
+│   │   ├── maintenance_rules.py # Maintenance Business Invariant Rules (MAINT-001..MAINT-010)
 │   │   └── vehicle_rules.py     # Vehicle business invariant rules (VEH-001..VEH-006)
 │   ├── config/
 │   │   ├── __init__.py
@@ -55,6 +58,7 @@ fleet_management/
 │   │   ├── __init__.py
 │   │   ├── assignment_events.py # Assignment Event Dispatcher
 │   │   ├── fuel_events.py       # Fuel Event Dispatcher
+│   │   ├── maintenance_events.py # Maintenance Event Dispatcher
 │   │   ├── registry.py          # Document Event Registry
 │   │   └── vehicle_events.py    # Vehicle Event Dispatcher
 │   ├── fixtures/
@@ -64,12 +68,16 @@ fleet_management/
 │   │   │   ├── distance_unit/
 │   │   │   ├── expense_category/
 │   │   │   ├── fleet_settings/
-│   │   │   ├── fuel_entry/         # Main Fuel Entry DocType (JSON, JS, PY)
+│   │   │   ├── fuel_entry/         # Main Fuel Entry DocType
 │   │   │   ├── fuel_station/
 │   │   │   ├── fuel_type/
 │   │   │   ├── fuel_unit/
+│   │   │   ├── maintenance_request/    # Main Maintenance Request DocType
+│   │   │   ├── maintenance_task/       # Child Table DocType
+│   │   │   ├── maintenance_task_template/ # Master Reference DocType
 │   │   │   ├── maintenance_type/
 │   │   │   ├── maintenance_vendor/
+│   │   │   ├── maintenance_work_order/ # Main Maintenance Work Order DocType
 │   │   │   ├── vehicle/            # Main Vehicle DocType
 │   │   │   ├── vehicle_assignment/ # Main Vehicle Assignment DocType
 │   │   │   ├── vehicle_brand/
@@ -99,6 +107,7 @@ fleet_management/
 │   │   ├── audit.py             # Security audit log decorators
 │   │   ├── evaluator.py         # Role-based access control (RBAC) evaluator
 │   │   ├── fuel_permission.py   # FuelPermissionEvaluator
+│   │   ├── maintenance_permission.py # MaintenancePermissionEvaluator
 │   │   ├── service.py           # PermissionService
 │   │   └── vehicle_permission.py # VehiclePermissionEvaluator
 │   ├── public/                  # Static web assets
@@ -110,8 +119,10 @@ fleet_management/
 │   │   ├── audit_service.py     # AuditService
 │   │   ├── base_service.py      # Abstract Base Service & Transaction management
 │   │   ├── fuel_average_service.py # FuelAverageService
-│   │   ├── fuel_service.py      # FuelService Implementation & Analytics Helpers
+│   │   ├── fuel_service.py      # FuelService Implementation
+│   │   ├── maintenance_due_service.py # MaintenanceDueEngine
 │   │   ├── maintenance_lock_service.py # MaintenanceLockService
+│   │   ├── maintenance_service.py # MaintenanceService Implementation & Analytics Helpers
 │   │   ├── settings_service.py   # SettingsService with Redis caching
 │   │   └── vehicle_service.py   # Vehicle Single Source of Truth Service
 │   ├── templates/               # Public Web Jinja templates
@@ -127,8 +138,12 @@ fleet_management/
 │   │   ├── test_fuel_architecture.py
 │   │   ├── test_fuel_entry_doctype.py
 │   │   ├── test_fuel_intelligence_engine.py
-│   │   ├── test_fuel_production_readiness.py # Master Fuel Production Readiness Test Suite
+│   │   ├── test_fuel_production_readiness.py
 │   │   ├── test_helpers_mixins.py
+│   │   ├── test_maintenance_architecture.py
+│   │   ├── test_maintenance_doctypes.py
+│   │   ├── test_maintenance_intelligence_engine.py
+│   │   ├── test_maintenance_production_readiness.py # Master Maintenance Production Readiness Test Suite
 │   │   ├── test_master_doctypes.py
 │   │   ├── test_settings_service.py
 │   │   ├── test_validators.py
@@ -150,10 +165,11 @@ fleet_management/
 │   │   ├── base_validator.py    # Abstract validator interface
 │   │   ├── common_validators.py # Global reusable validators
 │   │   ├── fuel_validator.py    # FuelValidator (FUEL-001..FUEL-010)
+│   │   ├── maintenance_validator.py # MaintenanceValidator (MAINT-001..MAINT-010)
 │   │   ├── vehicle_asset_validator.py # VehicleAssetValidator (ASSET-001..008)
 │   │   └── vehicle_validator.py # VehicleValidator (Rule IDs VEH-001..VEH-010)
 │   ├── constants.py             # System domain string constants & Lifecycles
-│   ├── enums.py                 # Strong Python Enum classes & Fuel Enums
+│   ├── enums.py                 # Strong Python Enum classes & Maintenance Enums
 │   ├── desktop.py               # Desk Module icon definition
 │   ├── hooks.py                 # App registration & fixture declarations
 │   └── modules.txt              # Registered Modules List
