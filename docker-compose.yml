@@ -1,0 +1,178 @@
+name: fleet_management_app
+
+services:
+  mariadb:
+    image: mariadb:10.6
+    container_name: fleet_mariadb
+    restart: unless-stopped
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --skip-character-set-client-handshake
+      - --skip-name-resolve
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-admin}
+    volumes:
+      - mariadb-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASSWORD:-admin}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - fleet-net
+
+  redis-cache:
+    image: redis:7.0-alpine
+    container_name: fleet_redis_cache
+    restart: unless-stopped
+    command: redis-server --maxmemory 512mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis-cache-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - fleet-net
+
+  redis-queue:
+    image: redis:7.0-alpine
+    container_name: fleet_redis_queue
+    restart: unless-stopped
+    volumes:
+      - redis-queue-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - fleet-net
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: dev
+    container_name: fleet_backend
+    restart: unless-stopped
+    environment:
+      - FRAPPE_PY_PORT=${FRAPPE_PY_PORT:-8000}
+      - DB_HOST=mariadb
+      - REDIS_CACHE=redis://redis-cache:6379
+      - REDIS_QUEUE=redis://redis-queue:6379
+      - REDIS_SOCKETIO=redis://redis-queue:6379
+    volumes:
+      - sites-data:/home/frappe/frappe-bench/sites
+      - logs-data:/home/frappe/frappe-bench/logs
+      - .:/home/frappe/frappe-bench/apps/fleet_management
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis-cache:
+        condition: service_healthy
+      redis-queue:
+        condition: service_healthy
+    networks:
+      - fleet-net
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: dev
+    container_name: fleet_frontend
+    restart: unless-stopped
+    ports:
+      - "${HTTP_PORT:-8000}:8000"
+      - "${SOCKETIO_PORT:-9000}:9000"
+    command: ["bench", "start"]
+    volumes:
+      - sites-data:/home/frappe/frappe-bench/sites
+      - logs-data:/home/frappe/frappe-bench/logs
+      - .:/home/frappe/frappe-bench/apps/fleet_management
+    depends_on:
+      - backend
+    networks:
+      - fleet-net
+
+  worker-default:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: dev
+    container_name: fleet_worker_default
+    restart: unless-stopped
+    command: ["bench", "worker", "--queue", "default"]
+    volumes:
+      - sites-data:/home/frappe/frappe-bench/sites
+      - logs-data:/home/frappe/frappe-bench/logs
+      - .:/home/frappe/frappe-bench/apps/fleet_management
+    depends_on:
+      - backend
+    networks:
+      - fleet-net
+
+  worker-short:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: dev
+    container_name: fleet_worker_short
+    restart: unless-stopped
+    command: ["bench", "worker", "--queue", "short"]
+    volumes:
+      - sites-data:/home/frappe/frappe-bench/sites
+      - logs-data:/home/frappe/frappe-bench/logs
+      - .:/home/frappe/frappe-bench/apps/fleet_management
+    depends_on:
+      - backend
+    networks:
+      - fleet-net
+
+  worker-long:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: dev
+    container_name: fleet_worker_long
+    restart: unless-stopped
+    command: ["bench", "worker", "--queue", "long"]
+    volumes:
+      - sites-data:/home/frappe/frappe-bench/sites
+      - logs-data:/home/frappe/frappe-bench/logs
+      - .:/home/frappe/frappe-bench/apps/fleet_management
+    depends_on:
+      - backend
+    networks:
+      - fleet-net
+
+  scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: dev
+    container_name: fleet_scheduler
+    restart: unless-stopped
+    command: ["bench", "schedule"]
+    volumes:
+      - sites-data:/home/frappe/frappe-bench/sites
+      - logs-data:/home/frappe/frappe-bench/logs
+      - .:/home/frappe/frappe-bench/apps/fleet_management
+    depends_on:
+      - backend
+    networks:
+      - fleet-net
+
+volumes:
+  mariadb-data:
+  redis-cache-data:
+  redis-queue-data:
+  sites-data:
+  logs-data:
+
+networks:
+  fleet-net:
+    driver: bridge
