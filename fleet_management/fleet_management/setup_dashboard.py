@@ -282,6 +282,17 @@ def setup_fleet_dashboards():
 		doc.update(dash_workspace)
 		doc.save(ignore_permissions=True)
 
+	if frappe.db.exists("Workspace", "Fleet Management"):
+		fm_doc = frappe.get_doc("Workspace", "Fleet Management")
+		for sc in (fm_doc.shortcuts or []):
+			if getattr(sc, "doc_view", None) == "Form":
+				sc.doc_view = ""
+		fm_doc.set("charts", [
+			{"chart_name": "Fleet Vehicle Status Distribution", "label": "Fleet Vehicle Status"},
+			{"chart_name": "Monthly Fuel Expense", "label": "Monthly Fuel Spend"}
+		])
+		fm_doc.save(ignore_permissions=True)
+
 	frappe.db.sql("""
 		DELETE FROM `tabWorkspace Link`
 		WHERE link_to IN ('Vehicle Image Detail', 'Vehicle Document Detail')

@@ -1,29 +1,22 @@
 {
- "charts": [
-  {
-   "chart_name": "Vehicle Status Distribution",
-   "label": "Fleet Vehicle Status"
-  },
-  {
-   "chart_name": "Fuel Spend Trend",
-   "label": "Monthly Fuel Spend"
-  }
- ],
- "content": "[{\"type\":\"header\",\"data\":{\"text\":\"Fleet Command Center Overview\",\"level\":2}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Vehicle\"}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Vehicle Assignment\"}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Fuel Entry\"}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Maintenance Request\"}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Maintenance Work Order\"}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Fleet Settings\"}},{\"type\":\"header\",\"data\":{\"text\":\"Fleet Management Modules (Sequence of Work)\",\"level\":3}},{\"type\":\"card\",\"data\":{\"card_name\":\"⚙️ System & Master Setup\"}},{\"type\":\"card\",\"data\":{\"card_name\":\"🚗 Asset Management\"}},{\"type\":\"card\",\"data\":{\"card_name\":\"🔑 Dispatch & Assignments\"}},{\"type\":\"card\",\"data\":{\"card_name\":\"⛽ Fuel & Energy Intelligence\"}},{\"type\":\"card\",\"data\":{\"card_name\":\"🔧 Maintenance & Repairs\"}},{\"type\":\"card\",\"data\":{\"card_name\":\"📊 Reports & Fleet Analytics\"}}]",
- "creation": "2026-07-24 16:51:00.000000",
+ "charts": [],
+ "content": "[{\"id\":\"yQs5qG3NoU\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Fleet Command Center Overview</span>\",\"col\":12}},{\"id\":\"h1vMbqxpY_\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Vehicle\",\"col\":3}},{\"id\":\"Nv7kiAQPEH\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Vehicle Assignment\",\"col\":3}},{\"id\":\"Jwo4FBfSpG\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Fuel Entry\",\"col\":3}},{\"id\":\"VQMb7YfPGZ\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Maintenance Request\",\"col\":3}},{\"id\":\"SBBy-T9OTP\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Maintenance Work Order\",\"col\":3}},{\"id\":\"sqiVvp7p2-\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Fleet Settings\",\"col\":3}},{\"id\":\"Vo4TzXiaGs\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Fleet Management Modules (Sequence of Work)</span>\",\"col\":12}},{\"id\":\"lUNaG6Wc6o\",\"type\":\"card\",\"data\":{\"card_name\":\"\u2699\ufe0f System & Master Setup\",\"col\":4}},{\"id\":\"cEKgC1kw5N\",\"type\":\"card\",\"data\":{\"card_name\":\"\ud83d\ude97 Asset Management\",\"col\":4}},{\"id\":\"uihzwgAVvf\",\"type\":\"card\",\"data\":{\"card_name\":\"\ud83d\udd11 Dispatch & Assignments\",\"col\":4}},{\"id\":\"dbmSd2n-AF\",\"type\":\"card\",\"data\":{\"card_name\":\"\u26fd Fuel & Energy Intelligence\",\"col\":4}},{\"id\":\"IKCXCqKiFg\",\"type\":\"card\",\"data\":{\"card_name\":\"\ud83d\udd27 Maintenance & Repairs\",\"col\":4}},{\"id\":\"QrVWxHlV9X\",\"type\":\"card\",\"data\":{\"card_name\":\"\ud83d\udcca Reports & Fleet Analytics\",\"col\":4}}]",
+ "creation": "2026-07-24 16:51:00",
+ "custom_blocks": [],
  "docstatus": 0,
  "doctype": "Workspace",
  "for_user": "",
- "icon": "truck",
+ "hide_custom": 0,
+ "icon": "shortcut",
  "idx": 0,
- "indicator_color": "blue",
+ "indicator_color": "",
  "is_hidden": 0,
  "label": "Fleet Management",
  "links": [
   {
    "hidden": 0,
    "is_query_report": 0,
-   "label": "⚙️ System & Master Setup",
+   "label": "\u2699\ufe0f System & Master Setup",
    "link_count": 0,
    "link_type": "DocType",
    "onboard": 0,
@@ -172,7 +165,7 @@
   {
    "hidden": 0,
    "is_query_report": 0,
-   "label": "🚗 Asset Management",
+   "label": "\ud83d\ude97 Asset Management",
    "link_count": 0,
    "link_type": "DocType",
    "onboard": 0,
@@ -191,27 +184,7 @@
   {
    "hidden": 0,
    "is_query_report": 0,
-   "label": "Vehicle Document Detail",
-   "link_count": 0,
-   "link_to": "Vehicle Document Detail",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Vehicle Image Detail",
-   "link_count": 0,
-   "link_to": "Vehicle Image Detail",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "🔑 Dispatch & Assignments",
+   "label": "\ud83d\udd11 Dispatch & Assignments",
    "link_count": 0,
    "link_type": "DocType",
    "onboard": 0,
@@ -230,7 +203,7 @@
   {
    "hidden": 0,
    "is_query_report": 0,
-   "label": "⛽ Fuel & Energy Intelligence",
+   "label": "\u26fd Fuel & Energy Intelligence",
    "link_count": 0,
    "link_type": "DocType",
    "onboard": 0,
@@ -259,7 +232,7 @@
   {
    "hidden": 0,
    "is_query_report": 0,
-   "label": "🔧 Maintenance & Repairs",
+   "label": "\ud83d\udd27 Maintenance & Repairs",
    "link_count": 0,
    "link_type": "DocType",
    "onboard": 0,
@@ -298,7 +271,7 @@
   {
    "hidden": 0,
    "is_query_report": 0,
-   "label": "📊 Reports & Fleet Analytics",
+   "label": "\ud83d\udcca Reports & Fleet Analytics",
    "link_count": 0,
    "link_type": "Report",
    "onboard": 0,
@@ -345,13 +318,15 @@
    "type": "Link"
   }
  ],
- "modified": "2026-07-25 00:00:00.000000",
+ "modified": "2026-07-26 00:22:12.879005",
  "modified_by": "Administrator",
  "module": "Fleet Management",
  "name": "Fleet Management",
+ "number_cards": [],
  "owner": "Administrator",
  "parent_page": "",
  "public": 1,
+ "quick_lists": [],
  "roles": [],
  "sequence_id": 1.0,
  "shortcuts": [
@@ -392,7 +367,7 @@
   },
   {
    "color": "Purple",
-   "doc_view": "Form",
+   "doc_view": "",
    "label": "Fleet Settings",
    "link_to": "Fleet Settings",
    "type": "DocType"

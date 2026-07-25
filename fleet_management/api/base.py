@@ -69,14 +69,17 @@ def api_endpoint(allow_guest: bool = False, rate_limit: bool = True):
 	return decorator
 
 
-from fleet_management.constants import SYSTEM_VERSION
-
-
 def boot_session(bootinfo):
 	"""
 	Frappe boot_session hook populating client boot data.
 	"""
+	try:
+		from fleet_management.constants import SYSTEM_VERSION
+		version = SYSTEM_VERSION
+	except Exception:
+		version = "1.0.0"
+
 	bootinfo.fleet_management_config = {
-		"version": SYSTEM_VERSION,
+		"version": version,
 		"status": "ready"
 	}
