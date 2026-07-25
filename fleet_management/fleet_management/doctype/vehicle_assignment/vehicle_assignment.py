@@ -34,14 +34,7 @@ class VehicleAssignment(BaseFleetDocument):
 			if self.status != old_status:
 				raise FleetValidationError(f"ASSIGN-008: Assignment is '{old_status}' and cannot be modified.")
 
-		# 1. Run AssignmentValidator structural checks (ASN-001..ASN-010)
-		AssignmentValidator(self.as_dict()).raise_if_invalid()
-
-		# 2. Default assignment date to today if empty
-		if not self.assignment_date and hasattr(frappe, "utils"):
-			self.assignment_date = frappe.utils.nowdate()
-
-		# 3. Auto-fetch Vehicle details if blank
+		# 1. Auto-fetch Vehicle details if blank
 		if self.vehicle:
 			v_doc = get_doc_or_none("Vehicle", self.vehicle)
 			if v_doc:
@@ -68,12 +61,23 @@ class VehicleAssignment(BaseFleetDocument):
 				if (not self.opening_odometer or self.opening_odometer == 0) and v_doc.current_odometer:
 					self.opening_odometer = float(v_doc.current_odometer)
 
-		# 4. Auto-fetch Employee details if blank
+		# 2. Auto-fetch Employee details if blank
 		if self.employee:
 			emp_doc = get_doc_or_none("User", self.employee)
 			if emp_doc:
 				if not self.employee_name:
 					self.employee_name = emp_doc.full_name or emp_doc.name
+
+		# 3. Default assignment date to today if empty
+		if not self.assignment_date and hasattr(frappe, "utils"):
+			self.assignment_date = frappe.utils.nowdate()
+
+		# 4. Run AssignmentValidator structural checks (ASN-001..ASN-010)
+		data = self.as_dict()
+		if not self.is_new():
+			data["current_status"] = self.db_get("status")
+			data["target_status"] = self.status
+		AssignmentValidator(data).raise_if_invalid()
 
 		# 5. Validate Date Range
 		if self.assignment_date and self.expected_return_date:

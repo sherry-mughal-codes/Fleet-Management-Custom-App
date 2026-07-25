@@ -53,7 +53,7 @@ jobs:
 
       - name: Execute Full Pytest Test Suite inside Container
         run: |
-          docker compose exec -T backend /home/frappe/frappe-bench/env/bin/pytest apps/fleet_management/fleet_management/tests -v
+          docker compose exec -T backend ./env/bin/pytest apps/fleet_management/fleet_management/tests -v
 
       - name: Tear Down Environment
         if: always()

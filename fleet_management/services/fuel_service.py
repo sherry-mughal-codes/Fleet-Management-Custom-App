@@ -88,11 +88,19 @@ class FuelService(BaseService):
 		v_doc = frappe.get_doc("Vehicle", vehicle_id)
 		current_odometer = max(float(v_doc.current_odometer or 0.0), float(fuel_doc.odometer or 0.0))
 
-		frappe.db.set_value("Vehicle", vehicle_id, {
-			"current_odometer": current_odometer,
-			"last_fuel_average": fuel_doc.fuel_average or 0.0,
-			"last_fuel_entry_date": fuel_doc.fuel_date
-		})
+		update_fields = {
+			"current_odometer": current_odometer
+		}
+		if hasattr(v_doc, "average_fuel_economy"):
+			update_fields["average_fuel_economy"] = fuel_doc.fuel_average or 0.0
+		if hasattr(v_doc, "last_fuel_average"):
+			update_fields["last_fuel_average"] = fuel_doc.fuel_average or 0.0
+		if hasattr(v_doc, "last_fuel_date"):
+			update_fields["last_fuel_date"] = fuel_doc.fuel_date
+		if hasattr(v_doc, "last_fuel_entry_date"):
+			update_fields["last_fuel_entry_date"] = fuel_doc.fuel_date
+
+		frappe.db.set_value("Vehicle", vehicle_id, update_fields)
 		logger.info(f"Updated Vehicle '{vehicle_id}' stats from Fuel Entry {fuel_doc.name}")
 
 	def update_assignment_statistics(self, assignment_id: str, fuel_doc: Any):
@@ -100,10 +108,15 @@ class FuelService(BaseService):
 		if not hasattr(frappe, "db") or not frappe.db.exists("Vehicle Assignment", assignment_id):
 			return
 
-		frappe.db.set_value("Vehicle Assignment", assignment_id, {
-			"latest_fuel_odometer": fuel_doc.odometer,
-			"latest_fuel_date": fuel_doc.fuel_date
-		})
+		asn_doc = frappe.get_doc("Vehicle Assignment", assignment_id)
+		update_fields = {}
+		if hasattr(asn_doc, "latest_fuel_odometer"):
+			update_fields["latest_fuel_odometer"] = fuel_doc.odometer
+		if hasattr(asn_doc, "latest_fuel_date"):
+			update_fields["latest_fuel_date"] = fuel_doc.fuel_date
+
+		if update_fields:
+			frappe.db.set_value("Vehicle Assignment", assignment_id, update_fields)
 		logger.info(f"Updated Assignment '{assignment_id}' stats from Fuel Entry {fuel_doc.name}")
 
 	def update_fuel_entry(self, fuel_entry_id: str, updates: Dict[str, Any]) -> Dict[str, Any]:

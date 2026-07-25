@@ -42,10 +42,12 @@ class MaintenanceLockService:
 
 		# 2. Check maintenance interval threshold
 		odometer = float(current_odometer or v.current_odometer or 0.0)
-		interval = float(v.maintenance_interval_km or 5000.0)
 
-		# If odometer exceeds interval threshold and vehicle status is Maintenance Due
-		if v.status == VehicleStatus.MAINTENANCE_DUE or odometer >= interval:
+		if v.status == VehicleStatus.MAINTENANCE_DUE:
+			return True
+
+		next_due = frappe.db.get_value("Vehicle", vehicle_id, "next_maintenance_due_odometer")
+		if next_due and float(next_due) > 0 and odometer >= float(next_due):
 			return True
 
 		return False

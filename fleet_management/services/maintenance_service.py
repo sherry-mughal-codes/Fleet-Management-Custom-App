@@ -98,14 +98,22 @@ class MaintenanceService(BaseService):
 		next_due_date = MaintenanceDueEngine.calculate_next_due_date(vehicle_id, doc.completion_date)
 
 		# 4. Update Vehicle statistics & Odometer
+		v_doc = frappe.get_doc("Vehicle", vehicle_id)
 		new_current_odo = max(curr_odometer, comp_odometer)
-		frappe.db.set_value("Vehicle", vehicle_id, {
+		update_fields = {
 			"current_odometer": new_current_odo,
-			"last_maintenance_odometer": comp_odometer,
-			"last_maintenance_date": doc.completion_date,
-			"next_due_odometer": next_due_odo,
-			"next_due_date": next_due_date
-		})
+			"last_maintenance_date": doc.completion_date
+		}
+		if hasattr(v_doc, "last_maintenance_odometer"):
+			update_fields["last_maintenance_odometer"] = comp_odometer
+		if hasattr(v_doc, "next_maintenance_due_odometer"):
+			update_fields["next_maintenance_due_odometer"] = next_due_odo
+		if hasattr(v_doc, "next_due_odometer"):
+			update_fields["next_due_odometer"] = next_due_odo
+		if hasattr(v_doc, "next_due_date"):
+			update_fields["next_due_date"] = next_due_date
+
+		frappe.db.set_value("Vehicle", vehicle_id, update_fields)
 
 		# 5. Remove Maintenance Lock via VehicleService single source of truth (MAINT-006, MAINT-009)
 		self.vehicle_service.change_status(vehicle_id, VehicleStatus.AVAILABLE, reason="Maintenance completed successfully")

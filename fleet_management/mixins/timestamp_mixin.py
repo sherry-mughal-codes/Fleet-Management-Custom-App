@@ -11,13 +11,15 @@ class TimestampMixin:
         if hasattr(self, "created_at"):
             self.created_at = now_datetime()
 
-        super().before_insert()
+        if hasattr(super(), "before_insert"):
+            super().before_insert()
 
     def validate(self):
         if hasattr(self, "updated_at"):
             self.updated_at = now_datetime()
 
-        super().validate()
+        if hasattr(super(), "validate"):
+            super().validate()
 
     def days_since_creation(self) -> int:
         """

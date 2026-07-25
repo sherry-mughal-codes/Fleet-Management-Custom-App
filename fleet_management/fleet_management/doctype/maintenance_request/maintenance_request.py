@@ -54,7 +54,7 @@ class MaintenanceRequest(BaseFleetDocument):
 					self.company = v_doc.company
 				if not self.last_maintenance_date:
 					self.last_maintenance_date = v_doc.last_maintenance_date
-				if not self.last_maintenance_odometer:
+				if not self.last_maintenance_odometer and hasattr(v_doc, "last_maintenance_odometer"):
 					self.last_maintenance_odometer = v_doc.last_maintenance_odometer
 
 				# Auto-detect active Vehicle Assignment if blank

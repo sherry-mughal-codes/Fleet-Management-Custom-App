@@ -42,9 +42,9 @@ class AssignmentValidator(BaseValidator):
 			except FleetValidationError as e:
 				self.add_error(f"ASSIGN-004: {e.message}")
 
-		# ASSIGN-005: Closing Odometer >= Opening Odometer
+		# ASSIGN-005: Closing Odometer >= Opening Odometer (when closing odometer is recorded upon return)
 		closing_odometer = self.data.get("closing_odometer")
-		if opening_odometer is not None and closing_odometer is not None:
+		if opening_odometer is not None and closing_odometer is not None and float(closing_odometer) > 0:
 			if float(closing_odometer) < float(opening_odometer):
 				self.add_error("ASSIGN-005: Closing Odometer cannot be less than Opening Odometer.")
 
