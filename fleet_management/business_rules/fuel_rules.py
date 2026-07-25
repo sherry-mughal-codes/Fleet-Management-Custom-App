@@ -85,3 +85,18 @@ class FuelCompanyIsolationRule(BaseBusinessRule):
 			self.add_violation(f"FUEL-010: Cross-company fuel entry denied: Vehicle belongs to '{vehicle_company}', Fuel Entry belongs to '{fuel_company}'.")
 			return False
 		return True
+
+
+class FuelCapacityThresholdRule(BaseBusinessRule):
+	"""
+	Rule FUEL-002: Validates fuel amount does not exceed max capacity if provided.
+	"""
+
+	def evaluate(self) -> bool:
+		amt = self.context.get("fuel_amount", 0)
+		cap = self.context.get("max_capacity")
+		if cap is not None and float(amt) > float(cap):
+			self.add_violation(f"FUEL-002: Fuel amount ({amt}) exceeds vehicle fuel tank capacity ({cap}).")
+			return False
+		return True
+

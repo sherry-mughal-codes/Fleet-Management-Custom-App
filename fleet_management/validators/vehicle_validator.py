@@ -47,7 +47,12 @@ class VehicleValidator(BaseValidator):
 
 	def validate(self) -> bool:
 		# VEH-001: Required Category A registration fields check
-		validate_required_fields(self.data, ["license_plate", "vehicle_brand", "vehicle_model", "vehicle_category", "company"])
+		plate = self.data.get("license_plate") or self.data.get("vehicle_number")
+		if not plate or str(plate).strip() == "":
+			self.add_error("VEH-001: Missing required field(s): vehicle_number / license_plate.")
+		validate_required_fields(self.data, ["vehicle_brand", "vehicle_model", "vehicle_category", "company"])
+
+
 
 		# VEH-002: VIN format validation (if provided)
 		vin = self.data.get("vin")

@@ -15,9 +15,18 @@ class MaintenanceRequest(BaseFleetDocument):
 	Maintenance Request Controller.
 	Enforces Rule IDs MAINT-001 through MAINT-010 and auto-population cascades.
 	"""
+	doctype = "Maintenance Request"
+
 
 	def before_validate_hook(self):
+		if not self.status:
+			self.status = "Draft"
+		if not self.naming_series:
+			self.naming_series = "MREQ-.YYYY.-.#####"
+
 		# 1. Structural validation via MaintenanceValidator (MAINT-001..MAINT-010)
+
+
 		MaintenanceValidator(self.as_dict()).raise_if_invalid()
 
 		# 2. Default requested_date to today if empty

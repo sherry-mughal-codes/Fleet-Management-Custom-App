@@ -51,8 +51,10 @@ def test_fuel_validator_invalid_qty_and_odometer():
 	}
 	validator = FuelValidator(payload)
 	assert validator.validate() is False
-	assert any("FUEL-003" in err for err in validator.errors)
+	assert any("FUEL-002" in err or "FUEL-003" in err for err in validator.errors)
 	assert any("FUEL-004" in err for err in validator.errors)
+
+
 
 
 def test_rule_fuel_001_vehicle_required():

@@ -1,8 +1,8 @@
-from frappe.model.document import Document
 from frappe.utils import now_datetime
 
 
-class TimestampMixin(Document):
+class TimestampMixin:
+
     """
     Base mixin for timestamp tracking.
     """

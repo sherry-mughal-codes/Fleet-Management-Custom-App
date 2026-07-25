@@ -25,6 +25,10 @@ doc_events = {
 	}
 }
 
+# Migration Hook
+after_migrate = "fleet_management.fleet_management.setup_dashboard.setup_fleet_dashboards"
+
+
 # Scheduled Tasks
 # ---------------
 scheduler_events = {
@@ -46,7 +50,15 @@ boot_session = "fleet_management.api.base.boot_session"
 fixtures = [
 	{
 		"dt": "Workspace",
-		"filters": [["name", "=", "Fleet Management"]]
+		"filters": [["module", "=", "Fleet Management"]]
+	},
+	{
+		"dt": "Number Card",
+		"filters": [["module", "=", "Fleet Management"]]
+	},
+	{
+		"dt": "Dashboard Chart",
+		"filters": [["module", "=", "Fleet Management"]]
 	},
 	{
 		"dt": "Vehicle Category",
@@ -71,5 +83,11 @@ fixtures = [
 	{
 		"dt": "Fuel Unit",
 		"filters": [["is_active", "=", 1]]
+	},
+	{
+		"dt": "Company",
+		"filters": [["name", "is", "set"]]
 	}
 ]
+
+

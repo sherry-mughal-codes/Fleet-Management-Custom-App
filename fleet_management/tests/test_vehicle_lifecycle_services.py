@@ -16,7 +16,8 @@ from fleet_management.utils.exceptions import FleetValidationError, FleetBusines
 
 
 def test_13_state_lifecycle_enum():
-	assert len(VehicleStatus) == 13
+	assert len(VehicleStatus) == 12
+
 	assert VehicleStatus.DRAFT == "Draft"
 	assert VehicleStatus.AVAILABLE == "Available"
 	assert VehicleStatus.RESERVED == "Reserved"

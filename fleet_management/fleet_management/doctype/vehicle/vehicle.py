@@ -11,6 +11,8 @@ from fleet_management.validators.vehicle_asset_validator import VehicleAssetVali
 from fleet_management.services.settings_service import SettingsService
 from fleet_management.validators.common_validators import validate_date_range, validate_range
 from fleet_management.utils.helpers import get_doc_or_none
+from fleet_management.enums import VehicleStatus
+
 
 
 class Vehicle(BaseFleetDocument):
@@ -18,9 +20,21 @@ class Vehicle(BaseFleetDocument):
 	Vehicle Document Controller.
 	Enforces Rule IDs VEH-001..VEH-010 and ASSET-001..ASSET-008.
 	"""
+	doctype = "Vehicle"
+
 
 	def before_validate_hook(self):
+		if not self.status:
+			self.status = VehicleStatus.AVAILABLE
+		if not self.current_assignment_status:
+			self.current_assignment_status = "Unassigned"
+		if self.current_odometer is None:
+			self.current_odometer = float(self.initial_odometer or 0.0)
+
+
+
 		# 1. Run VehicleValidator contract checks (VEH-001..VEH-010)
+
 		VehicleValidator(self.as_dict()).raise_if_invalid()
 
 		# 2. Run VehicleAssetValidator checks (ASSET-001..ASSET-008)

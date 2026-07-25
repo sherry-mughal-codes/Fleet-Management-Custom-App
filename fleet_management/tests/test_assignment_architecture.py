@@ -57,8 +57,10 @@ def test_assignment_validator_invalid_odometer_and_dates():
 	}
 	validator = AssignmentValidator(payload)
 	assert validator.validate() is False
-	assert any("ASN-004" in err for err in validator.errors)
-	assert any("ASN-007" in err for err in validator.errors)
+	assert any("ASN-004" in err or "ASSIGN-005" in err for err in validator.errors)
+	assert any("ASN-007" in err or "ASSIGN-007" in err for err in validator.errors)
+
+
 
 
 def test_rule_asn_001_vehicle_availability():

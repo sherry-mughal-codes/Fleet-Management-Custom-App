@@ -16,9 +16,17 @@ class FuelEntry(BaseFleetDocument):
 	Fuel Entry Controller.
 	Enforces Rule IDs FUEL-001 through FUEL-010, Fuel Average Engine, and Maintenance Lock Engine.
 	"""
+	doctype = "Fuel Entry"
+
 
 	def before_validate_hook(self):
+		if not self.status:
+			self.status = "Draft"
+		if not self.naming_series:
+			self.naming_series = "FUEL-.YYYY.-.#####"
+
 		# 1. Structural validation via FuelValidator (FUEL-001..FUEL-010)
+
 		FuelValidator(self.as_dict()).raise_if_invalid()
 
 		# 2. Default fuel date to today if empty

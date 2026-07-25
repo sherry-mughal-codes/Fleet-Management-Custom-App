@@ -11,6 +11,8 @@ class ExpenseCategory(BaseFleetDocument):
 	"""
 	Expense Category Master Document Controller.
 	"""
+	doctype = "Expense Category"
+
 
 	def before_validate_hook(self):
 		validate_required_fields(self.as_dict(), ["category_name"])

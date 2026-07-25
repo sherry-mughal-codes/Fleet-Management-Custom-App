@@ -10,8 +10,9 @@ from fleet_management.utils.exceptions import FleetBusinessLogicError
 
 
 def test_vehicle_availability_rule_pass():
-	rule = VehicleAvailabilityRule({"status": "Active"})
+	rule = VehicleAvailabilityRule({"status": "Available"})
 	assert rule.evaluate() is True
+
 
 
 def test_vehicle_availability_rule_fail():

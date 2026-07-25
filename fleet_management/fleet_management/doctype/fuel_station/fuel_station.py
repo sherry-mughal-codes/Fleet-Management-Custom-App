@@ -12,6 +12,8 @@ class FuelStation(BaseFleetDocument):
 	Fuel Station Master Document Controller.
 	Rule IDs: MASTER-008
 	"""
+	doctype = "Fuel Station"
+
 
 	def before_validate_hook(self):
 		validate_required_fields(self.as_dict(), ["station_name"])

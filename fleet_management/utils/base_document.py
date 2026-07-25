@@ -19,7 +19,14 @@ class BaseFleetDocument(Document, TimestampMixin, AuditMixin, StatusMixin, Permi
 	Combines Document lifecycle hooks with audit, status, timestamp, and permission mixins.
 	"""
 
+	def __init__(self, *args, **kwargs):
+		if args and isinstance(args[0], dict):
+			if "doctype" not in args[0] and getattr(self, "doctype", None):
+				args[0]["doctype"] = self.doctype
+		super().__init__(*args, **kwargs)
+
 	def validate(self):
+
 		super().validate()
 		self.before_validate_hook()
 

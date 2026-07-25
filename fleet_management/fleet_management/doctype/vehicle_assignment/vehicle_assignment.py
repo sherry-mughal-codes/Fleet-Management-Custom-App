@@ -18,9 +18,17 @@ class VehicleAssignment(BaseFleetDocument):
 	Vehicle Assignment Controller.
 	Enforces Rule IDs ASN-001 through ASN-010 and auto-population cascades.
 	"""
+	doctype = "Vehicle Assignment"
+
 
 	def before_validate_hook(self):
+		if not self.status:
+			self.status = AssignmentStatus.DRAFT
+		if not self.naming_series:
+			self.naming_series = "ASSIGN-.YYYY.-.#####"
+
 		# ASSIGN-008: Closed / Cancelled read-only protection
+
 		if not self.is_new() and self.db_get("status") in (AssignmentStatus.CLOSED, AssignmentStatus.CANCELLED):
 			old_status = self.db_get("status")
 			if self.status != old_status:

@@ -14,9 +14,17 @@ class MaintenanceWorkOrder(BaseFleetDocument):
 	Maintenance Work Order Controller.
 	Manages work order execution details and task checklist child tables.
 	"""
+	doctype = "Maintenance Work Order"
+
 
 	def before_validate_hook(self):
+		if not self.status:
+			self.status = "Draft"
+		if not self.naming_series:
+			self.naming_series = "MWO-.YYYY.-.#####"
+
 		# 1. Auto-fetch vehicle and company from maintenance request if linked
+
 		if self.maintenance_request and not self.vehicle:
 			req_doc = get_doc_or_none("Maintenance Request", self.maintenance_request)
 			if req_doc:

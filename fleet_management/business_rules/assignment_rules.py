@@ -80,3 +80,9 @@ class AssignmentCompanyIsolationRule(BaseBusinessRule):
 			self.add_violation(f"ASSIGN-010: Cross-company assignment denied: Vehicle belongs to '{vehicle_company}', Assignment belongs to '{assignment_company}'.")
 			return False
 		return True
+
+
+# Backward compatible rule class aliases
+AssignmentOdometerRule = AssignmentOdometerIntegrityRule
+AssignmentOverlapRule = AssignmentActiveDuplicateRule
+

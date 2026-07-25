@@ -12,6 +12,8 @@ class VehicleCategory(BaseFleetDocument):
 	Vehicle Category Master Document Controller.
 	Rule IDs: MASTER-005, MASTER-013
 	"""
+	doctype = "Vehicle Category"
+
 
 	def before_validate_hook(self):
 		validate_required_fields(self.as_dict(), ["category_name"])

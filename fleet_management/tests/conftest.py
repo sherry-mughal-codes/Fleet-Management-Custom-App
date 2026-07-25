@@ -1,8 +1,17 @@
-"""
-Pytest Fixtures for Fleet Management Test Architecture
-"""
-
 import pytest
+import frappe
+
+
+@pytest.fixture(scope="session", autouse=True)
+def initialize_frappe():
+	"""Initializes Frappe context and database connection for pytest suite."""
+	if not getattr(frappe, "db", None):
+		frappe.init(site="fleet.localhost", sites_path="sites")
+		frappe.connect()
+	yield
+
+
+
 
 @pytest.fixture(scope="session")
 def mock_frappe_context():
@@ -11,3 +20,4 @@ def mock_frappe_context():
 		"site": "fleet.localhost",
 		"user": "Administrator"
 	}
+

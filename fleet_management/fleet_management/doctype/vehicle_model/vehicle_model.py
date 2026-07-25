@@ -19,6 +19,8 @@ class VehicleModel(BaseFleetDocument):
 	Vehicle Model Master Document Controller.
 	Rule IDs: MASTER-002, MASTER-003, MASTER-004
 	"""
+	doctype = "Vehicle Model"
+
 
 	def before_validate_hook(self):
 		# MASTER-002: Required fields and Brand + Model combination uniqueness

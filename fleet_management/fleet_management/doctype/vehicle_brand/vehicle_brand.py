@@ -12,6 +12,8 @@ class VehicleBrand(BaseFleetDocument):
 	Vehicle Brand Master Document Controller.
 	Rule IDs: MASTER-001, MASTER-013
 	"""
+	doctype = "Vehicle Brand"
+
 
 	def before_validate_hook(self):
 		# MASTER-001: Validate required brand fields & uniqueness

@@ -36,12 +36,20 @@ class FleetLogger:
 		return data
 
 	def _format_message(self, message: str, context: Optional[Dict[str, Any]] = None, level: str = "INFO") -> str:
+		user = "System"
+		if hasattr(frappe, "session"):
+			try:
+				user = getattr(frappe.session, "user", "System") or "System"
+			except Exception:
+				user = "System"
+
 		payload = {
 			"module": self.module_name,
 			"level": level,
 			"message": message,
-			"user": getattr(frappe.session, "user", "System") if hasattr(frappe, "session") else "System",
+			"user": user,
 		}
+
 		if context:
 			payload["context"] = self._sanitize(context)
 		return json.dumps(payload)

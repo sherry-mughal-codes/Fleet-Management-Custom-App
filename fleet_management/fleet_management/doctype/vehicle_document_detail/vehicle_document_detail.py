@@ -12,8 +12,15 @@ class VehicleDocumentDetail(Document):
 	"""
 	Child Document controller for Vehicle Document attachments.
 	"""
+	doctype = "Vehicle Document Detail"
+
+	def __init__(self, *args, **kwargs):
+		if args and isinstance(args[0], dict) and "doctype" not in args[0]:
+			args[0]["doctype"] = self.doctype
+		super().__init__(*args, **kwargs)
 
 	def get_days_until_expiry(self) -> int:
+
 		"""Calculate remaining days until document expiry."""
 		if not self.expiry_date:
 			return 999999

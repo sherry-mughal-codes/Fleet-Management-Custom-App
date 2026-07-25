@@ -36,7 +36,7 @@ class FleetCostService(BaseService):
 			filters={"vehicle": vehicle_id, "status": ["!=", "Cancelled"]},
 			fields=["total_cost"]
 		)
-		return round(sum(float(e.get("total_cost") or 0.0) for e in entries), 2)
+		return float(round(sum(float(e.get("total_cost") or 0.0) for e in entries), 2))
 
 	def calculate_maintenance_cost(self, vehicle_id: str) -> float:
 		"""Calculates total completed maintenance work order spend for target vehicle (COST-002, COST-004, COST-005)."""
@@ -47,13 +47,14 @@ class FleetCostService(BaseService):
 			filters={"vehicle": vehicle_id, "status": "Completed"},
 			fields=["total_cost"]
 		)
-		return round(sum(float(w.get("total_cost") or 0.0) for w in orders), 2)
+		return float(round(sum(float(w.get("total_cost") or 0.0) for w in orders), 2))
 
 	def calculate_total_operating_cost(self, vehicle_id: str) -> float:
 		"""Calculates total operating cost (Fuel + Maintenance)."""
 		fuel = self.calculate_fuel_cost(vehicle_id)
 		maint = self.calculate_maintenance_cost(vehicle_id)
-		return round(fuel + maint, 2)
+		return float(round(fuel + maint, 2))
+
 
 	def calculate_cost_per_km(self, vehicle_id: str) -> float:
 		"""Calculates cost per kilometer using validated odometer data (COST-006)."""

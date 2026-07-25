@@ -12,6 +12,8 @@ class MaintenanceVendor(BaseFleetDocument):
 	Maintenance Vendor Master Document Controller.
 	Rule IDs: MASTER-009
 	"""
+	doctype = "Maintenance Vendor"
+
 
 	def before_validate_hook(self):
 		validate_required_fields(self.as_dict(), ["vendor_name"])

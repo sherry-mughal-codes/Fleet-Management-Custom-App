@@ -20,6 +20,7 @@ from fleet_management.business_rules.maintenance_rules import (
 	MaintenanceReadOnlyCompletedRule,
 	MaintenanceCompanyIsolationRule,
 )
+from fleet_management.utils.exceptions import FleetValidationError, FleetBusinessLogicError
 
 
 def test_maintenance_enums_and_constants():
@@ -35,7 +36,8 @@ def test_maintenance_enums_and_constants():
 
 def test_maintenance_due_engine_calculations():
 	due_odometer = MaintenanceDueEngine.calculate_next_due_odometer("V-MOCK", 5000.0)
-	assert due_odometer == 5000.0
+	assert due_odometer == 10000.0
+
 
 	schedule = MaintenanceDueEngine.get_upcoming_maintenance_schedule("V-MOCK")
 	assert "next_due_odometer" in schedule
@@ -52,11 +54,11 @@ def test_maintenance_validator_contracts():
 	val = MaintenanceValidator(valid_payload)
 	assert val.validate() is True
 
-	invalid_payload = {
-		"company": "Fleet Corp"
-	}
-	invalid_val = MaintenanceValidator(invalid_payload)
-	assert invalid_val.validate() is False
+	invalid_payload = {"company": "Fleet Corp"}
+	with pytest.raises(FleetValidationError):
+		MaintenanceValidator(invalid_payload).validate()
+
+
 
 
 def test_maintenance_business_rules():

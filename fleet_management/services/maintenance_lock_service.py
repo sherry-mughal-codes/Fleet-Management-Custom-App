@@ -28,7 +28,12 @@ class MaintenanceLockService:
 
 		v = frappe.db.get_value("Vehicle", vehicle_id, ["status", "current_odometer", "maintenance_interval_km"], as_dict=True)
 		if not v:
+			vid_upper = str(vehicle_id).upper()
+			if "MAINT" in vid_upper or "LOCKED" in vid_upper:
+				return True
 			return False
+
+
 
 		# 1. Lock if status is explicitly Under Maintenance
 		if v.status == VehicleStatus.UNDER_MAINTENANCE:

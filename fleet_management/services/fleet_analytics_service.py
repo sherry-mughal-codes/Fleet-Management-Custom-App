@@ -142,7 +142,8 @@ class FleetAnalyticsService(BaseService):
 		vehicles = frappe.get_all(
 			"Vehicle",
 			filters={"company": company} if company else {},
-			fields=["name", "vehicle_number", "vehicle_name", "vehicle_brand", "vehicle_model", "current_odometer", "status", "last_fuel_average"],
+			fields=["name", "vehicle_number", "vehicle_name", "vehicle_brand", "vehicle_model", "current_odometer", "status", "expected_fuel_average"],
+
 			order_by="modified desc",
 			limit=limit
 		)

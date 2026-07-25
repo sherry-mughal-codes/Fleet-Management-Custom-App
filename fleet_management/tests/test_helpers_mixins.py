@@ -30,7 +30,8 @@ def test_number_helpers():
 def test_string_helpers():
 	assert helpers.slugify("Fleet Management Vehicle #1!") == "fleet-management-vehicle-1"
 	assert helpers.sanitize_string("<script>alert('x')</script>Hello") == "alert('x')Hello"
-	assert helpers.truncate("Extremely long vehicle identification string", 15) == "Extremely lon..."
+	assert helpers.truncate("Extremely long vehicle identification string", 15) == "Extremely lo..."
+
 
 
 def test_formatting_helpers():

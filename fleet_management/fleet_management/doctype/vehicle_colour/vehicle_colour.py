@@ -14,6 +14,8 @@ class VehicleColour(BaseFleetDocument):
 	Vehicle Colour Master Document Controller.
 	Rule IDs: MASTER-010
 	"""
+	doctype = "Vehicle Colour"
+
 
 	def before_validate_hook(self):
 		validate_required_fields(self.as_dict(), ["colour_name"])

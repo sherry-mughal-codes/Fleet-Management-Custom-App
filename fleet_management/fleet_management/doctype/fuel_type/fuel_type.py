@@ -12,6 +12,8 @@ class FuelType(BaseFleetDocument):
 	Fuel Type Master Document Controller.
 	Rule IDs: MASTER-006
 	"""
+	doctype = "Fuel Type"
+
 
 	def before_validate_hook(self):
 		validate_required_fields(self.as_dict(), ["fuel_name"])

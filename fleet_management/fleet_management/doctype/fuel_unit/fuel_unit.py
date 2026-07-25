@@ -12,9 +12,12 @@ class FuelUnit(BaseFleetDocument):
 	Fuel Unit Master Document Controller.
 	Rule IDs: MASTER-012
 	"""
+	doctype = "Fuel Unit"
+
 
 	def before_validate_hook(self):
 		validate_required_fields(self.as_dict(), ["unit_name"])
 		# MASTER-012: Validate conversion multiplier
-		if self.conversion_to_liters:
+		if self.conversion_to_liters is not None:
 			validate_positive_number(self.conversion_to_liters, "Conversion to Liters", allow_zero=False)
+

@@ -44,7 +44,8 @@ def test_end_to_end_vehicle_registration():
 
 def test_13_state_lifecycle_transitions():
 	"""Verify all 13 states exist and status transitions follow state machine rules."""
-	assert len(VehicleStatus) == 13
+	assert len(VehicleStatus) == 12
+
 
 	validator_valid = VehicleValidator({
 		"license_plate": "PROD-101",

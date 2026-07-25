@@ -16,11 +16,11 @@ from fleet_management.utils.exceptions import FleetBusinessLogicError
 
 
 def test_vehicle_status_lifecycle_enum():
-	assert len(VehicleStatus) == 10
+	assert len(VehicleStatus) == 12
 	assert VehicleStatus.DRAFT == "Draft"
 	assert VehicleStatus.AVAILABLE == "Available"
 	assert VehicleStatus.ASSIGNED == "Assigned"
-	assert VehicleStatus.MAINTENANCE == "Maintenance"
+	assert VehicleStatus.UNDER_MAINTENANCE == "Under Maintenance"
 	assert VehicleStatus.OUT_OF_SERVICE == "Out of Service"
 	assert VehicleStatus.RESERVED == "Reserved"
 	assert VehicleStatus.INACTIVE == "Inactive"
@@ -33,6 +33,8 @@ def test_vehicle_document_type_enum():
 	assert VehicleDocumentType.REGISTRATION == "Registration"
 	assert VehicleDocumentType.INSURANCE == "Insurance"
 	assert VehicleDocumentType.FITNESS == "Fitness Certificate"
+
+
 
 
 def test_vehicle_validator_valid():

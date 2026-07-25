@@ -12,6 +12,8 @@ class MaintenanceType(BaseFleetDocument):
 	Maintenance Type Master Document Controller.
 	Rule IDs: MASTER-007
 	"""
+	doctype = "Maintenance Type"
+
 
 	def before_validate_hook(self):
 		validate_required_fields(self.as_dict(), ["maintenance_name"])
