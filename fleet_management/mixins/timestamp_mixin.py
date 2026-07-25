@@ -1,22 +1,30 @@
-"""
-Timestamp Mixin
-Fleet Management System
-"""
+from frappe.model.document import Document
+from frappe.utils import now_datetime
 
-import frappe
 
-class TimestampMixin:
-	"""
-	Mixin providing date and time helper utilities for Frappe Documents.
-	"""
+class TimestampMixin(Document):
+    """
+    Base mixin for timestamp tracking.
+    """
 
-	def get_creation_date(self):
-		return frappe.utils.getdate(getattr(self, "creation", frappe.utils.nowdate()))
+    def before_insert(self):
+        if hasattr(self, "created_at"):
+            self.created_at = now_datetime()
 
-	def get_modified_date(self):
-		return frappe.utils.getdate(getattr(self, "modified", frappe.utils.nowdate()))
+        super().before_insert()
 
-	def days_since_creation((self) -> int:
-		created = self.get_creation_date()
-		today = frappe.utils.getdate(frappe.utils.nowdate())
-		return (today - created).days
+    def validate(self):
+        if hasattr(self, "updated_at"):
+            self.updated_at = now_datetime()
+
+        super().validate()
+
+    def days_since_creation(self) -> int:
+        """
+        Returns number of days since document creation.
+        """
+        if not getattr(self, "creation", None):
+            return 0
+
+        delta = now_datetime() - self.creation
+        return delta.days

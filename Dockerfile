@@ -1,12 +1,23 @@
-FROM frappe/bench:v15 AS dev
+FROM frappe/bench:latest AS dev
 
 USER frappe
+
+WORKDIR /home/frappe
+
+RUN bench init \
+    --skip-redis-config-generation \
+    --frappe-branch version-15 \
+    frappe-bench
+
 WORKDIR /home/frappe/frappe-bench
 
-# Ensure custom app directory is initialized properly
-RUN mkdir -p apps/fleet_management
+COPY --chown=frappe:frappe . apps/fleet_management
 
-COPY --chown=frappe:frappe . /home/frappe/frappe-bench/apps/fleet_management
+RUN bench setup requirements
 
-# Default entrypoint relies on bench CLI
+# Docker Redis configuration
+RUN echo "redis_cache: redis://redis-cache:6379" > sites/common_site_config.json && \
+    echo "redis_queue: redis://redis-queue:6379" >> sites/common_site_config.json && \
+    echo "redis_socketio: redis://redis-queue:6379" >> sites/common_site_config.json
+
 CMD ["bench", "start"]
