@@ -1,7 +1,8 @@
 """
-Fleet Management API Layer Package
+Fleet Management REST API Version 1 (v1) Package
+Provides versioned API endpoint access for all enterprise fleet sub-modules.
 """
-from fleet_management.api.base import api_endpoint, boot_session
+
 from fleet_management.api import (
 	vehicle_api,
 	assignment_api,
@@ -10,12 +11,9 @@ from fleet_management.api import (
 	cost_api,
 	analytics_api,
 	automation_api,
-	v1,
 )
 
 __all__ = [
-	"api_endpoint",
-	"boot_session",
 	"vehicle_api",
 	"assignment_api",
 	"fuel_api",
@@ -23,5 +21,4 @@ __all__ = [
 	"cost_api",
 	"analytics_api",
 	"automation_api",
-	"v1",
 ]

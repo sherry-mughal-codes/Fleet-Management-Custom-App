@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "fleet_management"
-version = "0.0.1"
+version = "1.0.0"
 description = "Production-Grade Enterprise Fleet Management System for Frappe Framework v15"
 authors = [
     { name = "Fleet Management Team", email = "developer@fleetmanagement.local" }

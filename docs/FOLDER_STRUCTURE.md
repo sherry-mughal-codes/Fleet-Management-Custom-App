@@ -12,28 +12,34 @@ This document details every package, directory, and infrastructure file within `
 fleet_management/
 ├── .devcontainer/
 │   └── devcontainer.json        # VS Code Container specifications
+├── .github/
+│   └── workflows/
+│       └── ci.yml               # GitHub Actions CI/CD Pipeline Configuration
 ├── .vscode/
 │   ├── extensions.json          # Recommended VS Code extensions
 │   ├── launch.json              # Debugging launch configurations
 │   └── settings.json            # Workspace formatting & interpreter settings
 ├── docs/
+│   ├── ADMINISTRATOR_GUIDE.md   # Enterprise Administrator & Deployment Guide
+│   ├── API_DOCUMENTATION.md    # REST API v1 Reference Specification
 │   ├── ARCHITECTURE_OVERVIEW.md # Enterprise layer & settings architecture
-│   ├── ASSIGNMENT_DOMAIN_ARCHITECTURE.md # Assignment domain design, Handover/Return & Rule IDs ASN-001..010
-│   ├── ASSIGNMENT_PRODUCTION_READINESS_REPORT.md # Executive Assignment Domain Production Readiness Report
+│   ├── ASSIGNMENT_DOMAIN_ARCHITECTURE.md # Assignment domain design & Rule IDs ASN-001..010
+│   ├── BACKUP_AND_RECOVERY_GUIDE.md # Database & File Backup & Disaster Recovery Guide
+│   ├── BUSINESS_RULES_CATALOGUE.md # Complete Business Invariant Rules Catalogue
 │   ├── CONTRIBUTION_GUIDE.md   # Guidelines for pull requests and code standards
-│   ├── DEVELOPMENT_GUIDE.md    # Developer setup and testing workflows
+│   ├── DEVELOPER_GUIDE.md      # Developer setup, architecture & testing workflows
+│   ├── FINAL_PRODUCTION_CERTIFICATION.md # Executive Production Certification Report v1.0.0
 │   ├── FLEET_AUTOMATION_NOTIFICATION_ENGINE.md # Automation Engine, Scheduler, Notifications & Health Monitoring
 │   ├── FLEET_COMMAND_CENTER_ARCHITECTURE.md # Command Center, Workspace & Reports Architecture
 │   ├── FLEET_COST_INTELLIGENCE_ARCHITECTURE.md # Fleet Cost Subsystem Design & Rule IDs COST-001..006
 │   ├── FOLDER_STRUCTURE.md     # Directory breakdown documentation
 │   ├── FUEL_INTELLIGENCE_ARCHITECTURE.md # Fuel Intelligence Pipeline & Rule IDs FUEL-001..010
-│   ├── FUEL_PRODUCTION_READINESS_REPORT.md # Executive Fuel Intelligence Production Readiness Report
 │   ├── INSTALLATION_GUIDE.md   # Bench deployment & site installation
 │   ├── MAINTENANCE_INTELLIGENCE_ARCHITECTURE.md # Maintenance Domain Design & Rule IDs MAINT-001..010
-│   ├── MAINTENANCE_PRODUCTION_READINESS_REPORT.md # Executive Maintenance Production Readiness Report
 │   ├── MASTER_DATA_ARCHITECTURE.md # Master Data ER diagram, indexes & Rule IDs
-│   ├── PRODUCTION_READINESS_REPORT.md # Executive Vehicle Domain Production Readiness Report
-│   └── VEHICLE_DOMAIN_ARCHITECTURE.md # Vehicle domain design, 13-state lifecycle & Rule IDs VEH-001..VEH-010
+│   ├── RELEASE_NOTES_v1.0.0.md # Version 1.0.0 Release Notes
+│   ├── SECURITY_AND_PERFORMANCE_AUDIT.md # Enterprise Security & Performance Audit Report
+│   └── VEHICLE_DOMAIN_ARCHITECTURE.md # Vehicle domain design & Rule IDs VEH-001..010
 ├── fleet_management/
 │   ├── api/
 │   │   ├── __init__.py
@@ -45,6 +51,7 @@ fleet_management/
 │   │   ├── fuel_api.py          # Fuel Whitelisted API Endpoints Implementation
 │   │   ├── maintenance_api.py   # Maintenance Whitelisted API Endpoints Implementation
 │   │   ├── responses.py         # Standardized success, error & pagination envelopes
+│   │   ├── v1/                  # Version 1 (v1) API Routing Package
 │   │   └── vehicle_api.py       # Vehicle, Status & Asset Whitelisted API Endpoints
 │   ├── business_rules/
 │   │   ├── __init__.py

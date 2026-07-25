@@ -3,6 +3,8 @@ Shared System Constants
 Fleet Management System
 """
 
+SYSTEM_VERSION = "1.0.0"
+
 # Vehicle Status Lifecycle Constants (13 States)
 VEHICLE_STATUS_DRAFT = "Draft"
 VEHICLE_STATUS_AVAILABLE = "Available"

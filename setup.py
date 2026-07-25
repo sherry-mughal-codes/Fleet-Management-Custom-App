@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="fleet_management",
-    version="0.0.1",
+    version="1.0.0",
     description="Production-Grade Enterprise Fleet Management System for Frappe Framework v15",
     author="Fleet Management Team",
     author_email="developer@fleetmanagement.local",
