@@ -3,17 +3,16 @@ Final Production Certification Test Suite
 Fleet Management System v1.0.0
 """
 
-import pytest
 from fleet_management import constants
 from fleet_management.services import (
-	VehicleService,
 	AssignmentService,
+	FleetAnalyticsService,
+	FleetAutomationService,
+	FleetCostService,
+	FleetHealthService,
 	FuelService,
 	MaintenanceService,
-	FleetCostService,
-	FleetAnalyticsService,
-	FleetHealthService,
-	FleetAutomationService,
+	VehicleService,
 )
 
 

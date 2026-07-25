@@ -3,10 +3,10 @@ Unit Tests for Shared Helpers and Mixins
 Fleet Management System
 """
 
-import datetime
-from fleet_management.utils import helpers
-from fleet_management.mixins.status_mixin import StatusMixin
 import pytest
+
+from fleet_management.mixins.status_mixin import StatusMixin
+from fleet_management.utils import helpers
 from fleet_management.utils.exceptions import FleetValidationError
 
 

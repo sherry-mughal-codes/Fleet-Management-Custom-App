@@ -3,10 +3,12 @@ Assignment Domain Whitelisted API Endpoints Implementation
 Fleet Management System
 """
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict
+
 import frappe
+
 from fleet_management.api.base import api_endpoint
-from fleet_management.api.responses import success_response, paginated_response
+from fleet_management.api.responses import paginated_response, success_response
 from fleet_management.services.assignment_service import AssignmentService
 
 assignment_service = AssignmentService()
@@ -14,10 +16,10 @@ assignment_service = AssignmentService()
 
 @api_endpoint(allow_guest=False)
 def search_assignments(
-	vehicle: Optional[str] = None,
-	employee: Optional[str] = None,
-	status: Optional[str] = None,
-	company: Optional[str] = None,
+	vehicle: str | None = None,
+	employee: str | None = None,
+	status: str | None = None,
+	company: str | None = None,
 	page: int = 1,
 	page_length: int = 20
 ) -> Dict[str, Any]:
@@ -58,10 +60,10 @@ def create_assignment(
 	vehicle: str,
 	employee: str,
 	company: str,
-	assignment_date: Optional[str] = None,
-	expected_return_date: Optional[str] = None,
-	purpose: Optional[str] = None,
-	opening_odometer: Optional[float] = None
+	assignment_date: str | None = None,
+	expected_return_date: str | None = None,
+	purpose: str | None = None,
+	opening_odometer: float | None = None
 ) -> Dict[str, Any]:
 	"""Whitelisted API endpoint for creating a vehicle assignment using minimal payload."""
 	payload = {
@@ -80,8 +82,8 @@ def create_assignment(
 @api_endpoint(allow_guest=False)
 def assign_vehicle_api(
 	assignment_id: str,
-	opening_odometer: Optional[float] = None,
-	handover_notes: Optional[str] = None
+	opening_odometer: float | None = None,
+	handover_notes: str | None = None
 ) -> Dict[str, Any]:
 	"""Whitelisted API endpoint for executing Vehicle Handover."""
 	res = assignment_service.assign_vehicle(
@@ -96,8 +98,8 @@ def assign_vehicle_api(
 def return_vehicle_api(
 	assignment_id: str,
 	closing_odometer: float,
-	return_notes: Optional[str] = None,
-	return_condition: Optional[str] = None
+	return_notes: str | None = None,
+	return_condition: str | None = None
 ) -> Dict[str, Any]:
 	"""Whitelisted API endpoint for executing Vehicle Return."""
 	res = assignment_service.return_vehicle(
@@ -117,7 +119,7 @@ def close_assignment_api(assignment_id: str) -> Dict[str, Any]:
 
 
 @api_endpoint(allow_guest=False)
-def cancel_assignment_api(assignment_id: str, reason: Optional[str] = None) -> Dict[str, Any]:
+def cancel_assignment_api(assignment_id: str, reason: str | None = None) -> Dict[str, Any]:
 	"""Whitelisted API endpoint for cancelling an assignment."""
 	res = assignment_service.cancel_assignment(assignment_id, reason=reason)
 	return success_response(data={"success": res}, message="Assignment Cancelled successfully.")

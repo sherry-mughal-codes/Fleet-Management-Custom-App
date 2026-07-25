@@ -3,14 +3,16 @@ Fuel Intelligence Domain Service Implementation
 Fleet Management System
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
+
 import frappe
-from fleet_management.services.base_service import BaseService
-from fleet_management.services.vehicle_service import VehicleService
-from fleet_management.services.fuel_average_service import FuelAverageService
-from fleet_management.services.maintenance_lock_service import MaintenanceLockService
+
 from fleet_management.enums import FuelEntryStatus
 from fleet_management.events.fuel_events import FuelEventDispatcher
+from fleet_management.services.base_service import BaseService
+from fleet_management.services.fuel_average_service import FuelAverageService
+from fleet_management.services.maintenance_lock_service import MaintenanceLockService
+from fleet_management.services.vehicle_service import VehicleService
 from fleet_management.utils.exceptions import FleetNotFoundError, FleetValidationError
 from fleet_management.utils.logger import get_logger
 
@@ -115,7 +117,7 @@ class FuelService(BaseService):
 		doc.save()
 		return doc.as_dict()
 
-	def cancel_fuel_entry(self, fuel_entry_id: str, reason: Optional[str] = None) -> bool:
+	def cancel_fuel_entry(self, fuel_entry_id: str, reason: str | None = None) -> bool:
 		"""Cancels a fuel entry record."""
 		if not frappe.db.exists("Fuel Entry", fuel_entry_id):
 			raise FleetNotFoundError(f"Fuel Entry '{fuel_entry_id}' not found.")
@@ -145,7 +147,7 @@ class FuelService(BaseService):
 			"total_liters": sum(float(e.get("fuel_qty") or 0.0) for e in entries)
 		}
 
-	def get_monthly_consumption_stats(self, company: Optional[str] = None) -> Dict[str, Any]:
+	def get_monthly_consumption_stats(self, company: str | None = None) -> Dict[str, Any]:
 		"""Returns monthly aggregated fuel consumption and cost statistics."""
 		filters = {"status": ["!=", "Cancelled"]}
 		if company:
@@ -157,7 +159,7 @@ class FuelService(BaseService):
 			"total_fuel_cost": sum(float(e.get("total_cost") or 0.0) for e in entries)
 		}
 
-	def get_efficiency_rankings(self, company: Optional[str] = None, limit: int = 10) -> List[Dict[str, Any]]:
+	def get_efficiency_rankings(self, company: str | None = None, limit: int = 10) -> List[Dict[str, Any]]:
 		"""Returns top efficient vehicles ranked by fuel average."""
 		return frappe.get_all(
 			"Vehicle",

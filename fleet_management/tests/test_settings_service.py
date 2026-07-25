@@ -3,9 +3,10 @@ Unit Tests for Settings Service
 Fleet Management System
 """
 
+import pytest
+
 from fleet_management.services.settings_service import SettingsService
 from fleet_management.utils.exceptions import FleetConfigurationError
-import pytest
 
 
 def test_settings_service_default_fallbacks():

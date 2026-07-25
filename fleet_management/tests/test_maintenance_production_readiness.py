@@ -3,15 +3,12 @@ Master Production Readiness Integration Test Suite for Maintenance Subsystem
 Fleet Management System
 """
 
-import pytest
-from fleet_management.enums import MaintenanceStatus, VehicleStatus
-from fleet_management.fleet_management.doctype.maintenance_request.maintenance_request import MaintenanceRequest
-from fleet_management.fleet_management.doctype.maintenance_work_order.maintenance_work_order import MaintenanceWorkOrder
-from fleet_management.services.maintenance_service import MaintenanceService
-from fleet_management.services.maintenance_due_service import MaintenanceDueEngine
-from fleet_management.validators.maintenance_validator import MaintenanceValidator
+from fleet_management.fleet_management.doctype.maintenance_request.maintenance_request import (
+	MaintenanceRequest,
+)
 from fleet_management.permissions.maintenance_permission import MaintenancePermissionEvaluator
-from fleet_management.utils.exceptions import FleetValidationError
+from fleet_management.services.maintenance_due_service import MaintenanceDueEngine
+from fleet_management.services.maintenance_service import MaintenanceService
 
 
 def test_master_maintenance_request_creation_and_autofetch():

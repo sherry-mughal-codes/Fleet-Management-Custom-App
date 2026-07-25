@@ -3,21 +3,23 @@ Master Production Readiness Integration Test Suite
 Vehicle Domain - Fleet Management System
 """
 
-import pytest
-from fleet_management.enums import VehicleStatus, VehicleDocumentStatus, VehicleImageCategory
-from fleet_management.services.vehicle_service import VehicleService
-from fleet_management.fleet_management.doctype.vehicle.vehicle import Vehicle
-from fleet_management.fleet_management.doctype.vehicle_document_detail.vehicle_document_detail import VehicleDocumentDetail
-from fleet_management.fleet_management.doctype.vehicle_image_detail.vehicle_image_detail import VehicleImageDetail
-from fleet_management.validators.vehicle_validator import VehicleValidator
-from fleet_management.validators.vehicle_asset_validator import VehicleAssetValidator, enforce_single_primary_image
 from fleet_management.business_rules.vehicle_rules import (
+	VehicleArchivalAssignmentRule,
 	VehicleAvailabilityRule,
 	VehicleFuelingMaintenanceRule,
-	VehicleArchivalAssignmentRule,
 	VehicleScrapAssignmentRule,
 )
-from fleet_management.utils.exceptions import FleetValidationError, FleetBusinessLogicError
+from fleet_management.enums import VehicleStatus
+from fleet_management.fleet_management.doctype.vehicle.vehicle import Vehicle
+from fleet_management.fleet_management.doctype.vehicle_image_detail.vehicle_image_detail import (
+	VehicleImageDetail,
+)
+from fleet_management.services.vehicle_service import VehicleService
+from fleet_management.validators.vehicle_asset_validator import (
+	VehicleAssetValidator,
+	enforce_single_primary_image,
+)
+from fleet_management.validators.vehicle_validator import VehicleValidator
 
 
 def test_end_to_end_vehicle_registration():

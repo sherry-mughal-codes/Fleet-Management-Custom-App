@@ -3,7 +3,6 @@ Vehicle Summary Script Report Implementation
 Fleet Management System
 """
 
-import frappe
 from fleet_management.services.fleet_analytics_service import FleetAnalyticsService
 
 analytics_service = FleetAnalyticsService()

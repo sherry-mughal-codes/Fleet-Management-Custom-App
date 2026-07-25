@@ -4,8 +4,11 @@ Fleet Management System
 """
 
 import pytest
-from fleet_management.fleet_management.doctype.vehicle_assignment.vehicle_assignment import VehicleAssignment
+
 from fleet_management.fleet_management.doctype.vehicle.vehicle import Vehicle
+from fleet_management.fleet_management.doctype.vehicle_assignment.vehicle_assignment import (
+	VehicleAssignment,
+)
 from fleet_management.utils.exceptions import FleetValidationError
 
 

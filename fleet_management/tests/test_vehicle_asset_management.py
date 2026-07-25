@@ -3,11 +3,16 @@ Unit Tests for Vehicle Digital Asset & Document Management
 Fleet Management System
 """
 
-import pytest
-from fleet_management.fleet_management.doctype.vehicle_document_detail.vehicle_document_detail import VehicleDocumentDetail
-from fleet_management.fleet_management.doctype.vehicle_image_detail.vehicle_image_detail import VehicleImageDetail
-from fleet_management.validators.vehicle_asset_validator import VehicleAssetValidator, enforce_single_primary_image
-from fleet_management.utils.exceptions import FleetValidationError
+from fleet_management.fleet_management.doctype.vehicle_document_detail.vehicle_document_detail import (
+	VehicleDocumentDetail,
+)
+from fleet_management.fleet_management.doctype.vehicle_image_detail.vehicle_image_detail import (
+	VehicleImageDetail,
+)
+from fleet_management.validators.vehicle_asset_validator import (
+	VehicleAssetValidator,
+	enforce_single_primary_image,
+)
 
 
 def test_asset_validator_document_expiry_valid():

@@ -4,10 +4,16 @@ Fleet Management System
 """
 
 import pytest
-from fleet_management.fleet_management.doctype.maintenance_request.maintenance_request import MaintenanceRequest
-from fleet_management.fleet_management.doctype.maintenance_work_order.maintenance_work_order import MaintenanceWorkOrder
-from fleet_management.fleet_management.doctype.maintenance_task_template.maintenance_task_template import MaintenanceTaskTemplate
-from fleet_management.fleet_management.doctype.vehicle.vehicle import Vehicle
+
+from fleet_management.fleet_management.doctype.maintenance_request.maintenance_request import (
+	MaintenanceRequest,
+)
+from fleet_management.fleet_management.doctype.maintenance_task_template.maintenance_task_template import (
+	MaintenanceTaskTemplate,
+)
+from fleet_management.fleet_management.doctype.maintenance_work_order.maintenance_work_order import (
+	MaintenanceWorkOrder,
+)
 from fleet_management.utils.exceptions import FleetValidationError
 
 

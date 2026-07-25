@@ -3,14 +3,13 @@ Master Production Readiness Integration Test Suite for Assignment Domain Subsyst
 Fleet Management System
 """
 
-import pytest
-from fleet_management.enums import AssignmentStatus, VehicleStatus
-from fleet_management.fleet_management.doctype.vehicle_assignment.vehicle_assignment import VehicleAssignment
-from fleet_management.fleet_management.doctype.vehicle.vehicle import Vehicle
+from fleet_management.enums import AssignmentStatus
+from fleet_management.fleet_management.doctype.vehicle_assignment.vehicle_assignment import (
+	VehicleAssignment,
+)
+from fleet_management.permissions.assignment_permission import AssignmentPermissionEvaluator
 from fleet_management.services.assignment_service import AssignmentService
 from fleet_management.validators.assignment_validator import AssignmentValidator
-from fleet_management.permissions.assignment_permission import AssignmentPermissionEvaluator
-from fleet_management.utils.exceptions import FleetValidationError, FleetBusinessLogicError, FleetPermissionError
 
 
 def test_master_assignment_creation_and_autofetch():

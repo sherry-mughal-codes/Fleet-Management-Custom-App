@@ -4,8 +4,10 @@ Fleet Management System
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
+
 from fleet_management.utils.exceptions import FleetValidationError
+
 
 class BaseValidator(ABC):
 	"""
@@ -28,7 +30,7 @@ class BaseValidator(ABC):
 		"""Record a validation error message."""
 		self.errors.append(message)
 
-	def raise_if_invalid(self, custom_message: Optional[str] = None):
+	def raise_if_invalid(self, custom_message: str | None = None):
 		"""Raise FleetValidationError if any validation errors exist."""
 		if not self.validate() or self.errors:
 			msg = custom_message or "Validation check failed."

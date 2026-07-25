@@ -5,8 +5,10 @@ Fleet Management System
 
 import functools
 import time
-from typing import Any, Callable
+from typing import Callable
+
 import frappe
+
 from fleet_management.utils.exceptions import FleetManagementError
 from fleet_management.utils.helpers import format_api_response
 from fleet_management.utils.logger import get_logger
@@ -28,25 +30,25 @@ def api_endpoint(allow_guest: bool = False, rate_limit: bool = True):
 		def wrapper(*args, **kwargs):
 			start_time = time.time()
 			endpoint_name = f"{func.__module__}.{func.__name__}"
-			
+
 			try:
 				if rate_limit and hasattr(frappe, "rate_limit"):
 					# Placeholder hook for rate limiting evaluation
 					pass
-				
+
 				result = func(*args, **kwargs)
 				duration_ms = round((time.time() - start_time) * 1000, 2)
-				
+
 				meta = {
 					"endpoint": endpoint_name,
 					"execution_time_ms": duration_ms
 				}
-				
+
 				if isinstance(result, dict) and "success" in result:
 					return result
-				
+
 				return format_api_response(data=result, message="Request processed successfully", meta=meta)
-				
+
 			except FleetManagementError as e:
 				frappe.response["http_status_code"] = e.status_code
 				logger.warning(f"Domain error in API {endpoint_name}: {e.message}", e.to_dict())

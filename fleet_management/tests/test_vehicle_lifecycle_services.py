@@ -4,15 +4,15 @@ Fleet Management System
 """
 
 import pytest
-from fleet_management.enums import VehicleStatus
-from fleet_management.services.vehicle_service import VehicleService
+
 from fleet_management.business_rules.vehicle_rules import (
+	VehicleArchivalAssignmentRule,
 	VehicleAvailabilityRule,
 	VehicleFuelingMaintenanceRule,
-	VehicleArchivalAssignmentRule,
-	VehicleScrapAssignmentRule,
 )
-from fleet_management.utils.exceptions import FleetValidationError, FleetBusinessLogicError
+from fleet_management.enums import VehicleStatus
+from fleet_management.services.vehicle_service import VehicleService
+from fleet_management.utils.exceptions import FleetBusinessLogicError
 
 
 def test_13_state_lifecycle_enum():

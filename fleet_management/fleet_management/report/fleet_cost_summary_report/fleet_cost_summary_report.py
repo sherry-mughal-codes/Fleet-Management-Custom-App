@@ -3,7 +3,6 @@ Fleet Cost Summary Script Report Implementation
 Fleet Management System
 """
 
-import frappe
 from fleet_management.services.fleet_cost_service import FleetCostService
 
 cost_service = FleetCostService()

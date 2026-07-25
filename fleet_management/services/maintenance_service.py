@@ -3,13 +3,15 @@ Maintenance Domain Service Implementation
 Fleet Management System
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
+
 import frappe
-from fleet_management.services.base_service import BaseService
-from fleet_management.services.vehicle_service import VehicleService
-from fleet_management.services.maintenance_due_service import MaintenanceDueEngine
+
 from fleet_management.enums import MaintenanceStatus, VehicleStatus
 from fleet_management.events.maintenance_events import MaintenanceEventDispatcher
+from fleet_management.services.base_service import BaseService
+from fleet_management.services.maintenance_due_service import MaintenanceDueEngine
+from fleet_management.services.vehicle_service import VehicleService
 from fleet_management.utils.exceptions import FleetNotFoundError, FleetValidationError
 from fleet_management.utils.logger import get_logger
 
@@ -48,7 +50,7 @@ class MaintenanceService(BaseService):
 		MaintenanceEventDispatcher.notify_maintenance_scheduled(doc)
 		return doc.as_dict()
 
-	def complete_work_order(self, work_order_id: str, completion_odometer: float, costs: Optional[Dict[str, float]] = None) -> Dict[str, Any]:
+	def complete_work_order(self, work_order_id: str, completion_odometer: float, costs: Dict[str, float] | None = None) -> Dict[str, Any]:
 		"""
 		Completes a maintenance work order:
 		1. Validates completion odometer >= vehicle current odometer (MAINT-003).
@@ -134,7 +136,7 @@ class MaintenanceService(BaseService):
 		doc.save()
 		return doc.as_dict()
 
-	def cancel_request(self, request_id: str, reason: Optional[str] = None) -> bool:
+	def cancel_request(self, request_id: str, reason: str | None = None) -> bool:
 		"""Cancels a maintenance request record."""
 		if not frappe.db.exists("Maintenance Request", request_id):
 			raise FleetNotFoundError(f"Maintenance Request '{request_id}' not found.")
@@ -154,7 +156,7 @@ class MaintenanceService(BaseService):
 		work_orders = frappe.get_all("Maintenance Work Order", filters={"vehicle": vehicle_id, "status": ["!=", "Cancelled"]}, fields=["total_cost"])
 		return sum(float(w.get("total_cost") or 0.0) for w in work_orders)
 
-	def get_company_maintenance_cost_stats(self, company: Optional[str] = None) -> Dict[str, Any]:
+	def get_company_maintenance_cost_stats(self, company: str | None = None) -> Dict[str, Any]:
 		"""Returns total maintenance work orders count and spend for a company."""
 		filters = {"status": ["!=", "Cancelled"]}
 		if company:
@@ -176,7 +178,7 @@ class MaintenanceService(BaseService):
 			"total_revenue_generated": sum(float(w.get("total_cost") or 0.0) for w in orders)
 		}
 
-	def get_vehicle_reliability_rankings(self, company: Optional[str] = None, limit: int = 10) -> List[Dict[str, Any]]:
+	def get_vehicle_reliability_rankings(self, company: str | None = None, limit: int = 10) -> List[Dict[str, Any]]:
 		"""Returns top vehicles ranked by fewest maintenance requests."""
 		return frappe.get_all(
 			"Vehicle",
@@ -235,7 +237,7 @@ class MaintenanceService(BaseService):
 		self.complete_work_order(maintenance_id, closing_odometer)
 		return True
 
-	def cancel_maintenance(self, maintenance_id: str, reason: Optional[str] = None) -> bool:
+	def cancel_maintenance(self, maintenance_id: str, reason: str | None = None) -> bool:
 		return self.cancel_request(maintenance_id, reason)
 
 	def get_vehicle_maintenance_history(self, vehicle_id: str, limit: int = 20) -> List[Dict[str, Any]]:

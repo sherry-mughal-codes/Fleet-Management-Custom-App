@@ -4,7 +4,9 @@ Fleet Management System
 """
 
 from typing import Dict, Sequence
+
 from fleet_management.validators.common_validators import validate_status_transition
+
 
 class StatusMixin:
 	"""

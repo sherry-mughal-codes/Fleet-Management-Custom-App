@@ -4,11 +4,12 @@ Fleet Management System
 """
 
 import frappe
-from fleet_management.utils.base_document import BaseFleetDocument
-from fleet_management.validators.fuel_validator import FuelValidator
+
 from fleet_management.services.fuel_average_service import FuelAverageService
 from fleet_management.services.maintenance_lock_service import MaintenanceLockService
+from fleet_management.utils.base_document import BaseFleetDocument
 from fleet_management.utils.helpers import get_doc_or_none
+from fleet_management.validators.fuel_validator import FuelValidator
 
 
 class FuelEntry(BaseFleetDocument):

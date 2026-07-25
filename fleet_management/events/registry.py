@@ -4,6 +4,7 @@ Fleet Management System
 """
 
 from typing import Callable, Dict, List
+
 from fleet_management.utils.logger import get_logger
 
 logger = get_logger("fleet_management.events")

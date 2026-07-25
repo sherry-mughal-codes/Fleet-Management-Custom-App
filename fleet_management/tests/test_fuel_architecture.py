@@ -3,19 +3,14 @@ Unit Tests for Fuel Domain Architecture
 Fleet Management System
 """
 
-import pytest
+from fleet_management.business_rules.fuel_rules import (
+	FuelCompanyIsolationRule,
+	FuelMaintenanceLockRule,
+	FuelOdometerAdvancementRule,
+	FuelVehicleRequiredRule,
+)
 from fleet_management.enums import FuelEntryStatus, FuelEventType
 from fleet_management.validators.fuel_validator import FuelValidator
-from fleet_management.permissions.fuel_permission import FuelPermissionEvaluator
-from fleet_management.business_rules.fuel_rules import (
-	FuelVehicleRequiredRule,
-	FuelQuantityPositiveRule,
-	FuelOdometerAdvancementRule,
-	FuelMaintenanceLockRule,
-	FuelDuplicateRule,
-	FuelCompanyIsolationRule,
-)
-from fleet_management.utils.exceptions import FleetBusinessLogicError
 
 
 def test_fuel_entry_status_and_event_enums():

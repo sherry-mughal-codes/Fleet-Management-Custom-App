@@ -3,16 +3,15 @@ Fuel Domain Validator Architecture
 Fleet Management System
 """
 
-from typing import Any, Dict, Optional
 import frappe
+
+from fleet_management.enums import VehicleStatus
+from fleet_management.utils.exceptions import FleetValidationError
 from fleet_management.validators.base_validator import BaseValidator
 from fleet_management.validators.common_validators import (
-	validate_required_fields,
 	validate_positive_number,
+	validate_required_fields,
 )
-from fleet_management.enums import FuelEntryStatus, VehicleStatus
-from fleet_management.services.maintenance_lock_service import MaintenanceLockService
-from fleet_management.utils.exceptions import FleetValidationError
 
 
 class FuelValidator(BaseValidator):

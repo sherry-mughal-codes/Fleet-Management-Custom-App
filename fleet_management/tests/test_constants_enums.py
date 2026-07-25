@@ -5,16 +5,8 @@ Fleet Management System
 
 from fleet_management import constants
 from fleet_management.enums import (
-	VehicleStatus,
 	AssignmentStatus,
-	MaintenanceStatus,
-	FuelEntryStatus,
-	ApprovalStatus,
-	NotificationType,
-	ExpenseType,
-	DistanceUnit,
-	FuelUnit,
-	FleetRole,
+	VehicleStatus,
 )
 
 

@@ -4,14 +4,13 @@ Fleet Management System
 """
 
 import pytest
+
+from fleet_management.business_rules.fuel_rules import (
+	FuelOdometerAdvancementRule,
+	FuelQuantityPositiveRule,
+)
 from fleet_management.services.fuel_average_service import FuelAverageService
 from fleet_management.services.maintenance_lock_service import MaintenanceLockService
-from fleet_management.business_rules.fuel_rules import (
-	FuelVehicleRequiredRule,
-	FuelQuantityPositiveRule,
-	FuelOdometerAdvancementRule,
-	FuelMaintenanceLockRule,
-)
 from fleet_management.utils.exceptions import FleetValidationError
 
 
@@ -26,7 +25,7 @@ def test_fuel_average_calculation_formula():
 def test_maintenance_lock_service_enforcement():
 	"""Verify Maintenance Lock blocks fueling when vehicle is under maintenance (FUEL-008)."""
 	# Vehicle Under Maintenance check
-	locked = MaintenanceLockService.is_maintenance_locked("V-MOCK-LOCKED")
+	_ = MaintenanceLockService.is_maintenance_locked("V-MOCK-LOCKED")
 	# Enforce maintenance lock raise
 	with pytest.raises(FleetValidationError):
 		MaintenanceLockService.enforce_maintenance_lock("V-MOCK-UNDER-MAINTENANCE")

@@ -3,13 +3,10 @@ Unit Tests for API v1 Versioned REST Endpoints
 Fleet Management System v1.0.0
 """
 
-import pytest
-from fleet_management.api.v1.vehicle_api import search_vehicles
-from fleet_management.api.v1.assignment_api import get_assignment_summary
-from fleet_management.api.v1.fuel_api import get_fuel_summary
-from fleet_management.api.v1.cost_api import get_company_cost_summary_api
 from fleet_management.api.v1.analytics_api import get_kpis_api
 from fleet_management.api.v1.automation_api import get_automation_status_api, get_health_report_api
+from fleet_management.api.v1.cost_api import get_company_cost_summary_api
+from fleet_management.api.v1.vehicle_api import search_vehicles
 
 
 def test_v1_vehicle_api_routing():

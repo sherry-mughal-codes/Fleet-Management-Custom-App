@@ -3,7 +3,6 @@ Unit Tests for Fleet Analytics & Command Center Subsystem
 Fleet Management System
 """
 
-import pytest
 from fleet_management.services.fleet_analytics_service import FleetAnalyticsService
 
 

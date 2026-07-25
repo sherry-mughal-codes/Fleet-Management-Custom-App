@@ -4,8 +4,10 @@ Fleet Management System
 """
 
 import functools
-from typing import Any, Callable, Dict, Optional
+from typing import Callable
+
 import frappe
+
 from fleet_management.utils.logger import get_logger
 
 logger = get_logger("fleet_management.audit")

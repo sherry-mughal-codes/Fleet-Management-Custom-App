@@ -4,10 +4,13 @@ Fleet Management System
 """
 
 from abc import ABC
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable
+
 import frappe
-from fleet_management.utils.logger import get_logger
+
 from fleet_management.utils.exceptions import FleetManagementError
+from fleet_management.utils.logger import get_logger
+
 
 class BaseService(ABC):
 	"""
@@ -15,7 +18,7 @@ class BaseService(ABC):
 	Encapsulates database transaction boundaries, central logging, and permission checks.
 	"""
 
-	def __init__(self, user: Optional[str] = None):
+	def __init__(self, user: str | None = None):
 		if user:
 			self.user = user
 		else:

@@ -3,7 +3,6 @@ Unit Tests for Fleet Automation Service Engine
 Fleet Management System
 """
 
-import pytest
 from fleet_management.services.automation_service import FleetAutomationService
 
 

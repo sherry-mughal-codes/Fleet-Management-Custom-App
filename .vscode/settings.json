@@ -1,5 +1,9 @@
 {
-  "python.analysis.typeCheckingMode": "basic",
+  "python.analysis.typeCheckingMode": "off",
+  "python.analysis.diagnosticSeverityOverrides": {
+    "reportMissingImports": "none",
+    "reportMissingModuleSource": "none"
+  },
   "python.analysis.autoImportCompletions": true,
   "editor.formatOnSave": true,
   "editor.codeActionsOnSave": {

@@ -3,7 +3,6 @@ Maintenance Domain Business Invariant Rules Architecture
 Fleet Management System
 """
 
-from typing import Any, Dict
 from fleet_management.business_rules.base_rule import BaseBusinessRule
 from fleet_management.enums import MaintenanceStatus
 

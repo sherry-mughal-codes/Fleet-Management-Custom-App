@@ -3,17 +3,15 @@ Assignment Domain Validator Architecture
 Fleet Management System
 """
 
-from typing import Any, Dict, Optional
-import frappe
+from fleet_management.enums import AssignmentStatus
+from fleet_management.utils.exceptions import FleetValidationError
 from fleet_management.validators.base_validator import BaseValidator
 from fleet_management.validators.common_validators import (
-	validate_required_fields,
-	validate_positive_number,
 	validate_date_range,
+	validate_positive_number,
+	validate_required_fields,
 	validate_status_transition,
 )
-from fleet_management.enums import AssignmentStatus, VehicleStatus
-from fleet_management.utils.exceptions import FleetValidationError
 
 
 class AssignmentValidator(BaseValidator):

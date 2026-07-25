@@ -3,22 +3,24 @@ Fuel Domain Whitelisted API Endpoints Implementation
 Fleet Management System
 """
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict
+
 import frappe
+
 from fleet_management.api.base import api_endpoint
-from fleet_management.api.responses import success_response, paginated_response
-from fleet_management.services.fuel_service import FuelService
+from fleet_management.api.responses import paginated_response, success_response
 from fleet_management.services.fuel_average_service import FuelAverageService
+from fleet_management.services.fuel_service import FuelService
 
 fuel_service = FuelService()
 
 
 @api_endpoint(allow_guest=False)
 def search_fuel_entries(
-	vehicle: Optional[str] = None,
-	employee: Optional[str] = None,
-	assignment: Optional[str] = None,
-	company: Optional[str] = None,
+	vehicle: str | None = None,
+	employee: str | None = None,
+	assignment: str | None = None,
+	company: str | None = None,
 	page: int = 1,
 	page_length: int = 20
 ) -> Dict[str, Any]:
@@ -61,11 +63,11 @@ def create_fuel_entry_api(
 	total_cost: float,
 	odometer: float,
 	company: str,
-	fuel_date: Optional[str] = None,
-	assignment: Optional[str] = None,
-	receipt_number: Optional[str] = None,
-	fuel_station_name: Optional[str] = None,
-	remarks: Optional[str] = None
+	fuel_date: str | None = None,
+	assignment: str | None = None,
+	receipt_number: str | None = None,
+	fuel_station_name: str | None = None,
+	remarks: str | None = None
 ) -> Dict[str, Any]:
 	"""Whitelisted API endpoint for creating a fuel entry using minimal payload."""
 	payload = {

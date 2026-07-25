@@ -3,7 +3,8 @@ Enterprise Exception Architecture
 Fleet Management System
 """
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict
+
 import frappe
 
 
@@ -15,9 +16,9 @@ class FleetManagementError(frappe.ValidationError):
 
 	def __init__(
 		self,
-		message: Optional[str] = None,
-		details: Optional[Dict[str, Any]] = None,
-		status_code: Optional[int] = None
+		message: str | None = None,
+		details: Dict[str, Any] | None = None,
+		status_code: int | None = None
 	):
 		self.message = message or self.default_message
 		self.details = details or {}

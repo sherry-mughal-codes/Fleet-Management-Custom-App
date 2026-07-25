@@ -3,8 +3,10 @@ Fleet Cost Intelligence Service Implementation
 Fleet Management System
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict
+
 import frappe
+
 from fleet_management.services.base_service import BaseService
 from fleet_management.utils.exceptions import FleetNotFoundError
 from fleet_management.utils.logger import get_logger
@@ -157,7 +159,7 @@ class FleetCostService(BaseService):
 			"cost_per_km": cpkm
 		}
 
-	def calculate_company_cost(self, company: Optional[str] = None, period: str = "lifetime") -> Dict[str, Any]:
+	def calculate_company_cost(self, company: str | None = None, period: str = "lifetime") -> Dict[str, Any]:
 		"""Calculates aggregated company fleet operating spend."""
 		filters = {"status": ["!=", "Cancelled"]}
 		if company:
@@ -179,10 +181,10 @@ class FleetCostService(BaseService):
 			"total_fleet_operating_cost": round(fuel_cost + maint_cost, 2)
 		}
 
-	def calculate_monthly_cost(self, company: Optional[str] = None, year: Optional[int] = None, month: Optional[int] = None) -> Dict[str, Any]:
+	def calculate_monthly_cost(self, company: str | None = None, year: int | None = None, month: int | None = None) -> Dict[str, Any]:
 		"""Calculates monthly company fleet cost summary."""
 		return self.calculate_company_cost(company, period=f"Monthly ({year}-{month})")
 
-	def calculate_yearly_cost(self, company: Optional[str] = None, year: Optional[int] = None) -> Dict[str, Any]:
+	def calculate_yearly_cost(self, company: str | None = None, year: int | None = None) -> Dict[str, Any]:
 		"""Calculates yearly company fleet cost summary."""
 		return self.calculate_company_cost(company, period=f"Yearly ({year})")

@@ -3,8 +3,10 @@ Fuel Average Engine Service Implementation
 Fleet Management System
 """
 
-from typing import Any, Dict, Optional
+from typing import Dict
+
 import frappe
+
 from fleet_management.utils.logger import get_logger
 
 logger = get_logger("fleet_management.services.fuel_average")

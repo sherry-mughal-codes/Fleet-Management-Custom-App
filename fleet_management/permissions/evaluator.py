@@ -3,9 +3,12 @@ Role Based Permissions & Access Control Architecture
 Fleet Management System
 """
 
-from typing import List, Optional
+from typing import List
+
 import frappe
+
 from fleet_management.utils.exceptions import FleetPermissionError
+
 
 class PermissionEvaluator:
 	"""
@@ -13,7 +16,7 @@ class PermissionEvaluator:
 	"""
 
 	@staticmethod
-	def _resolve_user(user: Optional[str] = None) -> str:
+	def _resolve_user(user: str | None = None) -> str:
 		if user:
 			return user
 		try:
@@ -22,7 +25,7 @@ class PermissionEvaluator:
 			return "System"
 
 	@staticmethod
-	def get_user_roles(user: Optional[str] = None) -> List[str]:
+	def get_user_roles(user: str | None = None) -> List[str]:
 		"""Returns list of roles assigned to user."""
 		user_id = PermissionEvaluator._resolve_user(user)
 		if user_id in ("Administrator", "System"):
@@ -33,7 +36,7 @@ class PermissionEvaluator:
 			return []
 
 	@staticmethod
-	def has_role(role_name: str, user: Optional[str] = None) -> bool:
+	def has_role(role_name: str, user: str | None = None) -> bool:
 		"""Check if target user possesses the given role."""
 		user_id = PermissionEvaluator._resolve_user(user)
 		if user_id in ("Administrator", "System"):
@@ -42,13 +45,13 @@ class PermissionEvaluator:
 		return role_name in roles
 
 	@staticmethod
-	def require_role(role_name: str, user: Optional[str] = None):
+	def require_role(role_name: str, user: str | None = None):
 		"""Raise FleetPermissionError if user lacks target role."""
 		if not PermissionEvaluator.has_role(role_name, user):
 			raise FleetPermissionError(message=f"Action requires '{role_name}' role.")
 
 	@staticmethod
-	def require_any_role(roles: List[str], user: Optional[str] = None):
+	def require_any_role(roles: List[str], user: str | None = None):
 		"""Raise FleetPermissionError if user lacks all specified roles."""
 		user_id = PermissionEvaluator._resolve_user(user)
 		if user_id in ("Administrator", "System"):

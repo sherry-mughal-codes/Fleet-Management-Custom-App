@@ -3,17 +3,13 @@ Unit Tests for Assignment Domain Architecture
 Fleet Management System
 """
 
-import pytest
-from fleet_management.enums import AssignmentStatus, AssignmentEventType
-from fleet_management.validators.assignment_validator import AssignmentValidator
-from fleet_management.permissions.assignment_permission import AssignmentPermissionEvaluator
 from fleet_management.business_rules.assignment_rules import (
-	AssignmentVehicleAvailabilityRule,
 	AssignmentOdometerRule,
 	AssignmentOverlapRule,
-	AssignmentCompanyIsolationRule,
+	AssignmentVehicleAvailabilityRule,
 )
-from fleet_management.utils.exceptions import FleetBusinessLogicError
+from fleet_management.enums import AssignmentStatus
+from fleet_management.validators.assignment_validator import AssignmentValidator
 
 
 def test_assignment_status_lifecycle_enum():

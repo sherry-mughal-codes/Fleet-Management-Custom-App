@@ -1,5 +1,5 @@
-import pytest
 import frappe
+import pytest
 
 
 @pytest.fixture(scope="session", autouse=True)

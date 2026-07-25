@@ -4,18 +4,24 @@ Fleet Management System
 """
 
 import pytest
-from fleet_management.fleet_management.doctype.vehicle_brand.vehicle_brand import VehicleBrand
-from fleet_management.fleet_management.doctype.vehicle_model.vehicle_model import VehicleModel
-from fleet_management.fleet_management.doctype.vehicle_category.vehicle_category import VehicleCategory
-from fleet_management.fleet_management.doctype.fuel_type.fuel_type import FuelType
-from fleet_management.fleet_management.doctype.maintenance_type.maintenance_type import MaintenanceType
-from fleet_management.fleet_management.doctype.expense_category.expense_category import ExpenseCategory
-from fleet_management.fleet_management.doctype.fuel_station.fuel_station import FuelStation
-from fleet_management.fleet_management.doctype.maintenance_vendor.maintenance_vendor import MaintenanceVendor
-from fleet_management.fleet_management.doctype.vehicle_colour.vehicle_colour import VehicleColour
+
 from fleet_management.fleet_management.doctype.distance_unit.distance_unit import DistanceUnit
+from fleet_management.fleet_management.doctype.fuel_station.fuel_station import FuelStation
+from fleet_management.fleet_management.doctype.fuel_type.fuel_type import FuelType
 from fleet_management.fleet_management.doctype.fuel_unit.fuel_unit import FuelUnit
-from fleet_management.utils.exceptions import FleetValidationError, FleetDuplicateEntryError
+from fleet_management.fleet_management.doctype.maintenance_type.maintenance_type import (
+	MaintenanceType,
+)
+from fleet_management.fleet_management.doctype.maintenance_vendor.maintenance_vendor import (
+	MaintenanceVendor,
+)
+from fleet_management.fleet_management.doctype.vehicle_brand.vehicle_brand import VehicleBrand
+from fleet_management.fleet_management.doctype.vehicle_category.vehicle_category import (
+	VehicleCategory,
+)
+from fleet_management.fleet_management.doctype.vehicle_colour.vehicle_colour import VehicleColour
+from fleet_management.fleet_management.doctype.vehicle_model.vehicle_model import VehicleModel
+from fleet_management.utils.exceptions import FleetValidationError
 
 
 def test_vehicle_brand_validation():

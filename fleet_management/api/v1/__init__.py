@@ -4,13 +4,13 @@ Provides versioned API endpoint access for all enterprise fleet sub-modules.
 """
 
 from fleet_management.api import (
-	vehicle_api,
+	analytics_api,
 	assignment_api,
+	automation_api,
+	cost_api,
 	fuel_api,
 	maintenance_api,
-	cost_api,
-	analytics_api,
-	automation_api,
+	vehicle_api,
 )
 
 __all__ = [

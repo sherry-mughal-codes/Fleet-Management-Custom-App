@@ -3,15 +3,17 @@ Fleet Automation & Notification Engine Whitelisted API Endpoints
 Fleet Management System
 """
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict
+
 import frappe
+
 from fleet_management.api.base import api_endpoint
 from fleet_management.api.responses import success_response
-from fleet_management.services.settings_service import SettingsService
-from fleet_management.services.automation_service import FleetAutomationService
-from fleet_management.services.health_service import FleetHealthService
 from fleet_management.notifications.service import FleetNotificationService
 from fleet_management.permissions.evaluator import PermissionEvaluator
+from fleet_management.services.automation_service import FleetAutomationService
+from fleet_management.services.health_service import FleetHealthService
+from fleet_management.services.settings_service import SettingsService
 
 automation_service = FleetAutomationService()
 health_service = FleetHealthService()
@@ -74,7 +76,7 @@ def get_scheduler_history_api(limit: int = 20) -> Dict[str, Any]:
 
 
 @api_endpoint(allow_guest=False)
-def run_automation_job_api(job_name: Optional[str] = None) -> Dict[str, Any]:
+def run_automation_job_api(job_name: str | None = None) -> Dict[str, Any]:
 	"""
 	Whitelisted API endpoint allowing Fleet Managers to manually trigger an automation job.
 	Requires 'Fleet Manager' or 'System Manager' role.

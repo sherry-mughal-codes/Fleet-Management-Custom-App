@@ -3,16 +3,17 @@ Standard API Response Helpers
 Fleet Management System
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
+
 from fleet_management.utils.helpers import format_api_response
 
 
-def success_response(data: Any = None, message: str = "Operation completed successfully.", meta: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+def success_response(data: Any = None, message: str = "Operation completed successfully.", meta: Dict[str, Any] | None = None) -> Dict[str, Any]:
 	"""Return standard success API envelope."""
 	return format_api_response(data=data, message=message, status_code=200, meta=meta)
 
 
-def error_response(message: str = "An error occurred.", status_code: int = 400, details: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+def error_response(message: str = "An error occurred.", status_code: int = 400, details: Dict[str, Any] | None = None) -> Dict[str, Any]:
 	"""Return standard error API envelope."""
 	return format_api_response(data=details, message=message, status_code=status_code)
 

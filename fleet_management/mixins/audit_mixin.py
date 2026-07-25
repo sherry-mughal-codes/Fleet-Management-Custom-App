@@ -3,8 +3,8 @@ Audit Mixin
 Fleet Management System
 """
 
-import frappe
 from fleet_management.permissions.audit import audit_document_change
+
 
 class AuditMixin:
 	"""

@@ -4,7 +4,9 @@ Fleet Management System
 """
 
 import frappe
+
 from fleet_management.permissions.evaluator import PermissionEvaluator
+
 
 class PermissionMixin:
 	"""

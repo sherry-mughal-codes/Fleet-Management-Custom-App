@@ -3,8 +3,10 @@ Reusable Notification Engine Architecture
 Fleet Management System
 """
 
-from typing import Any, Dict, List, Optional
+from typing import List
+
 import frappe
+
 from fleet_management.utils.logger import get_logger
 
 logger = get_logger("fleet_management.notifications")
@@ -20,8 +22,8 @@ class NotificationEngine:
 		subject: str,
 		message: str,
 		channel: str = "email",
-		reference_doctype: Optional[str] = None,
-		reference_name: Optional[str] = None
+		reference_doctype: str | None = None,
+		reference_name: str | None = None
 	) -> bool:
 		"""
 		Dispatches notification to requested channel safely.

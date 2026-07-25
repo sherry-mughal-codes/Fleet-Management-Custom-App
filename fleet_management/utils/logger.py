@@ -3,11 +3,12 @@ Centralized Reusable Logging Architecture
 Fleet Management System
 """
 
-from contextlib import contextmanager
 import json
 import logging
 import time
-from typing import Any, Dict, Optional
+from contextlib import contextmanager
+from typing import Any, Dict
+
 import frappe
 
 SENSITIVE_KEYS = {"password", "api_secret", "secret", "token", "auth_header", "jwt"}
@@ -35,7 +36,7 @@ class FleetLogger:
 			return [self._sanitize(item) for item in data]
 		return data
 
-	def _format_message(self, message: str, context: Optional[Dict[str, Any]] = None, level: str = "INFO") -> str:
+	def _format_message(self, message: str, context: Dict[str, Any] | None = None, level: str = "INFO") -> str:
 		user = "System"
 		if hasattr(frappe, "session"):
 			try:
@@ -54,16 +55,16 @@ class FleetLogger:
 			payload["context"] = self._sanitize(context)
 		return json.dumps(payload)
 
-	def debug(self, message: str, context: Optional[Dict[str, Any]] = None):
+	def debug(self, message: str, context: Dict[str, Any] | None = None):
 		self._logger.debug(self._format_message(message, context, level="DEBUG"))
 
-	def info(self, message: str, context: Optional[Dict[str, Any]] = None):
+	def info(self, message: str, context: Dict[str, Any] | None = None):
 		self._logger.info(self._format_message(message, context, level="INFO"))
 
-	def warning(self, message: str, context: Optional[Dict[str, Any]] = None):
+	def warning(self, message: str, context: Dict[str, Any] | None = None):
 		self._logger.warning(self._format_message(message, context, level="WARNING"))
 
-	def error(self, message: str, context: Optional[Dict[str, Any]] = None, exc: Optional[Exception] = None):
+	def error(self, message: str, context: Dict[str, Any] | None = None, exc: Exception | None = None):
 		if exc and hasattr(frappe, "log_error"):
 			try:
 				frappe.log_error(title=f"{self.module_name}: {message}", message=str(exc))
@@ -71,7 +72,7 @@ class FleetLogger:
 				pass
 		self._logger.error(self._format_message(message, context, level="ERROR"))
 
-	def critical(self, message: str, context: Optional[Dict[str, Any]] = None, exc: Optional[Exception] = None):
+	def critical(self, message: str, context: Dict[str, Any] | None = None, exc: Exception | None = None):
 		if exc and hasattr(frappe, "log_error"):
 			try:
 				frappe.log_error(title=f"CRITICAL {self.module_name}: {message}", message=str(exc))
@@ -80,7 +81,7 @@ class FleetLogger:
 		self._logger.critical(self._format_message(message, context, level="CRITICAL"))
 
 	@contextmanager
-	def log_execution_time(self, action_name: str, context: Optional[Dict[str, Any]] = None):
+	def log_execution_time(self, action_name: str, context: Dict[str, Any] | None = None):
 		"""Context manager measuring and logging execution duration."""
 		start = time.time()
 		ctx = context.copy() if context else {}

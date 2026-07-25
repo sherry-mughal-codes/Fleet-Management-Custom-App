@@ -4,7 +4,7 @@ Fleet Management System
 """
 
 import re
-from typing import Any, Dict
+
 from fleet_management.business_rules.base_rule import BaseBusinessRule
 from fleet_management.enums import VehicleStatus
 
@@ -30,7 +30,7 @@ class VehicleFuelingMaintenanceRule(BaseBusinessRule):
 	def evaluate(self) -> bool:
 		vehicle_status = self.context.get("status")
 		if vehicle_status == VehicleStatus.UNDER_MAINTENANCE:
-			self.add_violation(f"VEH-002: Vehicle is Under Maintenance and cannot record fuel entries.")
+			self.add_violation("VEH-002: Vehicle is Under Maintenance and cannot record fuel entries.")
 			return False
 		return True
 

@@ -4,7 +4,10 @@ Fleet Management System
 """
 
 from fleet_management.utils.base_document import BaseFleetDocument
-from fleet_management.validators.common_validators import validate_required_fields, validate_positive_number
+from fleet_management.validators.common_validators import (
+	validate_positive_number,
+	validate_required_fields,
+)
 
 
 class MaintenanceType(BaseFleetDocument):

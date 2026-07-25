@@ -4,8 +4,9 @@ Fleet Management System
 """
 
 import pytest
-from fleet_management.business_rules.vehicle_rules import VehicleAvailabilityRule
+
 from fleet_management.business_rules.fuel_rules import FuelCapacityThresholdRule
+from fleet_management.business_rules.vehicle_rules import VehicleAvailabilityRule
 from fleet_management.utils.exceptions import FleetBusinessLogicError
 
 

@@ -4,7 +4,8 @@ Fleet Management System
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
+
 from fleet_management.utils.exceptions import FleetBusinessLogicError
 
 
@@ -30,7 +31,7 @@ class BaseBusinessRule(ABC):
 		"""Record a business rule violation."""
 		self.violations.append(message)
 
-	def raise_if_violated(self, custom_message: Optional[str] = None):
+	def raise_if_violated(self, custom_message: str | None = None):
 		"""Raise FleetBusinessLogicError if rule evaluation fails."""
 		if not self.evaluate() or self.violations:
 			msg = custom_message or "Business rule evaluation failed."

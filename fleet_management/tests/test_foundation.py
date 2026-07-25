@@ -3,18 +3,14 @@ Infrastructure Foundation Unit Tests
 Fleet Management System
 """
 
-import pytest
-from fleet_management.utils.logger import get_logger
 from fleet_management.utils.exceptions import (
-	FleetManagementError,
-	FleetValidationError,
-	FleetPermissionError,
 	FleetNotFoundError,
+	FleetPermissionError,
+	FleetValidationError,
 )
 from fleet_management.utils.helpers import format_api_response, safe_json_parse
+from fleet_management.utils.logger import get_logger
 from fleet_management.validators.base_validator import BaseValidator
-from fleet_management.services.base_service import BaseService
-from fleet_management.permissions.evaluator import PermissionEvaluator
 
 
 class DummyValidator(BaseValidator):

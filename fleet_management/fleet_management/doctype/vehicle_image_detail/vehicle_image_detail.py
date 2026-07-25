@@ -3,8 +3,8 @@ Vehicle Image Detail Child DocType Controller
 Fleet Management System
 """
 
-from frappe.model.document import Document
 import frappe
+from frappe.model.document import Document
 
 
 class VehicleImageDetail(Document):

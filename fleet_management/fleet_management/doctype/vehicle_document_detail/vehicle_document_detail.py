@@ -3,9 +3,8 @@ Vehicle Document Detail Child DocType Controller
 Fleet Management System
 """
 
-import datetime
-from frappe.model.document import Document
 import frappe
+from frappe.model.document import Document
 
 
 class VehicleDocumentDetail(Document):

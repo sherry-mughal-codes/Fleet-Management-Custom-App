@@ -3,8 +3,9 @@ Maintenance Lock Engine Service Implementation
 Fleet Management System
 """
 
-from typing import Optional
+
 import frappe
+
 from fleet_management.enums import VehicleStatus
 from fleet_management.utils.exceptions import FleetValidationError
 from fleet_management.utils.logger import get_logger
@@ -21,7 +22,7 @@ class MaintenanceLockService:
 	"""
 
 	@staticmethod
-	def is_maintenance_locked(vehicle_id: str, current_odometer: Optional[float] = None) -> bool:
+	def is_maintenance_locked(vehicle_id: str, current_odometer: float | None = None) -> bool:
 		"""Checks if target vehicle is currently maintenance locked."""
 		if not vehicle_id or not hasattr(frappe, "db"):
 			return False
@@ -50,7 +51,7 @@ class MaintenanceLockService:
 		return False
 
 	@staticmethod
-	def enforce_maintenance_lock(vehicle_id: str, current_odometer: Optional[float] = None):
+	def enforce_maintenance_lock(vehicle_id: str, current_odometer: float | None = None):
 		"""Raises FleetValidationError if vehicle is maintenance locked."""
 		if MaintenanceLockService.is_maintenance_locked(vehicle_id, current_odometer):
 			logger.warning(f"FUEL-008: Maintenance lock enforced for vehicle '{vehicle_id}'")

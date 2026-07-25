@@ -3,9 +3,10 @@ Notification Service Architecture
 Fleet Management System
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
+
 import frappe
-from fleet_management.enums import NotificationType
+
 from fleet_management.services.base_service import BaseService
 from fleet_management.services.settings_service import SettingsService
 from fleet_management.utils.logger import get_logger
@@ -55,9 +56,9 @@ class FleetNotificationService(BaseService):
 		recipients: List[str],
 		subject: str,
 		message: str,
-		context: Optional[Dict[str, Any]] = None,
-		reference_doctype: Optional[str] = None,
-		reference_name: Optional[str] = None,
+		context: Dict[str, Any] | None = None,
+		reference_doctype: str | None = None,
+		reference_name: str | None = None,
 		enqueue_background: bool = True
 	) -> bool:
 		"""
@@ -140,9 +141,9 @@ def execute_dispatch(
 	recipients: List[str],
 	subject: str,
 	message: str,
-	context: Optional[Dict[str, Any]] = None,
-	reference_doctype: Optional[str] = None,
-	reference_name: Optional[str] = None,
+	context: Dict[str, Any] | None = None,
+	reference_doctype: str | None = None,
+	reference_name: str | None = None,
 	email_enabled: bool = True,
 	system_enabled: bool = True
 ) -> bool:

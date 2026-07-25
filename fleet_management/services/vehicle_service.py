@@ -3,14 +3,16 @@ Vehicle Domain Service Architecture
 Fleet Management System
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
+
 import frappe
-from fleet_management.services.base_service import BaseService
+
 from fleet_management.enums import VehicleStatus
 from fleet_management.events.vehicle_events import VehicleEventDispatcher
-from fleet_management.validators.vehicle_validator import VehicleValidator
-from fleet_management.utils.exceptions import FleetNotFoundError, FleetValidationError
+from fleet_management.services.base_service import BaseService
+from fleet_management.utils.exceptions import FleetNotFoundError
 from fleet_management.utils.logger import get_logger
+from fleet_management.validators.vehicle_validator import VehicleValidator
 
 logger = get_logger("fleet_management.services.vehicle")
 
@@ -53,8 +55,8 @@ class VehicleService(BaseService):
 		self,
 		vehicle_id: str,
 		new_status: str,
-		reason: Optional[str] = None,
-		user: Optional[str] = None
+		reason: str | None = None,
+		user: str | None = None
 	) -> bool:
 		"""
 		Single Source of Truth method for changing vehicle status.
@@ -105,7 +107,7 @@ class VehicleService(BaseService):
 			VehicleEventDispatcher.notify_vehicle_created(doc)
 		return res
 
-	def deactivate_vehicle(self, vehicle_id: str, reason: Optional[str] = None) -> bool:
+	def deactivate_vehicle(self, vehicle_id: str, reason: str | None = None) -> bool:
 		"""Deactivates an active vehicle."""
 		res = self.change_status(vehicle_id, VehicleStatus.INACTIVE, reason=reason or "Deactivated via VehicleService")
 		if res and frappe.db.exists("Vehicle", vehicle_id):
@@ -125,7 +127,7 @@ class VehicleService(BaseService):
 		"""Restores an archived vehicle to Inactive."""
 		return self.change_status(vehicle_id, VehicleStatus.INACTIVE, reason="Restored via VehicleService")
 
-	def get_dashboard_summary(self, company: Optional[str] = None) -> Dict[str, Any]:
+	def get_dashboard_summary(self, company: str | None = None) -> Dict[str, Any]:
 		"""
 		Returns aggregated vehicle metric counts for executive dashboard.
 		Optimized query avoiding N+1 lookups.
@@ -135,7 +137,7 @@ class VehicleService(BaseService):
 			filters["company"] = company
 
 		all_vehicles = frappe.get_all("Vehicle", filters=filters, fields=["name", "status"])
-		
+
 		counts = {
 			"total_vehicles": len(all_vehicles),
 			"available_count": sum(1 for v in all_vehicles if v.status == VehicleStatus.AVAILABLE),
@@ -176,7 +178,7 @@ class VehicleService(BaseService):
 
 	def list_vehicles(
 		self,
-		filters: Optional[Dict[str, Any]] = None,
+		filters: Dict[str, Any] | None = None,
 		start: int = 0,
 		page_length: int = 20
 	) -> List[Dict[str, Any]]:
@@ -233,7 +235,7 @@ class VehicleService(BaseService):
 			"image_count": len(getattr(doc, "images", []) or [])
 		}
 
-	def get_primary_image(self, vehicle_id: str) -> Optional[str]:
+	def get_primary_image(self, vehicle_id: str) -> str | None:
 		"""Retrieves primary image URL for vehicle gallery."""
 		if not frappe.db.exists("Vehicle", vehicle_id):
 			return None

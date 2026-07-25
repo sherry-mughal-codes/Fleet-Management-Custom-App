@@ -3,9 +3,8 @@ Unit Tests for Fleet Notification Service & Extension Hooks
 Fleet Management System
 """
 
-import pytest
-from fleet_management.notifications.service import FleetNotificationService, NotificationService
 from fleet_management.enums import NotificationType
+from fleet_management.notifications.service import FleetNotificationService
 
 
 def test_notification_service_authorized_recipients():

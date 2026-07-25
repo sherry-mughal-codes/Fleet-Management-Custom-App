@@ -4,6 +4,7 @@ Fleet Management System
 """
 
 import pytest
+
 from fleet_management.fleet_management.doctype.fuel_entry.fuel_entry import FuelEntry
 from fleet_management.fleet_management.doctype.vehicle.vehicle import Vehicle
 from fleet_management.utils.exceptions import FleetValidationError

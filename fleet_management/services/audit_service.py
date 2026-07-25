@@ -3,8 +3,10 @@ Audit Service Architecture
 Fleet Management System
 """
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict
+
 import frappe
+
 from fleet_management.services.base_service import BaseService
 from fleet_management.services.settings_service import SettingsService
 from fleet_management.utils.logger import get_logger
@@ -22,11 +24,11 @@ class AuditService(BaseService):
 		doctype: str,
 		docname: str,
 		action: str,
-		user: Optional[str] = None,
-		old_values: Optional[Dict[str, Any]] = None,
-		new_values: Optional[Dict[str, Any]] = None,
-		reference: Optional[str] = None,
-		ip_address: Optional[str] = None
+		user: str | None = None,
+		old_values: Dict[str, Any] | None = None,
+		new_values: Dict[str, Any] | None = None,
+		reference: str | None = None,
+		ip_address: str | None = None
 	) -> bool:
 		"""
 		Logs structured audit payload if audit logging is enabled in Fleet Settings.

@@ -3,7 +3,6 @@ Maintenance Domain Permission Evaluator Architecture
 Fleet Management System
 """
 
-import frappe
 from fleet_management.enums import FleetRole
 from fleet_management.permissions.evaluator import PermissionEvaluator
 from fleet_management.utils.logger import get_logger

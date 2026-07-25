@@ -3,8 +3,10 @@ Permission Service Architecture
 Fleet Management System
 """
 
-from typing import List, Optional
+from typing import List
+
 import frappe
+
 from fleet_management.constants import ALL_FLEET_ROLES
 from fleet_management.permissions.evaluator import PermissionEvaluator
 from fleet_management.services.base_service import BaseService
@@ -16,7 +18,7 @@ class PermissionService(BaseService):
 	"""
 
 	@staticmethod
-	def is_fleet_user(user: Optional[str] = None) -> bool:
+	def is_fleet_user(user: str | None = None) -> bool:
 		"""Check if user has any Fleet role assigned."""
 		user_id = user or (frappe.session.user if hasattr(frappe, "session") else "System")
 		if user_id == "Administrator":
@@ -25,14 +27,14 @@ class PermissionService(BaseService):
 		return bool(user_roles.intersection(set(ALL_FLEET_ROLES)))
 
 	@staticmethod
-	def require_fleet_access(user: Optional[str] = None):
+	def require_fleet_access(user: str | None = None):
 		"""Require user to hold at least one Fleet system role."""
 		user_id = user or (frappe.session.user if hasattr(frappe, "session") else "System")
 		if not PermissionService.is_fleet_user(user_id):
 			PermissionEvaluator.require_any_role(list(ALL_FLEET_ROLES), user=user_id)
 
 	@staticmethod
-	def get_permitted_documents(doctype: str, user: Optional[str] = None) -> List[str]:
+	def get_permitted_documents(doctype: str, user: str | None = None) -> List[str]:
 		"""Get list of document names permitted for target user."""
 		user_id = user or (frappe.session.user if hasattr(frappe, "session") else "System")
 		return frappe.get_list(doctype, filters={}, pluck="name", user=user_id)

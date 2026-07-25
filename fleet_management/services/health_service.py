@@ -3,11 +3,13 @@ Data Integrity & Health Monitoring Service Implementation
 Fleet Management System
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
+
 import frappe
+
+from fleet_management.enums import AssignmentStatus, VehicleStatus
 from fleet_management.services.base_service import BaseService
 from fleet_management.services.settings_service import SettingsService
-from fleet_management.enums import VehicleStatus, AssignmentStatus
 from fleet_management.utils.logger import get_logger
 
 logger = get_logger("fleet_management.services.health")
@@ -212,7 +214,7 @@ class FleetHealthService(BaseService):
 						"reference_name": v,
 						"description": f"Vehicle {v} has multiple active assignments simultaneously: {', '.join(assign_ids)}."
 					})
-				
+
 				# Check vehicle status
 				if frappe.db.exists("Vehicle", v):
 					v_status = frappe.db.get_value("Vehicle", v, "status")

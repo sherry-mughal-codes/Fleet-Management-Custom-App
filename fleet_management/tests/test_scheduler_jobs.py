@@ -3,14 +3,13 @@ Unit Tests for Scheduled Tasks & Scheduler Handlers
 Fleet Management System
 """
 
-import pytest
 from fleet_management.services.scheduler import (
-	scheduled_maintenance_check,
-	scheduled_fuel_anomaly_check,
 	scheduled_assignment_expiry_check,
 	scheduled_cost_refresh,
-	scheduled_health_check,
 	scheduled_fleet_automation_daily,
+	scheduled_fuel_anomaly_check,
+	scheduled_health_check,
+	scheduled_maintenance_check,
 )
 
 

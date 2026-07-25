@@ -4,15 +4,15 @@ Fleet Management System
 """
 
 import pytest
-from fleet_management.enums import VehicleStatus, VehicleDocumentType, VehicleEventType
-from fleet_management.validators.vehicle_validator import VehicleValidator
-from fleet_management.permissions.vehicle_permission import VehiclePermissionEvaluator
+
 from fleet_management.business_rules.vehicle_rules import (
 	VehicleAvailabilityRule,
 	VehicleCompanyIsolationRule,
 	VehicleVINValidationRule,
 )
+from fleet_management.enums import VehicleDocumentType, VehicleStatus
 from fleet_management.utils.exceptions import FleetBusinessLogicError
+from fleet_management.validators.vehicle_validator import VehicleValidator
 
 
 def test_vehicle_status_lifecycle_enum():

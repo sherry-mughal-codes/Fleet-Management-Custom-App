@@ -3,8 +3,8 @@ Vehicle Domain Event Dispatcher
 Fleet Management System
 """
 
-from typing import Any, Dict, Optional
-import frappe
+from typing import Any
+
 from fleet_management.enums import VehicleEventType
 from fleet_management.events.registry import DocumentEventRegistry
 from fleet_management.utils.logger import get_logger

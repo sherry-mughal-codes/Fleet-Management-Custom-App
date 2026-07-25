@@ -4,16 +4,15 @@ Fleet Management System
 """
 
 import pytest
-from fleet_management.enums import AssignmentStatus, VehicleStatus
-from fleet_management.services.assignment_service import AssignmentService
-from fleet_management.validators.assignment_validator import AssignmentValidator
+
 from fleet_management.business_rules.assignment_rules import (
-	AssignmentVehicleAvailabilityRule,
 	AssignmentActiveDuplicateRule,
 	AssignmentOdometerIntegrityRule,
 	AssignmentReadOnlyClosedRule,
 )
-from fleet_management.utils.exceptions import FleetValidationError, FleetBusinessLogicError
+from fleet_management.enums import AssignmentStatus
+from fleet_management.utils.exceptions import FleetBusinessLogicError
+from fleet_management.validators.assignment_validator import AssignmentValidator
 
 
 def test_handover_and_return_validation():

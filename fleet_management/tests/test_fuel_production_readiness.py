@@ -3,16 +3,11 @@ Master Production Readiness Integration Test Suite for Fuel Subsystem
 Fleet Management System
 """
 
-import pytest
-from fleet_management.enums import FuelEntryStatus, VehicleStatus
 from fleet_management.fleet_management.doctype.fuel_entry.fuel_entry import FuelEntry
-from fleet_management.fleet_management.doctype.vehicle.vehicle import Vehicle
-from fleet_management.services.fuel_service import FuelService
-from fleet_management.services.fuel_average_service import FuelAverageService
-from fleet_management.services.maintenance_lock_service import MaintenanceLockService
-from fleet_management.validators.fuel_validator import FuelValidator
 from fleet_management.permissions.fuel_permission import FuelPermissionEvaluator
-from fleet_management.utils.exceptions import FleetValidationError, FleetBusinessLogicError, FleetPermissionError
+from fleet_management.services.fuel_average_service import FuelAverageService
+from fleet_management.services.fuel_service import FuelService
+from fleet_management.services.maintenance_lock_service import MaintenanceLockService
 
 
 def test_master_fuel_entry_creation_and_autofetch():

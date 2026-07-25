@@ -3,9 +3,11 @@ Global Reusable Validation Framework
 Fleet Management System
 """
 
-from typing import Any, Dict, Iterable, Optional, Sequence
+from typing import Any, Dict, Iterable, Sequence
+
 import frappe
-from fleet_management.utils.exceptions import FleetValidationError, FleetDuplicateEntryError
+
+from fleet_management.utils.exceptions import FleetDuplicateEntryError, FleetValidationError
 
 
 def validate_positive_number(value: Any, field_name: str, allow_zero: bool = False):
@@ -53,14 +55,14 @@ def validate_required_fields(data: Dict[str, Any], required_fields: Iterable[str
 		)
 
 
-def validate_duplicate(doctype: str, field_name: str, value: Any, exclude_name: Optional[str] = None):
+def validate_duplicate(doctype: str, field_name: str, value: Any, exclude_name: str | None = None):
 	"""Ensure value is unique for given Doctype field."""
 	if not value:
 		return
 	filters = {field_name: value}
 	if exclude_name:
 		filters["name"] = ["!=", exclude_name]
-	
+
 	if frappe.db.exists(doctype, filters):
 		raise FleetDuplicateEntryError(
 			message=f"{doctype} with {field_name} '{value}' already exists.",

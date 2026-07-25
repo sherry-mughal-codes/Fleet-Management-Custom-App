@@ -4,6 +4,7 @@ Fleet Management System
 """
 
 from enum import Enum
+
 from fleet_management import constants
 
 
@@ -20,7 +21,7 @@ class VehicleStatus(str, Enum):
 	SOLD = constants.VEHICLE_STATUS_SOLD
 	SCRAPPED = constants.VEHICLE_STATUS_SCRAPPED
 	ARCHIVED = constants.VEHICLE_STATUS_ARCHIVED
-	
+
 	# Legacy alias for backward compatibility
 	MAINTENANCE = constants.VEHICLE_STATUS_UNDER_MAINTENANCE
 
@@ -34,7 +35,7 @@ class AssignmentStatus(str, Enum):
 	RETURNED = constants.ASSIGNMENT_STATUS_RETURNED
 	CLOSED = constants.ASSIGNMENT_STATUS_CLOSED
 	CANCELLED = constants.ASSIGNMENT_STATUS_CANCELLED
-	
+
 	# Legacy alias
 	ACTIVE = constants.ASSIGNMENT_STATUS_ASSIGNED
 

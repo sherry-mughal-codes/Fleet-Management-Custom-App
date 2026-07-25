@@ -3,14 +3,13 @@ Maintenance Domain Validator Architecture
 Fleet Management System
 """
 
-from typing import Any, Dict, Optional
-from fleet_management.validators.base_validator import BaseValidator
-from fleet_management.validators.common_validators import (
-	validate_required_fields,
-	validate_positive_number,
-)
 from fleet_management.enums import MaintenanceStatus
 from fleet_management.utils.exceptions import FleetValidationError
+from fleet_management.validators.base_validator import BaseValidator
+from fleet_management.validators.common_validators import (
+	validate_positive_number,
+	validate_required_fields,
+)
 
 
 class MaintenanceValidator(BaseValidator):

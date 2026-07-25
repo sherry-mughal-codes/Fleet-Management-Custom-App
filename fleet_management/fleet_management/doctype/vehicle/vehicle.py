@@ -4,15 +4,19 @@ Fleet Management System
 """
 
 import datetime
-import frappe
-from fleet_management.utils.base_document import BaseFleetDocument
-from fleet_management.validators.vehicle_validator import VehicleValidator
-from fleet_management.validators.vehicle_asset_validator import VehicleAssetValidator, enforce_single_primary_image
-from fleet_management.services.settings_service import SettingsService
-from fleet_management.validators.common_validators import validate_date_range, validate_range
-from fleet_management.utils.helpers import get_doc_or_none
-from fleet_management.enums import VehicleStatus
 
+import frappe
+
+from fleet_management.enums import VehicleStatus
+from fleet_management.services.settings_service import SettingsService
+from fleet_management.utils.base_document import BaseFleetDocument
+from fleet_management.utils.helpers import get_doc_or_none
+from fleet_management.validators.common_validators import validate_date_range, validate_range
+from fleet_management.validators.vehicle_asset_validator import (
+	VehicleAssetValidator,
+	enforce_single_primary_image,
+)
+from fleet_management.validators.vehicle_validator import VehicleValidator
 
 
 class Vehicle(BaseFleetDocument):

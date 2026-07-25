@@ -3,8 +3,10 @@ Reusable Settings Service
 Fleet Management System
 """
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict
+
 import frappe
+
 from fleet_management import constants
 from fleet_management.services.base_service import BaseService
 from fleet_management.utils.exceptions import FleetConfigurationError
@@ -135,12 +137,12 @@ class SettingsService(BaseService):
 		return str(SettingsService.get_value("health_check_schedule", "Daily"))
 
 	@staticmethod
-	def get_escalation_recipient() -> Optional[str]:
+	def get_escalation_recipient() -> str | None:
 		recipient = SettingsService.get_value("escalation_recipient")
 		return str(recipient) if recipient else None
 
 	@staticmethod
-	def validate_settings(settings: Optional[Dict[str, Any]] = None):
+	def validate_settings(settings: Dict[str, Any] | None = None):
 		"""Validate configuration invariants."""
 		data = settings or SettingsService.get_all_settings()
 		interval = data.get("default_maintenance_interval_km", 0)

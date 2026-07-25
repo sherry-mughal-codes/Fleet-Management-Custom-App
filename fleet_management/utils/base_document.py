@@ -4,10 +4,11 @@ Fleet Management System
 """
 
 from frappe.model.document import Document
-from fleet_management.mixins.timestamp_mixin import TimestampMixin
+
 from fleet_management.mixins.audit_mixin import AuditMixin
-from fleet_management.mixins.status_mixin import StatusMixin
 from fleet_management.mixins.permission_mixin import PermissionMixin
+from fleet_management.mixins.status_mixin import StatusMixin
+from fleet_management.mixins.timestamp_mixin import TimestampMixin
 from fleet_management.utils.logger import get_logger
 
 logger = get_logger("fleet_management.base_document")

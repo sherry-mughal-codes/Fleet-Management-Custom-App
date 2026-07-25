@@ -3,7 +3,6 @@ Maintenance Summary Script Report Implementation
 Fleet Management System
 """
 
-import frappe
 from fleet_management.services.maintenance_service import MaintenanceService
 
 maintenance_service = MaintenanceService()

@@ -3,18 +3,19 @@ Assignment Domain Service Implementation
 Fleet Management System
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
+
 import frappe
-from fleet_management.services.base_service import BaseService
-from fleet_management.services.vehicle_service import VehicleService
-from fleet_management.enums import AssignmentStatus, VehicleStatus
-from fleet_management.events.assignment_events import AssignmentEventDispatcher
-from fleet_management.validators.assignment_validator import AssignmentValidator
+
 from fleet_management.business_rules.assignment_rules import (
-	AssignmentVehicleAvailabilityRule,
 	AssignmentActiveDuplicateRule,
 	AssignmentOdometerIntegrityRule,
+	AssignmentVehicleAvailabilityRule,
 )
+from fleet_management.enums import AssignmentStatus, VehicleStatus
+from fleet_management.events.assignment_events import AssignmentEventDispatcher
+from fleet_management.services.base_service import BaseService
+from fleet_management.services.vehicle_service import VehicleService
 from fleet_management.utils.exceptions import FleetNotFoundError, FleetValidationError
 from fleet_management.utils.logger import get_logger
 
@@ -37,7 +38,7 @@ class AssignmentService(BaseService):
 		Creates a new Vehicle Assignment using minimal Category A fields.
 		"""
 		logger.info("Creating new assignment via AssignmentService", {"vehicle": payload.get("vehicle"), "employee": payload.get("employee")})
-		
+
 		# Validate vehicle availability before creating assignment
 		vehicle_id = payload.get("vehicle")
 		if vehicle_id:
@@ -76,8 +77,8 @@ class AssignmentService(BaseService):
 	def assign_vehicle(
 		self,
 		assignment_id: str,
-		opening_odometer: Optional[float] = None,
-		handover_notes: Optional[str] = None
+		opening_odometer: float | None = None,
+		handover_notes: str | None = None
 	) -> bool:
 		"""
 		Vehicle Handover Workflow.
@@ -86,7 +87,7 @@ class AssignmentService(BaseService):
 		"""
 		if not frappe.db.exists("Vehicle Assignment", assignment_id):
 			raise FleetNotFoundError(f"Assignment '{assignment_id}' not found.")
-		
+
 		doc = frappe.get_doc("Vehicle Assignment", assignment_id)
 
 		# 1. Validate active duplicate assignment & vehicle availability (ASSIGN-001)
@@ -124,8 +125,8 @@ class AssignmentService(BaseService):
 		self,
 		assignment_id: str,
 		closing_odometer: float,
-		return_notes: Optional[str] = None,
-		return_condition: Optional[str] = None
+		return_notes: str | None = None,
+		return_condition: str | None = None
 	) -> bool:
 		"""
 		Vehicle Return Workflow.
@@ -177,7 +178,7 @@ class AssignmentService(BaseService):
 		logger.info(f"Closed assignment: {assignment_id}")
 		return True
 
-	def cancel_assignment(self, assignment_id: str, reason: Optional[str] = None) -> bool:
+	def cancel_assignment(self, assignment_id: str, reason: str | None = None) -> bool:
 		"""
 		Cancels an assignment.
 		Releases vehicle reservation back to Available via VehicleService.
@@ -213,7 +214,7 @@ class AssignmentService(BaseService):
 
 	# --- Analytics & Utilization Helpers ---
 
-	def get_active_assignments_count(self, company: Optional[str] = None) -> int:
+	def get_active_assignments_count(self, company: str | None = None) -> int:
 		"""Returns total active assignments count for a company."""
 		filters = {"status": ["in", [AssignmentStatus.ASSIGNED, AssignmentStatus.IN_USE]]}
 		if company:
@@ -249,7 +250,7 @@ class AssignmentService(BaseService):
 			"total_distance_travelled": total_distance
 		}
 
-	def get_return_compliance_stats(self, company: Optional[str] = None) -> Dict[str, Any]:
+	def get_return_compliance_stats(self, company: str | None = None) -> Dict[str, Any]:
 		"""Returns statistics on on-time vs overdue returns."""
 		filters = {}
 		if company:

@@ -3,7 +3,6 @@ Unit Tests for Fleet Health & Data Integrity Monitoring Service
 Fleet Management System
 """
 
-import pytest
 from fleet_management.services.health_service import FleetHealthService
 
 

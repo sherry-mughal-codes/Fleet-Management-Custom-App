@@ -3,10 +3,12 @@ Vehicle Domain Whitelisted API Endpoints Implementation
 Fleet Management System
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict
+
 import frappe
+
 from fleet_management.api.base import api_endpoint
-from fleet_management.api.responses import success_response, paginated_response
+from fleet_management.api.responses import paginated_response, success_response
 from fleet_management.services.vehicle_service import VehicleService
 
 vehicle_service = VehicleService()
@@ -14,10 +16,10 @@ vehicle_service = VehicleService()
 
 @api_endpoint(allow_guest=False)
 def search_vehicles(
-	query: Optional[str] = None,
-	brand: Optional[str] = None,
-	status: Optional[str] = None,
-	company: Optional[str] = None,
+	query: str | None = None,
+	brand: str | None = None,
+	status: str | None = None,
+	company: str | None = None,
 	page: int = 1,
 	page_length: int = 20
 ) -> Dict[str, Any]:
@@ -53,7 +55,7 @@ def create_vehicle(
 	vehicle_model: str,
 	vehicle_category: str,
 	company: str,
-	registration_number: Optional[str] = None,
+	registration_number: str | None = None,
 	initial_odometer: float = 0.0
 ) -> Dict[str, Any]:
 	"""Whitelisted API endpoint for registering a vehicle using Category A minimal payload."""
@@ -74,7 +76,7 @@ def create_vehicle(
 def change_vehicle_status(
 	vehicle_id: str,
 	new_status: str,
-	reason: Optional[str] = None
+	reason: str | None = None
 ) -> Dict[str, Any]:
 	"""Whitelisted API endpoint for single-source-of-truth status mutation."""
 	res = vehicle_service.change_status(vehicle_id, new_status, reason=reason)
@@ -82,7 +84,7 @@ def change_vehicle_status(
 
 
 @api_endpoint(allow_guest=False)
-def get_vehicle_dashboard_summary(company: Optional[str] = None) -> Dict[str, Any]:
+def get_vehicle_dashboard_summary(company: str | None = None) -> Dict[str, Any]:
 	"""Whitelisted API endpoint returning executive dashboard metrics."""
 	data = vehicle_service.get_dashboard_summary(company=company)
 	return success_response(data=data, message="Dashboard summary retrieved successfully.")

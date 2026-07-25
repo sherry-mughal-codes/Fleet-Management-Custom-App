@@ -4,15 +4,15 @@ Fleet Management System
 """
 
 import re
-from typing import Any, Dict, Optional
-from fleet_management.validators.base_validator import BaseValidator
-from fleet_management.validators.common_validators import (
-	validate_required_fields,
-	validate_positive_number,
-	validate_status_transition,
-)
+
 from fleet_management.enums import VehicleStatus
 from fleet_management.utils.exceptions import FleetValidationError
+from fleet_management.validators.base_validator import BaseValidator
+from fleet_management.validators.common_validators import (
+	validate_positive_number,
+	validate_required_fields,
+	validate_status_transition,
+)
 
 
 class VehicleValidator(BaseValidator):

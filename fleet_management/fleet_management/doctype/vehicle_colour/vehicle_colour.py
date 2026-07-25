@@ -4,9 +4,10 @@ Fleet Management System
 """
 
 import re
+
 from fleet_management.utils.base_document import BaseFleetDocument
-from fleet_management.validators.common_validators import validate_required_fields
 from fleet_management.utils.exceptions import FleetValidationError
+from fleet_management.validators.common_validators import validate_required_fields
 
 
 class VehicleColour(BaseFleetDocument):

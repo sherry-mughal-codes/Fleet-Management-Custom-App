@@ -4,6 +4,7 @@ Fleet Management System
 """
 
 from typing import Any
+
 from fleet_management.enums import FuelEventType
 from fleet_management.events.registry import DocumentEventRegistry
 from fleet_management.utils.logger import get_logger

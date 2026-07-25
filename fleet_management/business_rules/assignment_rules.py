@@ -4,7 +4,7 @@ Fleet Management System
 """
 
 from fleet_management.business_rules.base_rule import BaseBusinessRule
-from fleet_management.enums import VehicleStatus, AssignmentStatus
+from fleet_management.enums import AssignmentStatus, VehicleStatus
 
 
 class AssignmentVehicleAvailabilityRule(BaseBusinessRule):

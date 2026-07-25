@@ -4,14 +4,16 @@ Fleet Management System
 """
 
 import datetime
+
 import frappe
+
 from fleet_management.utils.base_document import BaseFleetDocument
-from fleet_management.validators.common_validators import (
-	validate_required_fields,
-	validate_range,
-	validate_positive_number,
-)
 from fleet_management.utils.exceptions import FleetDuplicateEntryError
+from fleet_management.validators.common_validators import (
+	validate_positive_number,
+	validate_range,
+	validate_required_fields,
+)
 
 
 class VehicleModel(BaseFleetDocument):
@@ -25,7 +27,7 @@ class VehicleModel(BaseFleetDocument):
 	def before_validate_hook(self):
 		# MASTER-002: Required fields and Brand + Model combination uniqueness
 		validate_required_fields(self.as_dict(), ["model_name", "vehicle_brand"])
-		
+
 		filters = {
 			"vehicle_brand": self.vehicle_brand,
 			"model_name": self.model_name

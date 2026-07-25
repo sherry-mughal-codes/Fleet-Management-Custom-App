@@ -3,15 +3,17 @@ Fleet Analytics & Command Center Service Implementation
 Fleet Management System
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
+
 import frappe
-from fleet_management.services.base_service import BaseService
-from fleet_management.services.vehicle_service import VehicleService
+
+from fleet_management.enums import VehicleStatus
 from fleet_management.services.assignment_service import AssignmentService
+from fleet_management.services.base_service import BaseService
+from fleet_management.services.fleet_cost_service import FleetCostService
 from fleet_management.services.fuel_service import FuelService
 from fleet_management.services.maintenance_service import MaintenanceService
-from fleet_management.services.fleet_cost_service import FleetCostService
-from fleet_management.enums import VehicleStatus
+from fleet_management.services.vehicle_service import VehicleService
 from fleet_management.utils.logger import get_logger
 
 logger = get_logger("fleet_management.services.analytics")
@@ -33,7 +35,7 @@ class FleetAnalyticsService(BaseService):
 		self.maintenance_service = MaintenanceService()
 		self.cost_service = FleetCostService()
 
-	def get_executive_kpis(self, company: Optional[str] = None) -> Dict[str, Any]:
+	def get_executive_kpis(self, company: str | None = None) -> Dict[str, Any]:
 		"""Calculates executive KPI cards for Desk Workspace (<30-second fleet understanding)."""
 		filters = {"company": company} if company else {}
 
@@ -64,7 +66,7 @@ class FleetAnalyticsService(BaseService):
 			"monthly_operating_cost": cost_stats["total_fleet_operating_cost"]
 		}
 
-	def get_smart_alerts(self, company: Optional[str] = None) -> List[Dict[str, Any]]:
+	def get_smart_alerts(self, company: str | None = None) -> List[Dict[str, Any]]:
 		"""Generates severity-based actionable smart alerts (Information, Warning, Critical)."""
 		alerts = []
 		filters = {"company": company} if company else {}
@@ -102,7 +104,7 @@ class FleetAnalyticsService(BaseService):
 			alerts.append({
 				"severity": "Information",
 				"category": "Fleet Capacity",
-				"title": f"Available Fleet Capacity",
+				"title": "Available Fleet Capacity",
 				"message": f"{available_count} vehicles are ready for driver assignment.",
 				"reference_doctype": "Vehicle",
 				"reference_name": ""
@@ -110,7 +112,7 @@ class FleetAnalyticsService(BaseService):
 
 		return alerts
 
-	def get_analytics_charts(self, company: Optional[str] = None) -> Dict[str, Any]:
+	def get_analytics_charts(self, company: str | None = None) -> Dict[str, Any]:
 		"""Returns chart data feeds for Fuel spend, Maintenance distribution, and Operating Costs."""
 		cost_stats = self.cost_service.calculate_company_cost(company)
 
@@ -134,7 +136,7 @@ class FleetAnalyticsService(BaseService):
 			}
 		}
 
-	def get_vehicle_health_summary(self, company: Optional[str] = None, limit: int = 20) -> List[Dict[str, Any]]:
+	def get_vehicle_health_summary(self, company: str | None = None, limit: int = 20) -> List[Dict[str, Any]]:
 		"""Returns comprehensive vehicle health table with fuel economy, status, and operating spend."""
 		if not hasattr(frappe, "get_all"):
 			return []
@@ -167,7 +169,7 @@ class FleetAnalyticsService(BaseService):
 			})
 		return summary
 
-	def get_recent_activity_timeline(self, company: Optional[str] = None, limit: int = 10) -> List[Dict[str, Any]]:
+	def get_recent_activity_timeline(self, company: str | None = None, limit: int = 10) -> List[Dict[str, Any]]:
 		"""Aggregates recent timeline activity events across Vehicle, Assignment, Fuel, and Maintenance."""
 		activity = []
 
@@ -201,7 +203,7 @@ class FleetAnalyticsService(BaseService):
 		activity.sort(key=lambda x: x.get("date", ""), reverse=True)
 		return activity[:limit]
 
-	def get_dashboard_data(self, user: str, company: Optional[str] = None) -> Dict[str, Any]:
+	def get_dashboard_data(self, user: str, company: str | None = None) -> Dict[str, Any]:
 		"""Aggregates full command center payload for Desk Workspace."""
 		return {
 			"kpis": self.get_executive_kpis(company),

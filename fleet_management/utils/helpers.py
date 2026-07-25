@@ -6,8 +6,10 @@ Fleet Management System
 import datetime
 import functools
 import re
-from typing import Any, Callable, Dict, Optional, Union
+from typing import Any, Callable, Dict
+
 import frappe
+
 from fleet_management.utils.logger import get_logger
 
 logger = get_logger("fleet_management.helpers")
@@ -30,7 +32,7 @@ def format_api_response(
 	data: Any = None,
 	message: str = "Success",
 	status_code: int = 200,
-	meta: Optional[Dict[str, Any]] = None
+	meta: Dict[str, Any] | None = None
 ) -> Dict[str, Any]:
 	"""Standardized envelope for all Frappe API endpoints."""
 	return {
@@ -135,7 +137,7 @@ def truncate(text: str, max_length: int = 50, suffix: str = "...") -> str:
 
 # --- Document Helpers ---
 
-def get_doc_or_none(doctype: str, name: str) -> Optional[Any]:
+def get_doc_or_none(doctype: str, name: str) -> Any | None:
 	"""Safely retrieve Document or None if it doesn't exist."""
 	if not doctype or not name:
 		return None
@@ -158,11 +160,11 @@ def has_field(doctype: str, fieldname: str) -> bool:
 
 # --- Formatting Helpers ---
 
-def format_distance(distance_val: Union[int, float], unit: str = "KM") -> str:
+def format_distance(distance_val: int | float, unit: str = "KM") -> str:
 	"""Format distance with units."""
 	return f"{distance_val:,.0f} {unit}"
 
 
-def format_fuel(fuel_val: Union[int, float], unit: str = "Liters") -> str:
+def format_fuel(fuel_val: int | float, unit: str = "Liters") -> str:
 	"""Format fuel quantity with units."""
 	return f"{fuel_val:,.2f} {unit}"

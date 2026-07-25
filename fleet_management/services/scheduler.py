@@ -4,9 +4,9 @@ Fleet Management System
 """
 
 from typing import Any, Dict
-import frappe
-from fleet_management.services.settings_service import SettingsService
+
 from fleet_management.services.automation_service import FleetAutomationService
+from fleet_management.services.settings_service import SettingsService
 from fleet_management.utils.logger import get_logger
 
 logger = get_logger("fleet_management.scheduler")

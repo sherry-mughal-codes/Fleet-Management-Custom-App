@@ -3,22 +3,24 @@ Maintenance Domain Whitelisted API Endpoints Implementation
 Fleet Management System
 """
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict
+
 import frappe
+
 from fleet_management.api.base import api_endpoint
-from fleet_management.api.responses import success_response, paginated_response
-from fleet_management.services.maintenance_service import MaintenanceService
+from fleet_management.api.responses import paginated_response, success_response
 from fleet_management.services.maintenance_due_service import MaintenanceDueEngine
+from fleet_management.services.maintenance_service import MaintenanceService
 
 maintenance_service = MaintenanceService()
 
 
 @api_endpoint(allow_guest=False)
 def search_maintenance_requests(
-	vehicle: Optional[str] = None,
-	status: Optional[str] = None,
-	priority: Optional[str] = None,
-	company: Optional[str] = None,
+	vehicle: str | None = None,
+	status: str | None = None,
+	priority: str | None = None,
+	company: str | None = None,
 	page: int = 1,
 	page_length: int = 20
 ) -> Dict[str, Any]:
@@ -49,10 +51,10 @@ def search_maintenance_requests(
 
 @api_endpoint(allow_guest=False)
 def search_maintenance_orders(
-	vehicle: Optional[str] = None,
-	status: Optional[str] = None,
-	workshop: Optional[str] = None,
-	company: Optional[str] = None,
+	vehicle: str | None = None,
+	status: str | None = None,
+	workshop: str | None = None,
+	company: str | None = None,
 	page: int = 1,
 	page_length: int = 20
 ) -> Dict[str, Any]:
@@ -87,9 +89,9 @@ def create_maintenance_request_api(
 	maintenance_type: str,
 	company: str,
 	priority: str = "Medium",
-	requested_date: Optional[str] = None,
-	description: Optional[str] = None,
-	workshop_name: Optional[str] = None
+	requested_date: str | None = None,
+	description: str | None = None,
+	workshop_name: str | None = None
 ) -> Dict[str, Any]:
 	"""Whitelisted API endpoint for creating a maintenance request."""
 	payload = {
@@ -128,7 +130,7 @@ def complete_work_order_api(
 
 
 @api_endpoint(allow_guest=False)
-def calculate_next_due_api(vehicle: str, completion_odometer: Optional[float] = None) -> Dict[str, Any]:
+def calculate_next_due_api(vehicle: str, completion_odometer: float | None = None) -> Dict[str, Any]:
 	"""Whitelisted API endpoint for calculating next due thresholds."""
 	due_odo = MaintenanceDueEngine.calculate_next_due_odometer(vehicle, completion_odometer)
 	due_date = MaintenanceDueEngine.calculate_next_due_date(vehicle)

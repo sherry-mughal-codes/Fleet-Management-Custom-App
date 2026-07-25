@@ -3,7 +3,6 @@ Fuel Efficiency Script Report Implementation
 Fleet Management System
 """
 
-import frappe
 from fleet_management.services.fuel_service import FuelService
 
 fuel_service = FuelService()

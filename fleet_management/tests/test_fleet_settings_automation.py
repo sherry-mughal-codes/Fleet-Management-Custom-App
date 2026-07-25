@@ -3,7 +3,6 @@ Unit Tests for Fleet Settings Automation Configurations
 Fleet Management System
 """
 
-import pytest
 from fleet_management.services.settings_service import SettingsService
 
 

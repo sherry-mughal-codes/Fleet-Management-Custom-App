@@ -3,7 +3,6 @@ Unit Tests for Fleet Cost Intelligence Domain
 Fleet Management System
 """
 
-import pytest
 from fleet_management.services.fleet_cost_service import FleetCostService
 
 

@@ -3,19 +3,21 @@ Fleet Automation Engine Service Implementation
 Fleet Management System
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict
+
 import frappe
-from fleet_management.services.base_service import BaseService
-from fleet_management.services.settings_service import SettingsService
-from fleet_management.services.vehicle_service import VehicleService
+
+from fleet_management.enums import AssignmentStatus, NotificationType, VehicleStatus
+from fleet_management.notifications.service import FleetNotificationService
 from fleet_management.services.assignment_service import AssignmentService
+from fleet_management.services.base_service import BaseService
+from fleet_management.services.fleet_cost_service import FleetCostService
 from fleet_management.services.fuel_service import FuelService
+from fleet_management.services.health_service import FleetHealthService
 from fleet_management.services.maintenance_due_service import MaintenanceDueEngine
 from fleet_management.services.maintenance_service import MaintenanceService
-from fleet_management.services.fleet_cost_service import FleetCostService
-from fleet_management.services.health_service import FleetHealthService
-from fleet_management.notifications.service import FleetNotificationService
-from fleet_management.enums import VehicleStatus, AssignmentStatus, NotificationType
+from fleet_management.services.settings_service import SettingsService
+from fleet_management.services.vehicle_service import VehicleService
 from fleet_management.utils.logger import get_logger
 
 logger = get_logger("fleet_management.services.automation")
