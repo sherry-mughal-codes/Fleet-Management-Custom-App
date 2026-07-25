@@ -70,6 +70,12 @@ class SettingsService(BaseService):
 			"enable_system_notifications": 1,
 			"enable_audit_logging": 1,
 			"enable_expense_analytics": 1,
+			"enable_scheduler": 1,
+			"enable_notifications": 1,
+			"maintenance_reminder_days": 7,
+			"fuel_anomaly_threshold": 20.0,
+			"health_check_schedule": "Daily",
+			"escalation_recipient": "",
 		}
 
 	@staticmethod
@@ -107,6 +113,31 @@ class SettingsService(BaseService):
 	@staticmethod
 	def is_system_notification_enabled() -> bool:
 		return bool(SettingsService.get_value("enable_system_notifications", 1))
+
+	@staticmethod
+	def is_scheduler_enabled() -> bool:
+		return bool(SettingsService.get_value("enable_scheduler", 1))
+
+	@staticmethod
+	def is_notifications_enabled() -> bool:
+		return bool(SettingsService.get_value("enable_notifications", 1))
+
+	@staticmethod
+	def get_maintenance_reminder_days() -> int:
+		return int(SettingsService.get_value("maintenance_reminder_days", 7))
+
+	@staticmethod
+	def get_fuel_anomaly_threshold() -> float:
+		return float(SettingsService.get_value("fuel_anomaly_threshold", 20.0))
+
+	@staticmethod
+	def get_health_check_schedule() -> str:
+		return str(SettingsService.get_value("health_check_schedule", "Daily"))
+
+	@staticmethod
+	def get_escalation_recipient() -> Optional[str]:
+		recipient = SettingsService.get_value("escalation_recipient")
+		return str(recipient) if recipient else None
 
 	@staticmethod
 	def validate_settings(settings: Optional[Dict[str, Any]] = None):

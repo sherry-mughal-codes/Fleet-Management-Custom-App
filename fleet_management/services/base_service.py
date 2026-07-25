@@ -16,7 +16,13 @@ class BaseService(ABC):
 	"""
 
 	def __init__(self, user: Optional[str] = None):
-		self.user = user or (frappe.session.user if hasattr(frappe, "session") else "System")
+		if user:
+			self.user = user
+		else:
+			try:
+				self.user = getattr(frappe.session, "user", "System") if hasattr(frappe, "session") else "System"
+			except Exception:
+				self.user = "System"
 		self.logger = get_logger(self.__class__.__module__)
 
 	def execute_in_transaction(self, action: Callable[..., Any], *args, **kwargs) -> Any:

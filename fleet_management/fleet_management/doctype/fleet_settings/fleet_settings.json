@@ -21,7 +21,14 @@
   "enable_email_notifications",
   "enable_system_notifications",
   "enable_audit_logging",
-  "enable_expense_analytics"
+  "enable_expense_analytics",
+  "automation_section",
+  "enable_scheduler",
+  "enable_notifications",
+  "maintenance_reminder_days",
+  "fuel_anomaly_threshold",
+  "health_check_schedule",
+  "escalation_recipient"
  ],
  "fields": [
   {
@@ -130,6 +137,47 @@
    "fieldname": "enable_expense_analytics",
    "fieldtype": "Check",
    "label": "Enable Expense Analytics"
+  },
+  {
+   "fieldname": "automation_section",
+   "fieldtype": "Section Break",
+   "label": "Automation & Notification Engine"
+  },
+  {
+   "default": "1",
+   "fieldname": "enable_scheduler",
+   "fieldtype": "Check",
+   "label": "Enable Scheduler"
+  },
+  {
+   "default": "1",
+   "fieldname": "enable_notifications",
+   "fieldtype": "Check",
+   "label": "Enable Notifications"
+  },
+  {
+   "default": "7",
+   "fieldname": "maintenance_reminder_days",
+   "fieldtype": "Int",
+   "label": "Maintenance Reminder Days"
+  },
+  {
+   "default": "20.0",
+   "fieldname": "fuel_anomaly_threshold",
+   "fieldtype": "Float",
+   "label": "Fuel Anomaly Threshold (%)"
+  },
+  {
+   "default": "Daily",
+   "fieldname": "health_check_schedule",
+   "fieldtype": "Select",
+   "label": "Health Check Schedule",
+   "options": "Daily\nHourly\nWeekly"
+  },
+  {
+   "fieldname": "escalation_recipient",
+   "fieldtype": "Data",
+   "label": "Escalation Recipient Email"
   }
  ],
  "issingle": 1,

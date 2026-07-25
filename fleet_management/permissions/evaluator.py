@@ -13,10 +13,19 @@ class PermissionEvaluator:
 	"""
 
 	@staticmethod
+	def _resolve_user(user: Optional[str] = None) -> str:
+		if user:
+			return user
+		try:
+			return getattr(frappe.session, "user", "System") if hasattr(frappe, "session") else "System"
+		except Exception:
+			return "System"
+
+	@staticmethod
 	def get_user_roles(user: Optional[str] = None) -> List[str]:
 		"""Returns list of roles assigned to user."""
-		user_id = user or (frappe.session.user if hasattr(frappe, "session") else "System")
-		if user_id == "Administrator":
+		user_id = PermissionEvaluator._resolve_user(user)
+		if user_id in ("Administrator", "System"):
 			return ["Fleet Manager", "Fleet Officer", "Fleet User", "System Manager", "Administrator"]
 		try:
 			return frappe.get_roles(user_id)
@@ -26,12 +35,11 @@ class PermissionEvaluator:
 	@staticmethod
 	def has_role(role_name: str, user: Optional[str] = None) -> bool:
 		"""Check if target user possesses the given role."""
-		user_id = user or (frappe.session.user if hasattr(frappe, "session") else "System")
-		if user_id == "Administrator":
+		user_id = PermissionEvaluator._resolve_user(user)
+		if user_id in ("Administrator", "System"):
 			return True
 		roles = frappe.get_roles(user_id)
 		return role_name in roles
-
 
 	@staticmethod
 	def require_role(role_name: str, user: Optional[str] = None):
@@ -42,8 +50,8 @@ class PermissionEvaluator:
 	@staticmethod
 	def require_any_role(roles: List[str], user: Optional[str] = None):
 		"""Raise FleetPermissionError if user lacks all specified roles."""
-		user_id = user or (frappe.session.user if hasattr(frappe, "session") else "System")
-		if user_id == "Administrator":
+		user_id = PermissionEvaluator._resolve_user(user)
+		if user_id in ("Administrator", "System"):
 			return
 		user_roles = set(frappe.get_roles(user_id))
 		if not user_roles.intersection(set(roles)):

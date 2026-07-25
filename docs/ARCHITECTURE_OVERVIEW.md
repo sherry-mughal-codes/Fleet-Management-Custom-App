@@ -8,24 +8,21 @@ This document presents the architectural design, security model, data flow, logg
 
 ## 🏛️ Layered Architecture Pattern
 
-The system enforces a clean 6-tier layered architecture:
-
-```
-[ HTTP / Desk Client ]
+[ HTTP / Desk Client ] <---> [ Whitelisted REST API Layer (automation_api.py, analytics_api.py) ]
          │
          ▼
-[ API Layer ] ──> (@api_endpoint, api/responses.py)
+[ Automation & Scheduler Layer ] ──> (FleetAutomationService, FleetHealthService, scheduler.py)
          │
          ▼
-[ Validation Layer & Rules ] ──> (BaseValidator, common_validators.py, business_rules/)
+[ Domain Service Layer ] ──> (VehicleService, AssignmentService, FuelService, MaintenanceService, FleetCostService)
          │
          ▼
-[ Service Layer ] ──> (BaseService, SettingsService, AuditService, NotificationService)
+[ Validation & Business Rules ] ──> (BaseValidator, business_rules/)
          │
  ┌───────┴───────────────┐
  ▼                       ▼
-[ Permissions & Mixins ] [ Utilities & Logging ]
-(PermissionService)      (logger.py, exceptions.py, helpers.py, constants.py, enums.py)
+[ Notifications & Logs ]  [ Settings & Security ]
+(FleetNotificationService) (SettingsService, PermissionEvaluator)
 ```
 
 ---
@@ -36,6 +33,7 @@ The system enforces a clean 6-tier layered architecture:
 - Redis key: `fleet_management:settings`
 - Auto-invalidation on `on_update` doc hook.
 - Fallback defaults for uninitialized sites from `constants.py`.
+- Configurable automation controls: scheduler toggles, notification channel toggles, maintenance lead time, fuel anomaly thresholds, health check schedules, escalation recipients.
 
 ---
 

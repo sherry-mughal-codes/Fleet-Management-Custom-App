@@ -22,7 +22,7 @@ fleet_management/
 │   ├── ASSIGNMENT_PRODUCTION_READINESS_REPORT.md # Executive Assignment Domain Production Readiness Report
 │   ├── CONTRIBUTION_GUIDE.md   # Guidelines for pull requests and code standards
 │   ├── DEVELOPMENT_GUIDE.md    # Developer setup and testing workflows
-│   ├── DIGITAL_ASSET_MANAGEMENT.md # Digital Asset & Document Subsystem, Rule IDs ASSET-001..008
+│   ├── FLEET_AUTOMATION_NOTIFICATION_ENGINE.md # Automation Engine, Scheduler, Notifications & Health Monitoring
 │   ├── FLEET_COMMAND_CENTER_ARCHITECTURE.md # Command Center, Workspace & Reports Architecture
 │   ├── FLEET_COST_INTELLIGENCE_ARCHITECTURE.md # Fleet Cost Subsystem Design & Rule IDs COST-001..006
 │   ├── FOLDER_STRUCTURE.md     # Directory breakdown documentation
@@ -39,6 +39,7 @@ fleet_management/
 │   │   ├── __init__.py
 │   │   ├── analytics_api.py   # Command Center & Workspace Whitelisted API Endpoints Implementation
 │   │   ├── assignment_api.py    # Assignment Whitelisted API Endpoints Implementation
+│   │   ├── automation_api.py    # Automation, Notification & Health Monitoring Whitelisted API Endpoints
 │   │   ├── base.py              # Whitelisted API wrapper (@api_endpoint decorator)
 │   │   ├── cost_api.py          # Fleet Cost Whitelisted API Endpoints Implementation
 │   │   ├── fuel_api.py          # Fuel Whitelisted API Endpoints Implementation
@@ -107,7 +108,7 @@ fleet_management/
 │   ├── notifications/
 │   │   ├── __init__.py
 │   │   ├── engine.py            # Notification dispatcher engine
-│   │   └── service.py           # Multi-channel NotificationService
+│   │   └── service.py           # Multi-channel FleetNotificationService
 │   ├── patches/
 │   │   └── __init__.py          # Database patches directory
 │   ├── permissions/
@@ -126,14 +127,17 @@ fleet_management/
 │   │   ├── __init__.py
 │   │   ├── assignment_service.py # AssignmentService Implementation
 │   │   ├── audit_service.py     # AuditService
+│   │   ├── automation_service.py # FleetAutomationService Orchestrator
 │   │   ├── base_service.py      # Abstract Base Service & Transaction management
 │   │   ├── fleet_analytics_service.py # FleetAnalyticsService Command Center Engine
 │   │   ├── fleet_cost_service.py # FleetCostService Implementation
 │   │   ├── fuel_average_service.py # FuelAverageService
 │   │   ├── fuel_service.py      # FuelService Implementation
+│   │   ├── health_service.py    # FleetHealthService Data Integrity Engine
 │   │   ├── maintenance_due_service.py # MaintenanceDueEngine
 │   │   ├── maintenance_lock_service.py # MaintenanceLockService
 │   │   ├── maintenance_service.py # MaintenanceService Implementation
+│   │   ├── scheduler.py         # Background Scheduler Job Entry Points
 │   │   ├── settings_service.py   # SettingsService with Redis caching
 │   │   └── vehicle_service.py   # Vehicle Single Source of Truth Service
 │   ├── templates/               # Public Web Jinja templates
@@ -143,10 +147,15 @@ fleet_management/
 │   │   ├── test_assignment_architecture.py
 │   │   ├── test_assignment_business_logic.py
 │   │   ├── test_assignment_production_readiness.py
+│   │   ├── test_automation_api.py # Automation & Health API Tests
 │   │   ├── test_business_rules.py
 │   │   ├── test_constants_enums.py
 │   │   ├── test_fleet_analytics_service.py # Fleet Analytics & Command Center Tests
+│   │   ├── test_fleet_automation_service.py # FleetAutomationService Tests
 │   │   ├── test_fleet_cost_service.py
+│   │   ├── test_fleet_health_service.py # FleetHealthService Tests
+│   │   ├── test_fleet_notification_service.py # FleetNotificationService Tests
+│   │   ├── test_fleet_settings_automation.py # Settings Automation Tests
 │   │   ├── test_foundation.py
 │   │   ├── test_fuel_architecture.py
 │   │   ├── test_fuel_entry_doctype.py

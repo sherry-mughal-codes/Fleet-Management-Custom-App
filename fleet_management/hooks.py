@@ -33,11 +33,21 @@ after_migrate = "fleet_management.fleet_management.setup_dashboard.setup_fleet_d
 # ---------------
 scheduler_events = {
 	"all": [
-		"fleet_management.services.base_service.scheduled_health_check"
+		"fleet_management.services.scheduler.scheduled_health_check"
 	],
-	"daily": [],
-	"hourly": [],
-	"weekly": [],
+	"daily": [
+		"fleet_management.services.scheduler.scheduled_maintenance_check",
+		"fleet_management.services.scheduler.scheduled_fuel_anomaly_check",
+		"fleet_management.services.scheduler.scheduled_assignment_expiry_check",
+		"fleet_management.services.scheduler.scheduled_fleet_automation_daily"
+	],
+	"hourly": [
+		"fleet_management.services.scheduler.scheduled_maintenance_check"
+	],
+	"weekly": [
+		"fleet_management.services.scheduler.scheduled_cost_refresh",
+		"fleet_management.services.scheduler.scheduled_health_check"
+	],
 	"monthly": [],
 }
 
