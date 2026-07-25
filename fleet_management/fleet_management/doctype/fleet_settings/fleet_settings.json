@@ -4,6 +4,10 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "demo_data_section",
+  "load_demo_data_button",
+  "col_break_1",
+  "remove_demo_data_button",
   "general_section",
   "company",
   "default_currency",
@@ -31,6 +35,25 @@
   "escalation_recipient"
  ],
  "fields": [
+  {
+   "fieldname": "demo_data_section",
+   "fieldtype": "Section Break",
+   "label": "🚀 Demo Data Control Center"
+  },
+  {
+   "fieldname": "load_demo_data_button",
+   "fieldtype": "Button",
+   "label": "☁ Load Demo Data"
+  },
+  {
+   "fieldname": "col_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "remove_demo_data_button",
+   "fieldtype": "Button",
+   "label": "🗑 Remove Demo Data"
+  },
   {
    "fieldname": "general_section",
    "fieldtype": "Section Break",
@@ -182,7 +205,7 @@
  ],
  "issingle": 1,
  "links": [],
- "modified": "2026-07-24 14:00:00.000000",
+ "modified": "2026-07-25 21:43:00.000000",
  "modified_by": "Administrator",
  "module": "Fleet Management",
  "name": "Fleet Settings",

@@ -36,9 +36,11 @@ class BaseFleetDocument(Document, TimestampMixin, AuditMixin, StatusMixin, Permi
 		pass
 
 	def on_update(self):
-		super().on_update()
+		if hasattr(super(), "on_update"):
+			super().on_update()
 		logger.info(f"Document updated: {self.doctype}/{self.name}")
 
 	def on_trash(self):
-		super().on_trash()
+		if hasattr(super(), "on_trash"):
+			super().on_trash()
 		logger.info(f"Document deleted: {self.doctype}/{self.name}")

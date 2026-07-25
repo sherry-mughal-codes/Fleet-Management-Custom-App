@@ -125,9 +125,9 @@ class MaintenanceService(BaseService):
 		# 7. Update active Assignment maintenance stats if linked
 		active_assign = frappe.db.get_value("Vehicle Assignment", {"vehicle": vehicle_id, "status": ["in", ["Assigned", "In Use"]]}, "name")
 		if active_assign:
-			frappe.db.set_value("Vehicle Assignment", active_assign, {
-				"latest_maintenance_date": doc.completion_date
-			})
+			asn_doc = frappe.get_doc("Vehicle Assignment", active_assign)
+			if hasattr(asn_doc, "latest_maintenance_date"):
+				frappe.db.set_value("Vehicle Assignment", active_assign, "latest_maintenance_date", doc.completion_date)
 
 		MaintenanceEventDispatcher.notify_maintenance_completed(doc)
 		logger.info(f"Completed Work Order {work_order_id} for Vehicle {vehicle_id}. Maintenance Lock removed.")

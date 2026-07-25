@@ -15,7 +15,12 @@ app_license = "mit"
 
 # include js, css files in header of desk.html
 # app_include_css = "/assets/fleet_management/css/fleet_management.css"
-# app_include_js = "/assets/fleet_management/js/fleet_management.js"
+# app_include_js = ["/assets/fleet_management/js/fleet_management.js"]
+
+# DocType JS Hooks
+doctype_js = {
+	"Fleet Settings": "public/js/fleet_settings.js"
+}
 
 # Document Events Hooks
 # ---------------------

@@ -1,0 +1,8 @@
+{
+	"js/fleet_management.js": [
+		"public/js/fleet_management.js"
+	],
+	"js/fleet_settings.js": [
+		"public/js/fleet_settings.js"
+	]
+}
