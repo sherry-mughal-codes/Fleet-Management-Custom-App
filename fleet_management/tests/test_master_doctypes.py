@@ -25,20 +25,20 @@ from fleet_management.utils.exceptions import FleetValidationError
 
 
 def test_vehicle_brand_validation():
-	brand = VehicleBrand({"brand_name": "Toyota", "brand_code": "TOY", "display_order": 1})
+	brand = VehicleBrand({"brand_name": "Unique-Test-Brand", "brand_code": "UTB", "display_order": 1})
 	brand.before_validate_hook()
 
 	with pytest.raises(FleetValidationError):
-		invalid_brand = VehicleBrand({"brand_name": "", "brand_code": "TOY"})
+		invalid_brand = VehicleBrand({"brand_name": "", "brand_code": "UTB"})
 		invalid_brand.before_validate_hook()
 
 
 def test_vehicle_model_validation():
-	model = VehicleModel({"model_name": "Corolla", "vehicle_brand": "Toyota", "year": 2024, "default_fuel_average": 15.5})
+	model = VehicleModel({"model_name": "Unique-Test-Model", "vehicle_brand": "Toyota", "year": 2024, "default_fuel_average": 15.5})
 	model.before_validate_hook()
 
 	with pytest.raises(FleetValidationError):
-		invalid_model = VehicleModel({"model_name": "Corolla", "vehicle_brand": "Toyota", "year": 1850})
+		invalid_model = VehicleModel({"model_name": "Unique-Test-Model", "vehicle_brand": "Toyota", "year": 1850})
 		invalid_model.before_validate_hook()
 
 

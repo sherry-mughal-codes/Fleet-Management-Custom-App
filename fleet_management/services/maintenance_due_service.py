@@ -60,13 +60,17 @@ class MaintenanceDueEngine:
 		if not hasattr(frappe, "db") or not frappe.db.exists("Vehicle", vehicle_id):
 			return False
 
-		v = frappe.db.get_value("Vehicle", vehicle_id, ["current_odometer", "last_maintenance_odometer", "maintenance_interval_km"], as_dict=True)
+		v_fields = ["current_odometer", "maintenance_interval_km"]
+		if hasattr(frappe, "get_meta") and frappe.get_meta("Vehicle").has_field("last_maintenance_odometer"):
+			v_fields.append("last_maintenance_odometer")
+
+		v = frappe.db.get_value("Vehicle", vehicle_id, v_fields, as_dict=True)
 		if not v:
 			return False
 
-		odometer = float(current_odometer or v.current_odometer or 0.0)
-		last_maint = float(v.last_maintenance_odometer or 0.0)
-		interval = float(v.maintenance_interval_km or 5000.0)
+		odometer = float(current_odometer or v.get("current_odometer") or 0.0)
+		last_maint = float(v.get("last_maintenance_odometer") or 0.0)
+		interval = float(v.get("maintenance_interval_km") or 5000.0)
 
 		return odometer >= (last_maint + interval)
 

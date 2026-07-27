@@ -46,6 +46,21 @@ class TestEndToEndFleetLifecycle:
 	@pytest.fixture(autouse=True)
 	def setup_test_data(self):
 		"""Set up clean test entities for E2E flow."""
+		self.test_vin = "1HGCR2F83HA999999"
+		self.test_plate = "E2E-LIFECYCLE-100"
+		self.company = "E2E Fleets Inc"
+
+		if hasattr(frappe, "db") and frappe.db:
+			# Clean up any leftover test entries
+			if frappe.db.exists("Vehicle", {"vehicle_number": self.test_plate}):
+				v_names = frappe.get_all("Vehicle", filters={"vehicle_number": self.test_plate}, fields=["name"])
+				for vn in v_names:
+					frappe.delete_doc("Vehicle", vn["name"], force=True, ignore_permissions=True)
+			if frappe.db.exists("Vehicle", {"vin": self.test_vin}):
+				v_names = frappe.get_all("Vehicle", filters={"vin": self.test_vin}, fields=["name"])
+				for vn in v_names:
+					frappe.delete_doc("Vehicle", vn["name"], force=True, ignore_permissions=True)
+
 		self.model_id = ensure_master_data()
 		self.vehicle_service = VehicleService()
 		self.assignment_service = AssignmentService()
@@ -56,10 +71,6 @@ class TestEndToEndFleetLifecycle:
 		self.automation_service = FleetAutomationService()
 		self.health_service = FleetHealthService()
 		self.evaluator = PermissionEvaluator()
-
-		self.test_vin = "1HGCR2F83HA999999"
-		self.test_plate = "E2E-LIFECYCLE-100"
-		self.company = "E2E Fleets Inc"
 
 	def test_complete_fleet_lifecycle_e2e(self):
 		"""
@@ -102,7 +113,9 @@ class TestEndToEndFleetLifecycle:
 		assert asn_id is not None
 
 		# Execute Handover
-		self.assignment_service.assign_vehicle(asn_id, opening_odometer=10000.0)
+		v_summary_before = self.vehicle_service.get_vehicle_summary(vehicle_id)
+		curr_odo = float(v_summary_before.get("current_odometer") or 10000.0)
+		self.assignment_service.assign_vehicle(asn_id, opening_odometer=curr_odo)
 
 		# Verify status updated to Assigned
 		v_summary = self.vehicle_service.get_vehicle_summary(vehicle_id)
@@ -180,7 +193,9 @@ class TestEndToEndFleetLifecycle:
 			"tax_amount": 30.0,
 			"discount_amount": 10.0
 		}
-		self.maintenance_service.complete_work_order(wo_id, completion_odometer=10600.0, costs=maint_costs)
+		v_curr_odo = float(frappe.db.get_value("Vehicle", vehicle_id, "current_odometer") or 10600.0)
+		comp_odo = max(10600.0, v_curr_odo)
+		self.maintenance_service.complete_work_order(wo_id, completion_odometer=comp_odo, costs=maint_costs)
 		self.vehicle_service.change_status(vehicle_id, "Available")
 		assert MaintenanceLockService.is_maintenance_locked(vehicle_id) is False
 

@@ -44,6 +44,8 @@ def search_vehicles(
 @api_endpoint(allow_guest=False)
 def get_vehicle_summary(vehicle_id: str) -> Dict[str, Any]:
 	"""Whitelisted API endpoint retrieving aggregated vehicle summary."""
+	from fleet_management.services.vehicle_service import sync_vehicle_operational_summary
+	sync_vehicle_operational_summary(vehicle_id)
 	summary = vehicle_service.get_vehicle_summary(vehicle_id)
 	return success_response(data=summary, message="Vehicle summary retrieved successfully.")
 
@@ -139,3 +141,19 @@ def get_vehicle_asset_summary(vehicle_id: str) -> Dict[str, Any]:
 		"primary_image": primary_image
 	}
 	return success_response(data=data, message="Asset summary retrieved successfully.")
+
+
+@api_endpoint(allow_guest=False)
+def sync_vehicle_summary_api(vehicle_id: str) -> Dict[str, Any]:
+	"""Whitelisted API endpoint to recalculate operational summary for a target vehicle."""
+	from fleet_management.services.vehicle_service import sync_vehicle_operational_summary
+	sync_vehicle_operational_summary(vehicle_id)
+	return success_response(data={"vehicle_id": vehicle_id, "synced": True}, message="Vehicle operational summary synchronized successfully.")
+
+
+@api_endpoint(allow_guest=False)
+def sync_all_vehicles_summary_api() -> Dict[str, Any]:
+	"""Whitelisted API endpoint to recalculate operational summary across all vehicles in fleet."""
+	from fleet_management.services.vehicle_service import sync_all_vehicles_operational_summary
+	sync_all_vehicles_operational_summary()
+	return success_response(data={"synced": True}, message="All vehicle operational summaries synchronized successfully.")

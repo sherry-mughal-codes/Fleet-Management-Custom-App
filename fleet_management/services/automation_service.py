@@ -78,10 +78,18 @@ class FleetAutomationService(BaseService):
 			return {"upcoming_count": 0, "overdue_count": 0, "reminders_sent": 0}
 
 		try:
+			v_fields = ["name", "current_odometer", "maintenance_interval_km"]
+			if hasattr(frappe, "get_meta"):
+				meta = frappe.get_meta("Vehicle")
+				if meta.has_field("registration_number"):
+					v_fields.append("registration_number")
+				if meta.has_field("last_maintenance_odometer"):
+					v_fields.append("last_maintenance_odometer")
+
 			vehicles = frappe.db.get_all(
 				"Vehicle",
 				filters={"status": ["!=", VehicleStatus.DECOMMISSIONED]},
-				fields=["name", "license_plate", "current_odometer", "last_maintenance_odometer", "maintenance_interval_km"]
+				fields=v_fields
 			)
 			reminder_dist = SettingsService.get_reminder_distance()
 

@@ -12,7 +12,46 @@ frappe.ui.form.on('Vehicle', {
 
 	refresh: function(frm) {
 		if (!frm.is_new()) {
-			// Add Quick Action Buttons
+			// Helper function to apply summary metrics to form controls
+			let apply_summary = function(d) {
+				if (!d) return;
+				let fields = [
+					'current_odometer', 'total_fuel_cost', 'total_maintenance_cost',
+					'average_fuel_economy', 'last_fuel_date', 'last_maintenance_date',
+					'lifetime_distance', 'next_maintenance_due_odometer', 'last_maintenance_odometer'
+				];
+				fields.forEach(function(f) {
+					if (d[f] !== undefined && d[f] !== null) {
+						frappe.model.set_value(frm.doctype, frm.docname, f, d[f]);
+					}
+				});
+				frm.refresh_fields();
+			};
+
+			// Auto-sync operational summary on form load
+			frappe.call({
+				method: 'fleet_management.api.vehicle_api.get_vehicle_summary',
+				args: { vehicle_id: frm.doc.name },
+				callback: function(r) {
+					if (!r.exc && r.message) {
+						apply_summary(r.message.data || r.message);
+					}
+				}
+			});
+
+			// Add Manual Action Button
+			frm.add_custom_button(__('Sync Operational Summary'), function() {
+				frappe.call({
+					method: 'fleet_management.api.vehicle_api.get_vehicle_summary',
+					args: { vehicle_id: frm.doc.name },
+					callback: function(r) {
+						if (!r.exc && r.message) {
+							apply_summary(r.message.data || r.message);
+							frappe.show_alert({ message: __('Operational Summary Synchronized'), indicator: 'green' });
+						}
+					}
+				});
+			}, __('Actions'));
 			frm.add_custom_button(__('Assign Vehicle'), function() {
 				frappe.msgprint(__('Vehicle Assignment module will trigger assignment workflow for: ') + frm.doc.name);
 			}, __('Actions'));

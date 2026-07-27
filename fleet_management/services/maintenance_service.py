@@ -40,13 +40,30 @@ class MaintenanceService(BaseService):
 		return doc.as_dict()
 
 	def create_work_order(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-		"""Creates a new Maintenance Work Order record."""
+		"""Creates a new Maintenance Work Order record and updates vehicle status to Under Maintenance."""
 		logger.info("Creating Maintenance Work Order via MaintenanceService", {"vehicle": payload.get("vehicle")})
 		doc = frappe.get_doc({
 			"doctype": "Maintenance Work Order",
 			**payload
 		})
 		doc.insert()
+
+		vehicle_id = payload.get("vehicle")
+		if vehicle_id and frappe.db.exists("Vehicle", vehicle_id):
+			v_status = frappe.db.get_value("Vehicle", vehicle_id, "status")
+			if v_status not in (
+				VehicleStatus.UNDER_MAINTENANCE,
+				VehicleStatus.INACTIVE,
+				VehicleStatus.ARCHIVED,
+				VehicleStatus.SOLD,
+				VehicleStatus.SCRAPPED,
+			):
+				self.vehicle_service.change_status(
+					vehicle_id,
+					VehicleStatus.UNDER_MAINTENANCE,
+					reason=f"Maintenance Work Order '{doc.name}' created"
+				)
+
 		MaintenanceEventDispatcher.notify_maintenance_scheduled(doc)
 		return doc.as_dict()
 
@@ -56,7 +73,7 @@ class MaintenanceService(BaseService):
 		1. Validates completion odometer >= vehicle current odometer (MAINT-003).
 		2. Calculates next due thresholds via MaintenanceDueEngine (MAINT-004).
 		3. Updates Vehicle last_maintenance_odometer and next_due fields.
-		4. Removes Maintenance Lock by changing Vehicle status to Available via VehicleService (MAINT-006, MAINT-009).
+		4. Removes Maintenance Lock by changing Vehicle status to Assigned (if active assignment) or Available via VehicleService (MAINT-006, MAINT-009).
 		5. Updates linked Assignment statistics.
 		"""
 		if not frappe.db.exists("Maintenance Work Order", work_order_id):
@@ -116,7 +133,13 @@ class MaintenanceService(BaseService):
 		frappe.db.set_value("Vehicle", vehicle_id, update_fields)
 
 		# 5. Remove Maintenance Lock via VehicleService single source of truth (MAINT-006, MAINT-009)
-		self.vehicle_service.change_status(vehicle_id, VehicleStatus.AVAILABLE, reason="Maintenance completed successfully")
+		from fleet_management.services.vehicle_service import is_vehicle_assigned
+		assigned = is_vehicle_assigned(vehicle_id)
+		target_status = VehicleStatus.ASSIGNED if assigned else VehicleStatus.AVAILABLE
+		target_assignment_status = "Assigned" if assigned else "Unassigned"
+
+		self.vehicle_service.change_status(vehicle_id, target_status, reason="Maintenance completed successfully")
+		frappe.db.set_value("Vehicle", vehicle_id, "current_assignment_status", target_assignment_status)
 
 		# 6. Update linked Maintenance Request status if applicable
 		if doc.maintenance_request and frappe.db.exists("Maintenance Request", doc.maintenance_request):

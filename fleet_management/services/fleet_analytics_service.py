@@ -63,7 +63,9 @@ class FleetAnalyticsService(BaseService):
 			"today_maintenance_jobs": today_maint_jobs,
 			"monthly_fuel_cost": cost_stats["total_fuel_cost"],
 			"monthly_maintenance_cost": cost_stats["total_maintenance_cost"],
-			"monthly_operating_cost": cost_stats["total_fleet_operating_cost"]
+			"monthly_operating_cost": cost_stats["total_fleet_operating_cost"],
+			"total_fuel_spend": cost_stats["total_fuel_cost"],
+			"total_maintenance_spend": cost_stats["total_maintenance_cost"]
 		}
 
 	def get_smart_alerts(self, company: str | None = None) -> List[Dict[str, Any]]:

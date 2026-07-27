@@ -153,6 +153,7 @@ class VehicleService(BaseService):
 		if not frappe.db.exists("Vehicle", vehicle_id):
 			raise FleetNotFoundError(f"Vehicle '{vehicle_id}' not found.")
 
+		sync_vehicle_operational_summary(vehicle_id)
 		doc = frappe.get_doc("Vehicle", vehicle_id)
 		asset_counts = self.get_asset_counts(vehicle_id)
 		return {
@@ -167,6 +168,8 @@ class VehicleService(BaseService):
 			"current_assignment_status": doc.current_assignment_status,
 			"current_odometer": doc.current_odometer,
 			"next_maintenance_due_odometer": doc.next_maintenance_due_odometer,
+			"last_fuel_date": str(doc.last_fuel_date) if doc.last_fuel_date else None,
+			"last_maintenance_date": str(doc.last_maintenance_date) if doc.last_maintenance_date else None,
 			"average_fuel_economy": doc.average_fuel_economy,
 			"total_fuel_cost": doc.total_fuel_cost,
 			"total_maintenance_cost": doc.total_maintenance_cost,
@@ -267,3 +270,140 @@ class VehicleService(BaseService):
 	def get_upcoming_expiries(self, within_days: int = 30) -> List[Dict[str, Any]]:
 		"""Returns list of vehicle documents expiring within target days boundary."""
 		return []
+
+
+def sync_vehicle_operational_summary(vehicle_id: str):
+	"""
+	Central Operational Summary Synchronization Engine.
+	Recalculates and saves Operational Summary fields on target Vehicle DB doc.
+	"""
+	if not hasattr(frappe, "db") or not vehicle_id or not frappe.db.exists("Vehicle", vehicle_id):
+		return
+
+	doc = frappe.get_doc("Vehicle", vehicle_id)
+	doc.sync_operational_summary()
+
+	update_dict = {
+		"current_odometer": doc.current_odometer,
+		"last_fuel_date": doc.last_fuel_date,
+		"average_fuel_economy": doc.average_fuel_economy,
+		"total_fuel_cost": doc.total_fuel_cost,
+		"last_maintenance_date": doc.last_maintenance_date,
+		"total_maintenance_cost": doc.total_maintenance_cost,
+		"lifetime_distance": doc.lifetime_distance,
+		"next_maintenance_due_odometer": doc.next_maintenance_due_odometer
+	}
+
+	if hasattr(frappe, "get_meta") and frappe.get_meta("Vehicle").has_field("last_maintenance_odometer"):
+		update_dict["last_maintenance_odometer"] = getattr(doc, "last_maintenance_odometer", 0.0)
+
+	frappe.db.set_value("Vehicle", doc.name, update_dict)
+	frappe.db.commit()
+
+
+def sync_all_vehicles_operational_summary():
+	"""One-time or batch sync method across all vehicles in system."""
+	if not hasattr(frappe, "get_all"):
+		return
+	vehicles = frappe.get_all("Vehicle", fields=["name"])
+	for v in vehicles:
+		sync_vehicle_operational_summary(v.name)
+
+
+def is_vehicle_assigned(vehicle_id: str) -> bool:
+	"""
+	Determines whether a vehicle is currently assigned to an employee or has an active Vehicle Assignment record.
+	"""
+	if not vehicle_id or not hasattr(frappe, "db") or not frappe.db.exists("Vehicle", vehicle_id):
+		return False
+
+	current_employee = frappe.db.get_value("Vehicle", vehicle_id, "current_employee")
+	if current_employee:
+		return True
+
+	current_assignment_status = frappe.db.get_value("Vehicle", vehicle_id, "current_assignment_status")
+	if current_assignment_status == "Assigned":
+		return True
+
+	active_assignment = frappe.db.exists(
+		"Vehicle Assignment",
+		{
+			"vehicle": vehicle_id,
+			"status": ["in", ["Assigned", "In Use", "Approved"]],
+		},
+	)
+	if active_assignment:
+		return True
+
+	return False
+
+
+def update_vehicle_status_on_maintenance_change(doc, method=None):
+	"""
+	Automatically updates vehicle status based on Maintenance Work Order lifecycle:
+	- When Work Order is created / active: changes vehicle status to 'Under Maintenance'.
+	- When Work Order is completed (done) against 'Under Maintenance' or 'Maintenance Due':
+	  - If vehicle is assigned to someone -> status becomes 'Assigned'
+	  - If vehicle is not assigned -> status becomes 'Available'
+	- When Work Order is cancelled while vehicle is 'Under Maintenance':
+	  - Restores status to 'Assigned' (if assigned) or 'Available' (if unassigned).
+	"""
+	if not getattr(doc, "vehicle", None) or not hasattr(frappe, "db") or not frappe.db.exists("Vehicle", doc.vehicle):
+		return
+
+	vehicle_id = doc.vehicle
+	current_v_status = frappe.db.get_value("Vehicle", vehicle_id, "status")
+	wo_status = getattr(doc, "status", None)
+	from fleet_management.enums import MaintenanceStatus, VehicleStatus
+
+	svc = VehicleService()
+
+	if wo_status == MaintenanceStatus.COMPLETED or wo_status == "Completed":
+		if current_v_status in (VehicleStatus.UNDER_MAINTENANCE, VehicleStatus.MAINTENANCE_DUE):
+			assigned = is_vehicle_assigned(vehicle_id)
+			target_status = VehicleStatus.ASSIGNED if assigned else VehicleStatus.AVAILABLE
+			target_assignment_status = "Assigned" if assigned else "Unassigned"
+			svc.change_status(vehicle_id, target_status, reason=f"Maintenance Work Order '{doc.name}' completed")
+			frappe.db.set_value("Vehicle", vehicle_id, "current_assignment_status", target_assignment_status)
+
+	elif wo_status == MaintenanceStatus.CANCELLED or wo_status == "Cancelled":
+		if current_v_status == VehicleStatus.UNDER_MAINTENANCE:
+			assigned = is_vehicle_assigned(vehicle_id)
+			target_status = VehicleStatus.ASSIGNED if assigned else VehicleStatus.AVAILABLE
+			target_assignment_status = "Assigned" if assigned else "Unassigned"
+			svc.change_status(vehicle_id, target_status, reason=f"Maintenance Work Order '{doc.name}' cancelled")
+			frappe.db.set_value("Vehicle", vehicle_id, "current_assignment_status", target_assignment_status)
+
+	else:
+		# Created / Draft / Scheduled / In Progress / Open Work Order
+		if current_v_status not in (
+			VehicleStatus.UNDER_MAINTENANCE,
+			VehicleStatus.INACTIVE,
+			VehicleStatus.ARCHIVED,
+			VehicleStatus.SOLD,
+			VehicleStatus.SCRAPPED,
+		):
+			svc.change_status(vehicle_id, VehicleStatus.UNDER_MAINTENANCE, reason=f"Maintenance Work Order '{doc.name}' created/active")
+
+
+# Document Event Handlers called by Frappe Hooks
+def on_fuel_entry_change(doc, method=None):
+	if getattr(doc, "vehicle", None):
+		sync_vehicle_operational_summary(doc.vehicle)
+
+
+def on_maint_order_change(doc, method=None):
+	if getattr(doc, "vehicle", None):
+		sync_vehicle_operational_summary(doc.vehicle)
+		update_vehicle_status_on_maintenance_change(doc, method=method)
+
+
+def on_maint_request_change(doc, method=None):
+	if getattr(doc, "vehicle", None):
+		sync_vehicle_operational_summary(doc.vehicle)
+
+
+def on_assignment_change(doc, method=None):
+	if getattr(doc, "vehicle", None):
+		sync_vehicle_operational_summary(doc.vehicle)
+

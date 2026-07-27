@@ -82,3 +82,13 @@ class VehicleAssignment(BaseFleetDocument):
 		# 5. Validate Date Range
 		if self.assignment_date and self.expected_return_date:
 			validate_date_range(self.assignment_date, self.expected_return_date, "Assignment Date", "Expected Return Date")
+
+	def on_update(self):
+		if self.vehicle:
+			from fleet_management.services.vehicle_service import sync_vehicle_operational_summary
+			sync_vehicle_operational_summary(self.vehicle)
+
+	def on_trash(self):
+		if self.vehicle:
+			from fleet_management.services.vehicle_service import sync_vehicle_operational_summary
+			sync_vehicle_operational_summary(self.vehicle)

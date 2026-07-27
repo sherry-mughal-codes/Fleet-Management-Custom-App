@@ -43,3 +43,17 @@ class MaintenanceWorkOrder(BaseFleetDocument):
 		tax = float(self.tax_amount or 0.0)
 		discount = float(self.discount_amount or 0.0)
 		self.total_cost = round((labour + parts + external + tax) - discount, 2)
+
+	def on_update(self):
+		if self.vehicle:
+			from fleet_management.services.vehicle_service import (
+				sync_vehicle_operational_summary,
+				update_vehicle_status_on_maintenance_change,
+			)
+			sync_vehicle_operational_summary(self.vehicle)
+			update_vehicle_status_on_maintenance_change(self)
+
+	def on_trash(self):
+		if self.vehicle:
+			from fleet_management.services.vehicle_service import sync_vehicle_operational_summary
+			sync_vehicle_operational_summary(self.vehicle)

@@ -68,6 +68,10 @@ class FleetHealthService(BaseService):
 		)
 		return report
 
+	def get_health_report(self) -> Dict[str, Any]:
+		"""Alias for run_health_check."""
+		return self.run_health_check()
+
 	def verify_odometer_consistency(self) -> List[Dict[str, Any]]:
 		"""Verifies vehicle current_odometer >= initial_odometer and chronological odometer progression."""
 		issues = []
@@ -77,7 +81,7 @@ class FleetHealthService(BaseService):
 		try:
 			vehicles = frappe.db.get_all(
 				"Vehicle",
-				fields=["name", "license_plate", "current_odometer", "initial_odometer"]
+				fields=["name", "vehicle_number", "current_odometer", "initial_odometer"]
 			)
 			for v in vehicles:
 				current = float(v.get("current_odometer") or 0.0)

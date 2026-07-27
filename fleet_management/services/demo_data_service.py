@@ -43,7 +43,7 @@ class DemoDataService(BaseService):
 		"""Checks if the ABC Logistics demo dataset is currently present."""
 		if not hasattr(frappe, "db"):
 			return False
-		return bool(frappe.db.exists("Company", DEMO_COMPANY_NAME))
+		return bool(frappe.db.exists("Vehicle", {"company": DEMO_COMPANY_NAME}))
 
 	def get_demo_status(self) -> Dict[str, Any]:
 		"""Returns current status of demo dataset in database."""
@@ -102,10 +102,8 @@ class DemoDataService(BaseService):
 		created_summary["maintenance_records"] = maint_count
 
 		# 7. Refresh Dashboard Metrics & Cost Aggregations
-		for v in vehicles:
-			v_id = v.get("name") or v.get("vehicle_number")
-			if v_id and hasattr(frappe, "db") and frappe.db.exists("Vehicle", v_id):
-				self.cost_service.calculate_vehicle_cost(v_id)
+		from fleet_management.services.vehicle_service import sync_all_vehicles_operational_summary
+		sync_all_vehicles_operational_summary()
 		setup_fleet_dashboards()
 
 		if hasattr(frappe, "db") and frappe.db:
@@ -170,11 +168,11 @@ class DemoDataService(BaseService):
 			# Direct DB cleanup for ABC Logistics company records
 			for table in ["Fuel Entry", "Maintenance Work Order", "Maintenance Request", "Vehicle Assignment", "Vehicle"]:
 				try:
-					frappe.db.sql(f"DELETE FROM `tab{table}` WHERE company = %s", (DEMO_COMPANY_NAME,))
+					frappe.db.sql(f"DELETE FROM `tab{table}` WHERE company LIKE %s OR company = %s", ("%ABC Logistics%", DEMO_COMPANY_NAME))
 				except Exception:
 					pass
 			try:
-				frappe.db.sql("DELETE FROM `tabCompany` WHERE name = %s", (DEMO_COMPANY_NAME,))
+				frappe.db.sql("DELETE FROM `tabCompany` WHERE name LIKE %s OR name = %s OR company_name LIKE %s", ("%ABC Logistics%", DEMO_COMPANY_NAME, "%ABC Logistics%"))
 			except Exception:
 				pass
 
@@ -186,6 +184,10 @@ class DemoDataService(BaseService):
 				frappe.db.commit()
 		except Exception:
 			pass
+
+		if hasattr(frappe, "db") and frappe.db:
+			frappe.db.sql("DELETE FROM `tabVehicle` WHERE company LIKE %s OR company = %s", ("%ABC Logistics%", DEMO_COMPANY_NAME))
+			frappe.db.commit()
 
 		logger.info("Demo data removal completed.")
 		return {

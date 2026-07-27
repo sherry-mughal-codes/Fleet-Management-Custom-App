@@ -48,6 +48,7 @@
   "column_break_summary",
   "next_maintenance_due_odometer",
   "last_maintenance_date",
+  "last_maintenance_odometer",
   "last_fuel_date",
   "average_fuel_economy",
   "total_fuel_cost",
@@ -322,6 +323,12 @@
    "fieldname": "last_maintenance_date",
    "fieldtype": "Date",
    "label": "Last Maintenance Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_maintenance_odometer",
+   "fieldtype": "Float",
+   "label": "Last Maintenance Odometer (KM)",
    "read_only": 1
   },
   {

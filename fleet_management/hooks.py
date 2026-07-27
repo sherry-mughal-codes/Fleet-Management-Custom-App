@@ -27,6 +27,30 @@ doctype_js = {
 doc_events = {
 	"*": {
 		"on_update": "fleet_management.permissions.audit.audit_document_change",
+	},
+	"Fuel Entry": {
+		"on_update": "fleet_management.services.vehicle_service.on_fuel_entry_change",
+		"on_submit": "fleet_management.services.vehicle_service.on_fuel_entry_change",
+		"on_cancel": "fleet_management.services.vehicle_service.on_fuel_entry_change",
+		"on_trash": "fleet_management.services.vehicle_service.on_fuel_entry_change"
+	},
+	"Maintenance Work Order": {
+		"on_update": "fleet_management.services.vehicle_service.on_maint_order_change",
+		"on_submit": "fleet_management.services.vehicle_service.on_maint_order_change",
+		"on_cancel": "fleet_management.services.vehicle_service.on_maint_order_change",
+		"on_trash": "fleet_management.services.vehicle_service.on_maint_order_change"
+	},
+	"Maintenance Request": {
+		"on_update": "fleet_management.services.vehicle_service.on_maint_request_change",
+		"on_submit": "fleet_management.services.vehicle_service.on_maint_request_change",
+		"on_cancel": "fleet_management.services.vehicle_service.on_maint_request_change",
+		"on_trash": "fleet_management.services.vehicle_service.on_maint_request_change"
+	},
+	"Vehicle Assignment": {
+		"on_update": "fleet_management.services.vehicle_service.on_assignment_change",
+		"on_submit": "fleet_management.services.vehicle_service.on_assignment_change",
+		"on_cancel": "fleet_management.services.vehicle_service.on_assignment_change",
+		"on_trash": "fleet_management.services.vehicle_service.on_assignment_change"
 	}
 }
 

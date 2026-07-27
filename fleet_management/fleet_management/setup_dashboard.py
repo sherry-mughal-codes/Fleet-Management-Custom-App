@@ -12,6 +12,11 @@ import frappe
 def setup_fleet_dashboards():
 	"""Seeds Number Cards, Dashboard Charts, and Workspaces."""
 	frappe.set_user("Administrator")
+	try:
+		from fleet_management.services.vehicle_service import sync_all_vehicles_operational_summary
+		sync_all_vehicles_operational_summary()
+	except Exception:
+		pass
 
 	# ---------------------------------------------------------
 	# 1. Number Cards (KPI Metrics)

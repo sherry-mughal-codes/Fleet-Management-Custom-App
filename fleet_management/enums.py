@@ -24,6 +24,8 @@ class VehicleStatus(str, Enum):
 
 	# Legacy alias for backward compatibility
 	MAINTENANCE = constants.VEHICLE_STATUS_UNDER_MAINTENANCE
+	IN_MAINTENANCE = constants.VEHICLE_STATUS_UNDER_MAINTENANCE
+	DECOMMISSIONED = constants.VEHICLE_STATUS_OUT_OF_SERVICE
 
 
 class AssignmentStatus(str, Enum):
@@ -150,6 +152,10 @@ class NotificationType(str, Enum):
 	EXPENSE_CREATED = constants.NOTIFICATION_TYPE_EXPENSE_CREATED
 	INSURANCE_EXPIRY = constants.NOTIFICATION_TYPE_INSURANCE_EXPIRY
 	REGISTRATION_EXPIRY = constants.NOTIFICATION_TYPE_REGISTRATION_EXPIRY
+
+	SYSTEM_ALERT = "System Health Alert"
+	ASSIGNMENT_EXPIRED = "Assignment Expired"
+	FUEL_LOCK = "Fuel Lock Alert"
 
 
 class ExpenseType(str, Enum):
