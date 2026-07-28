@@ -30,26 +30,34 @@ class FleetCostService(BaseService):
 	"""
 
 	def calculate_fuel_cost(self, vehicle_id: str) -> float:
-		"""Calculates total submitted/verified fuel spend for target vehicle (COST-001, COST-004, COST-005)."""
+		"""Calculates total submitted fuel spend for target vehicle via Vehicle Assignments."""
 		if not hasattr(frappe, "get_all"):
+			return 0.0
+		asn_names = [a.name for a in frappe.get_all("Vehicle Assignment", filters={"vehicle": vehicle_id}, fields=["name"])]
+		if not asn_names:
 			return 0.0
 		entries = frappe.get_all(
 			"Fuel Entry",
-			filters={"vehicle": vehicle_id, "status": ["!=", "Cancelled"]},
+			filters={"assignment": ["in", asn_names], "docstatus": 1},
 			fields=["total_cost"]
 		)
 		return float(round(sum(float(e.get("total_cost") or 0.0) for e in entries), 2))
 
 	def calculate_maintenance_cost(self, vehicle_id: str) -> float:
-		"""Calculates total completed maintenance work order spend for target vehicle (COST-002, COST-004, COST-005)."""
+		"""Calculates total completed maintenance spend for target vehicle via Vehicle Assignments & legacy orders."""
 		if not hasattr(frappe, "get_all"):
 			return 0.0
-		orders = frappe.get_all(
-			"Maintenance Work Order",
-			filters={"vehicle": vehicle_id, "status": "Completed"},
-			fields=["total_cost"]
-		)
-		return float(round(sum(float(w.get("total_cost") or 0.0) for w in orders), 2))
+		entry_spend = 0.0
+		asn_names = [a.name for a in frappe.get_all("Vehicle Assignment", filters={"vehicle": vehicle_id}, fields=["name"])]
+		if asn_names:
+			entries = frappe.get_all(
+				"Maintenance Entry",
+				filters={"assignment": ["in", asn_names], "docstatus": 1},
+				fields=["total_cost"]
+			)
+			entry_spend += sum(float(m.get("total_cost") or 0.0) for m in entries)
+
+		return float(round(entry_spend, 2))
 
 	def calculate_total_operating_cost(self, vehicle_id: str) -> float:
 		"""Calculates total operating cost (Fuel + Maintenance)."""
@@ -93,13 +101,16 @@ class FleetCostService(BaseService):
 			as_dict=True
 		) if hasattr(frappe, "db") else None
 
-		latest_maint = frappe.db.get_value(
-			"Maintenance Work Order",
-			filters={"vehicle": vehicle_id, "status": "Completed"},
-			fieldname=["total_cost", "completion_date"],
-			order_by="creation desc",
-			as_dict=True
-		) if hasattr(frappe, "db") else None
+		asn_names_for_maint = [a.name for a in frappe.get_all("Vehicle Assignment", filters={"vehicle": vehicle_id}, fields=["name"])] if hasattr(frappe, "get_all") else []
+		latest_maint = None
+		if asn_names_for_maint:
+			latest_maint = frappe.db.get_value(
+				"Maintenance Entry",
+				filters={"assignment": ["in", asn_names_for_maint], "docstatus": 1},
+				fieldname=["total_cost", "maintenance_date"],
+				order_by="maintenance_date desc",
+				as_dict=True
+			) if hasattr(frappe, "db") else None
 
 		return {
 			"vehicle": vehicle_id,
@@ -110,7 +121,7 @@ class FleetCostService(BaseService):
 			"latest_fuel_cost": float(latest_fuel.total_cost or 0.0) if latest_fuel else 0.0,
 			"latest_fuel_date": latest_fuel.fuel_date if latest_fuel else None,
 			"latest_maintenance_cost": float(latest_maint.total_cost or 0.0) if latest_maint else 0.0,
-			"latest_maintenance_date": latest_maint.completion_date if latest_maint else None
+			"latest_maintenance_date": latest_maint.maintenance_date if latest_maint else None
 		}
 
 	def calculate_assignment_cost(self, assignment_id: str) -> Dict[str, Any]:
@@ -135,12 +146,12 @@ class FleetCostService(BaseService):
 		fuel_cost = sum(float(e.get("total_cost") or 0.0) for e in fuel_entries)
 		fuel_qty = sum(float(e.get("fuel_qty") or 0.0) for e in fuel_entries)
 
-		maint_orders = frappe.get_all(
-			"Maintenance Work Order",
-			filters={"vehicle": vehicle_id, "status": "Completed"},
+		maint_entries = frappe.get_all(
+			"Maintenance Entry",
+			filters={"assignment": assignment_id, "docstatus": 1},
 			fields=["total_cost"]
 		) if hasattr(frappe, "get_all") else []
-		maint_cost = sum(float(w.get("total_cost") or 0.0) for w in maint_orders)
+		maint_cost = sum(float(e.get("total_cost") or 0.0) for e in maint_entries)
 
 		opening_odo = float(assign.opening_odometer or 0.0)
 		closing_odo = float(assign.closing_odometer or opening_odo)
@@ -165,12 +176,12 @@ class FleetCostService(BaseService):
 		if company:
 			filters["company"] = company
 
-		fuel_entries = frappe.get_all("Fuel Entry", filters=filters, fields=["total_cost", "fuel_qty"]) if hasattr(frappe, "get_all") else []
-		maint_orders = frappe.get_all("Maintenance Work Order", filters={"status": "Completed", **({"company": company} if company else {})}, fields=["total_cost"]) if hasattr(frappe, "get_all") else []
+		fuel_entries = frappe.get_all("Fuel Entry", filters={"docstatus": 1}, fields=["total_cost", "fuel_qty"]) if hasattr(frappe, "get_all") else []
+		maint_entries = frappe.get_all("Maintenance Entry", filters={"docstatus": 1}, fields=["total_cost"]) if hasattr(frappe, "get_all") else []
 
 		fuel_cost = sum(float(e.get("total_cost") or 0.0) for e in fuel_entries)
 		fuel_liters = sum(float(e.get("fuel_qty") or 0.0) for e in fuel_entries)
-		maint_cost = sum(float(w.get("total_cost") or 0.0) for w in maint_orders)
+		maint_cost = sum(float(m.get("total_cost") or 0.0) for m in maint_entries)
 
 		return {
 			"company": company or "All Companies",

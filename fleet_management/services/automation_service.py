@@ -54,7 +54,8 @@ class FleetAutomationService(BaseService):
 		health_res = self.run_health_monitoring_automation()
 
 		summary = {
-			"status": "completed",
+			"status": "success",
+			"state": "completed",
 			"maintenance": maint_res,
 			"fuel": fuel_res,
 			"assignment": assign_res,
@@ -63,6 +64,10 @@ class FleetAutomationService(BaseService):
 		}
 		logger.info("Completed Fleet Automation run successfully.", summary)
 		return summary
+
+	def run_automation_cycle(self) -> Dict[str, Any]:
+		"""Alias method delegating to run_all_automations."""
+		return self.run_all_automations()
 
 	def run_maintenance_automation(self) -> Dict[str, Any]:
 		"""
@@ -103,7 +108,7 @@ class FleetAutomationService(BaseService):
 						notification_type=NotificationType.MAINTENANCE_DUE,
 						recipients=recipients,
 						subject=f"OVERDUE: Maintenance Required for {v_id}",
-						message=f"Vehicle {v_id} ({v.license_plate}) has exceeded its maintenance threshold.",
+						message=f"Vehicle {v_id} ({getattr(v, 'registration_number', v_id)}) has exceeded its maintenance threshold.",
 						reference_doctype="Vehicle",
 						reference_name=v_id,
 						enqueue_background=False
@@ -149,10 +154,19 @@ class FleetAutomationService(BaseService):
 
 		try:
 			threshold_pct = SettingsService.get_fuel_anomaly_threshold()
+			v_fields = ["name"]
+			meta = frappe.get_meta("Vehicle")
+			if meta.has_field("registration_number"):
+				v_fields.append("registration_number")
+			if meta.has_field("last_fuel_average"):
+				v_fields.append("last_fuel_average")
+			if meta.has_field("last_fuel_date"):
+				v_fields.append("last_fuel_date")
+
 			vehicles = frappe.db.get_all(
 				"Vehicle",
 				filters={"status": VehicleStatus.ASSIGNED},
-				fields=["name", "license_plate", "last_fuel_average", "last_fuel_entry_date"]
+				fields=v_fields
 			)
 
 			for v in vehicles:

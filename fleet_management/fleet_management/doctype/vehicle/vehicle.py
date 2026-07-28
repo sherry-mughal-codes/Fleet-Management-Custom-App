@@ -131,14 +131,22 @@ class Vehicle(BaseFleetDocument):
 
 		placeholders = ", ".join(["%s"] * len(target_ids))
 
-		# 1. Fuel Entries Aggregation (Direct SQL)
-		fuel_entries = frappe.db.sql(f"""
-			SELECT total_cost, fuel_date, odometer, fuel_average, status
-			FROM `tabFuel Entry`
-			WHERE status != 'Cancelled'
-			  AND (vehicle IN ({placeholders}) OR vehicle_number IN ({placeholders}))
-			ORDER BY fuel_date DESC, creation DESC
-		""", tuple(target_ids + target_ids), as_dict=True) if hasattr(frappe.db, "sql") else []
+		# 1. Fuel Entries Aggregation (via Assignment, Direct SQL)
+		asn_ids_fuel = [a.get("name") for a in (frappe.db.sql(f"""
+			SELECT name FROM `tabVehicle Assignment` WHERE vehicle IN ({placeholders})
+		""", tuple(target_ids), as_dict=True) if hasattr(frappe.db, "sql") else [])]
+
+		if asn_ids_fuel:
+			asn_ph_fuel = ", ".join(["%s"] * len(asn_ids_fuel))
+			fuel_entries = frappe.db.sql(f"""
+				SELECT total_cost, fuel_date, odometer, fuel_average, docstatus
+				FROM `tabFuel Entry`
+				WHERE docstatus = 1
+				  AND assignment IN ({asn_ph_fuel})
+				ORDER BY fuel_date DESC, creation DESC
+			""", tuple(asn_ids_fuel), as_dict=True)
+		else:
+			fuel_entries = []
 
 		self.total_fuel_cost = round(sum(float(f.get("total_cost") or 0.0) for f in fuel_entries), 2)
 		if fuel_entries:
@@ -156,39 +164,29 @@ class Vehicle(BaseFleetDocument):
 		if latest_avg is not None:
 			self.average_fuel_economy = latest_avg
 
-		# 2. Maintenance Work Orders & Requests Aggregation (Direct SQL)
-		maint_orders = frappe.db.sql(f"""
-			SELECT total_cost, completion_date, completion_odometer, status
-			FROM `tabMaintenance Work Order`
-			WHERE status != 'Cancelled'
-			  AND vehicle IN ({placeholders})
-			ORDER BY creation DESC
+		# 2. Maintenance Entries Aggregation (Direct SQL via Assignments)
+		asn_records = frappe.db.sql(f"""
+			SELECT name FROM `tabVehicle Assignment` WHERE vehicle IN ({placeholders})
 		""", tuple(target_ids), as_dict=True) if hasattr(frappe.db, "sql") else []
+		asn_ids = [a.get("name") for a in asn_records]
 
-		self.total_maintenance_cost = round(sum(float(m.get("total_cost") or 0.0) for m in maint_orders), 2)
-		completed_orders = [m for m in maint_orders if m.get("status") == "Completed"]
+		if asn_ids:
+			asn_placeholders = ", ".join(["%s"] * len(asn_ids))
+			maint_entries = frappe.db.sql(f"""
+				SELECT total_cost, maintenance_date, current_odometer, docstatus
+				FROM `tabMaintenance Entry`
+				WHERE docstatus = 1
+				  AND assignment IN ({asn_placeholders})
+				ORDER BY maintenance_date DESC
+			""", tuple(asn_ids), as_dict=True)
+		else:
+			maint_entries = []
 
-		if completed_orders:
-			self.last_maintenance_date = completed_orders[0].get("completion_date")
+		self.total_maintenance_cost = round(sum(float(m.get("total_cost") or 0.0) for m in maint_entries), 2)
+		if maint_entries:
+			self.last_maintenance_date = maint_entries[0].get("maintenance_date")
 			if hasattr(self, "last_maintenance_odometer"):
-				self.last_maintenance_odometer = float(completed_orders[0].get("completion_odometer") or 0.0)
-
-		highest_maint_odo = initial_odo
-		for m in maint_orders:
-			m_odo = float(m.get("completion_odometer") or 0.0)
-			if m_odo > highest_maint_odo:
-				highest_maint_odo = m_odo
-
-		if not self.last_maintenance_date and hasattr(frappe.db, "sql"):
-			m_reqs = frappe.db.sql(f"""
-				SELECT requested_date
-				FROM `tabMaintenance Request`
-				WHERE status != 'Cancelled'
-				  AND vehicle IN ({placeholders})
-				ORDER BY requested_date DESC
-			""", tuple(target_ids), as_dict=True)
-			if m_reqs:
-				self.last_maintenance_date = m_reqs[0].get("requested_date")
+				self.last_maintenance_odometer = float(maint_entries[0].get("current_odometer") or 0.0)
 
 		# 3. Vehicle Assignments Aggregation (Direct SQL)
 		assignments = frappe.db.sql(f"""
@@ -208,6 +206,7 @@ class Vehicle(BaseFleetDocument):
 				highest_assign_odo = a_close
 
 		# 4. Final Aggregated Metrics & Auto-Updates
+		highest_maint_odo = float(maint_entries[0].get("current_odometer") or 0.0) if maint_entries else initial_odo
 		self.current_odometer = max(initial_odo, current_odo, highest_fuel_odo, highest_maint_odo, highest_assign_odo)
 		self.lifetime_distance = round(max(0.0, self.current_odometer - initial_odo), 2)
 

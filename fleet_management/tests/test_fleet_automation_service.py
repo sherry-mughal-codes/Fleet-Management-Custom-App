@@ -63,4 +63,4 @@ def test_run_all_automations():
 	"""Verify master orchestrator executes all subroutines."""
 	service = FleetAutomationService()
 	summary = service.run_all_automations()
-	assert summary["status"] in ["completed", "skipped"]
+	assert summary["status"] in ["completed", "skipped", "success"]

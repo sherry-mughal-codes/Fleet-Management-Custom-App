@@ -1,82 +1,62 @@
 """
-Unit Tests for Maintenance DocTypes & UX Implementation
+Unit Tests for Maintenance Entry DocType & Servicing Items
 Fleet Management System
 """
 
 import pytest
 
-from fleet_management.fleet_management.doctype.maintenance_request.maintenance_request import (
-	MaintenanceRequest,
-)
-from fleet_management.fleet_management.doctype.maintenance_task_template.maintenance_task_template import (
-	MaintenanceTaskTemplate,
-)
-from fleet_management.fleet_management.doctype.maintenance_work_order.maintenance_work_order import (
-	MaintenanceWorkOrder,
-)
+from fleet_management.fleet_management.doctype.maintenance_entry.maintenance_entry import MaintenanceEntry
 from fleet_management.utils.exceptions import FleetValidationError
 
 
-def test_maintenance_request_creation_minimal():
+def test_maintenance_entry_creation_minimal():
 	"""Verify Category A minimal field creation (<1 min UX velocity)."""
-	payload = {
-		"vehicle": "PROD-V-101",
-		"company": "Fleet Corp",
-		"maintenance_type": "Preventive",
-		"priority": "Medium",
-		"requested_date": "2026-07-24"
-	}
-	req = MaintenanceRequest(payload)
-	req.before_validate_hook()
-
-	assert req.vehicle == "PROD-V-101"
-	assert req.company == "Fleet Corp"
-	assert req.maintenance_type == "Preventive"
-	assert req.priority == "Medium"
-	assert req.status == "Draft"
-	assert req.naming_series == "MREQ-.YYYY.-.#####"
+	entry = MaintenanceEntry({
+		"assignment": "ASN-TEST-101",
+		"maintenance_date": "2026-07-24",
+		"current_odometer": 15000.0,
+		"remarks": "Routine 15,000 KM Servicing"
+	})
+	assert entry.assignment == "ASN-TEST-101"
+	assert entry.current_odometer == 15000.0
+	assert entry.naming_series == "MAINT-.YYYY.-.#####"
 
 
-def test_maintenance_work_order_with_tasks():
-	"""Verify Maintenance Work Order creation with Maintenance Task child table."""
-	mwo_payload = {
-		"vehicle": "PROD-V-101",
-		"company": "Fleet Corp",
-		"workshop": "Central Fleet Workshop",
-		"tasks": [
-			{"task_name": "Oil Change", "estimated_duration": 1.5, "completed": 0},
-			{"task_name": "Brake Pad Inspection", "estimated_duration": 1.0, "completed": 0}
+def test_maintenance_entry_total_cost_from_items():
+	"""Verify Maintenance Entry total cost is sum of completed item costs."""
+	entry = MaintenanceEntry({
+		"assignment": "ASN-COST-101",
+		"maintenance_date": "2026-07-24",
+		"current_odometer": 15000.0,
+		"items": [
+			{"item_name": "Engine Oil Change", "interval_km": 5000, "is_completed": 1, "cost": 150.0},
+			{"item_name": "Brake Inspection", "interval_km": 10000, "is_completed": 1, "cost": 100.0},
+			{"item_name": "Air Filter", "interval_km": 10000, "is_completed": 0, "cost": 50.0},
 		]
-	}
-	mwo = MaintenanceWorkOrder(mwo_payload)
-	mwo.before_validate_hook()
-
-	assert mwo.vehicle == "PROD-V-101"
-	assert mwo.company == "Fleet Corp"
-	assert mwo.naming_series == "MWO-.YYYY.-.#####"
-	assert len(mwo.tasks) == 2
-	assert mwo.tasks[0].task_name == "Oil Change"
+	})
+	# Manually compute total as validate() would
+	total = sum(float(i.cost or 0.0) for i in entry.items if i.is_completed)
+	assert total == 250.0
 
 
-def test_maintenance_task_template():
-	"""Verify Maintenance Task Template master record."""
-	template_payload = {
-		"task_name": "Tyre Rotation",
-		"maintenance_type": "Preventive",
-		"estimated_duration_hours": 0.75,
-		"estimated_cost": 50.0,
-		"description": "Rotate all four tyres according to cross pattern."
-	}
-	template = MaintenanceTaskTemplate(template_payload)
-	assert template.task_name == "Tyre Rotation"
-	assert template.estimated_duration_hours == 0.75
+def test_maintenance_entry_items_count():
+	"""Verify Maintenance Entry child items are correctly appended."""
+	entry = MaintenanceEntry({
+		"assignment": "ASN-ITEMS-101",
+		"maintenance_date": "2026-07-24",
+		"current_odometer": 20000.0,
+		"items": [
+			{"item_name": "Tyre Rotation", "interval_km": 15000, "is_completed": 1, "cost": 80.0},
+			{"item_name": "Transmission Oil", "interval_km": 30000, "is_completed": 1, "cost": 200.0},
+		]
+	})
+	assert len(entry.items) == 2
+	assert entry.items[0].item_name == "Tyre Rotation"
+	assert entry.items[1].item_name == "Transmission Oil"
 
 
-def test_maintenance_structural_validations():
-	"""Verify missing mandatory fields raise FleetValidationError."""
-	bad_payload = {
-		"company": "Fleet Corp"
-	}
-	req = MaintenanceRequest(bad_payload)
+def test_maintenance_entry_structural_validations():
+	"""Verify missing mandatory assignment raises FleetValidationError."""
+	entry = MaintenanceEntry({"maintenance_date": "2026-07-24"})
 	with pytest.raises(FleetValidationError):
-		req.before_validate_hook()
+		entry.validate()

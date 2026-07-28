@@ -3,32 +3,33 @@ Master Production Readiness Integration Test Suite for Maintenance Subsystem
 Fleet Management System
 """
 
-from fleet_management.fleet_management.doctype.maintenance_request.maintenance_request import (
-	MaintenanceRequest,
-)
 from fleet_management.permissions.maintenance_permission import MaintenancePermissionEvaluator
 from fleet_management.services.maintenance_due_service import MaintenanceDueEngine
 from fleet_management.services.maintenance_service import MaintenanceService
 
 
-def test_master_maintenance_request_creation_and_autofetch():
-	"""Verify Category A minimal field creation (<1 min UX velocity)."""
-	payload = {
-		"vehicle": "PROD-V-101",
-		"company": "Fleet Corp",
-		"maintenance_type": "Preventive",
-		"priority": "High",
-		"requested_date": "2026-07-24"
-	}
-	doc = MaintenanceRequest(payload)
-	doc.before_validate_hook()
+def test_master_maintenance_entry_creation_and_validation():
+	"""Verify Maintenance Entry minimal field creation (<1 min UX velocity)."""
+	from fleet_management.fleet_management.doctype.maintenance_entry.maintenance_entry import MaintenanceEntry
+	from fleet_management.utils.exceptions import FleetValidationError
 
-	assert doc.vehicle == "PROD-V-101"
-	assert doc.company == "Fleet Corp"
-	assert doc.maintenance_type == "Preventive"
-	assert doc.priority == "High"
-	assert doc.status == "Draft"
-	assert doc.naming_series == "MREQ-.YYYY.-.#####"
+	# No assignment -> should raise FleetValidationError
+	bad_entry = MaintenanceEntry({"maintenance_date": "2026-07-24"})
+	try:
+		bad_entry.validate()
+		assert False, "Expected FleetValidationError for missing assignment"
+	except FleetValidationError:
+		pass
+
+	# With items but no DB (assignment cannot be resolved) -> same error
+	entry_with_items = MaintenanceEntry({
+		"assignment": "ASN-TEST-READONLY",
+		"maintenance_date": "2026-07-24",
+		"current_odometer": 10000.0,
+	})
+	assert entry_with_items.assignment == "ASN-TEST-READONLY"
+	assert entry_with_items.current_odometer == 10000.0
+	assert entry_with_items.naming_series == "MAINT-.YYYY.-.#####"
 
 
 def test_master_maintenance_due_engine_policy_hierarchy():

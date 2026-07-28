@@ -164,24 +164,16 @@ class FleetHealthService(BaseService):
 						"description": f"Fuel Entry {fe.name} references non-existent Assignment '{fe.assignment}'."
 					})
 
-			# Verify Maintenance Work Orders
-			maint_orders = frappe.db.get_all("Maintenance Work Order", fields=["name", "vehicle", "maintenance_request"])
-			for mo in maint_orders:
-				if mo.vehicle and not frappe.db.exists("Vehicle", mo.vehicle):
+			# Verify Maintenance Entries
+			maint_entries = frappe.db.get_all("Maintenance Entry", fields=["name", "assignment"])
+			for me in maint_entries:
+				if me.assignment and not frappe.db.exists("Vehicle Assignment", me.assignment):
 					issues.append({
 						"category": "Broken Reference",
 						"severity": "Critical",
-						"reference_doctype": "Maintenance Work Order",
-						"reference_name": mo.name,
-						"description": f"Work Order {mo.name} references non-existent Vehicle '{mo.vehicle}'."
-					})
-				if mo.maintenance_request and not frappe.db.exists("Maintenance Request", mo.maintenance_request):
-					issues.append({
-						"category": "Broken Reference",
-						"severity": "Warning",
-						"reference_doctype": "Maintenance Work Order",
-						"reference_name": mo.name,
-						"description": f"Work Order {mo.name} references non-existent Maintenance Request '{mo.maintenance_request}'."
+						"reference_doctype": "Maintenance Entry",
+						"reference_name": me.name,
+						"description": f"Maintenance Entry {me.name} references non-existent Assignment '{me.assignment}'."
 					})
 		except Exception as e:
 			logger.error(f"Error in verify_broken_references: {str(e)}")
@@ -236,26 +228,26 @@ class FleetHealthService(BaseService):
 		return issues
 
 	def verify_maintenance_links(self) -> List[Dict[str, Any]]:
-		"""Verifies maintenance request and work order completion logic and date sanity."""
+		"""Verifies maintenance entry cost sanity."""
 		issues = []
 		if not hasattr(frappe, "db") or not hasattr(frappe.db, "get_all"):
 			return issues
 
 		try:
-			work_orders = frappe.db.get_all(
-				"Maintenance Work Order",
-				filters={"status": "Completed"},
-				fields=["name", "total_cost", "creation", "completion_date"]
+			maint_entries = frappe.db.get_all(
+				"Maintenance Entry",
+				filters={"docstatus": 1},
+				fields=["name", "total_cost", "maintenance_date"]
 			)
-			for wo in work_orders:
-				total = float(wo.get("total_cost") or 0.0)
+			for me in maint_entries:
+				total = float(me.get("total_cost") or 0.0)
 				if total < 0:
 					issues.append({
 						"category": "Invalid Maintenance",
 						"severity": "Warning",
-						"reference_doctype": "Maintenance Work Order",
-						"reference_name": wo.name,
-						"description": f"Work Order {wo.name} has negative total cost ({total})."
+						"reference_doctype": "Maintenance Entry",
+						"reference_name": me.name,
+						"description": f"Maintenance Entry {me.name} has negative total cost ({total})."
 					})
 		except Exception as e:
 			logger.error(f"Error in verify_maintenance_links: {str(e)}")

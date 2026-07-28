@@ -7,39 +7,23 @@
  "field_order": [
   "basic_fuel_section",
   "naming_series",
-  "vehicle",
   "assignment",
-  "employee",
   "fuel_date",
   "column_break_basic",
   "odometer",
+  "fuel_price",
   "fuel_qty",
   "total_cost",
-  "company",
-  "status",
   "intelligence_section",
+  "is_first_entry",
+  "previous_fuel_date",
+  "previous_odometer",
+  "column_break_intel",
+  "distance_travelled",
+  "days_since_last_fuel",
   "fuel_average",
-  "distance_since_last_fuel",
-  "is_maintenance_locked",
-  "vehicle_info_section",
-  "vehicle_number",
-  "vehicle_name",
-  "vehicle_brand",
-  "vehicle_model",
-  "column_break_veh",
-  "fuel_type",
-  "current_vehicle_status",
-  "current_vehicle_odometer",
-  "last_fuel_date",
-  "last_fuel_odometer",
-  "last_fuel_average",
-  "assignment_info_section",
-  "assignment_id",
-  "assigned_employee",
-  "department",
-  "column_break_assign",
-  "assignment_status",
-  "opening_odometer",
+  "cost_per_km",
+  "fuel_efficiency_rating",
   "receipt_section",
   "receipt_number",
   "receipt_attachment",
@@ -52,7 +36,7 @@
   {
    "fieldname": "basic_fuel_section",
    "fieldtype": "Section Break",
-   "label": "Fuel Entry Information"
+   "label": "Fuel Entry Details"
   },
   {
    "default": "FUEL-.YYYY.-.#####",
@@ -62,30 +46,13 @@
    "options": "FUEL-.YYYY.-.#####"
   },
   {
-   "fieldname": "vehicle",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "in_standard_filter": 1,
-   "label": "Vehicle",
-   "options": "Vehicle",
-   "reqd": 1
-  },
-  {
    "fieldname": "assignment",
    "fieldtype": "Link",
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Vehicle Assignment",
-   "options": "Vehicle Assignment"
-  },
-  {
-   "fieldname": "employee",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "in_standard_filter": 1,
-   "label": "Employee / Driver",
-   "options": "User",
-   "read_only": 1
+   "options": "Vehicle Assignment",
+   "reqd": 1
   },
   {
    "fieldname": "fuel_date",
@@ -104,6 +71,14 @@
    "fieldtype": "Float",
    "in_list_view": 1,
    "label": "Odometer Reading (KM)",
+   "read_only": 0,
+   "reqd": 1
+  },
+  {
+   "fieldname": "fuel_price",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Rate Per Litre",
    "reqd": 1
   },
   {
@@ -118,163 +93,67 @@
    "fieldtype": "Currency",
    "in_list_view": 1,
    "label": "Total Cost",
-   "reqd": 1
+   "read_only": 1
   },
   {
-   "fieldname": "company",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "in_standard_filter": 1,
-   "label": "Company",
-   "options": "Company",
-   "reqd": 1
-  },
-  {
-   "default": "Draft",
-   "fieldname": "status",
-   "fieldtype": "Select",
-   "in_list_view": 1,
-   "in_standard_filter": 1,
-   "label": "Status",
-   "options": "Draft\nSubmitted\nVerified\nCancelled"
-  },
-  {
-   "collapsible": 1,
    "fieldname": "intelligence_section",
    "fieldtype": "Section Break",
-   "label": "Calculated Fuel Intelligence"
+   "label": "Fuel Intelligence"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_first_entry",
+   "fieldtype": "Check",
+   "hidden": 1,
+   "label": "Is First Fuel Entry",
+   "read_only": 1
+  },
+  {
+   "fieldname": "previous_fuel_date",
+   "fieldtype": "Date",
+   "label": "Previous Fuel Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "previous_odometer",
+   "fieldtype": "Float",
+   "label": "Previous Odometer (KM)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_intel",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "distance_travelled",
+   "fieldtype": "Float",
+   "label": "Distance Travelled (KM)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "days_since_last_fuel",
+   "fieldtype": "Int",
+   "label": "Days Since Last Fuel",
+   "read_only": 1
   },
   {
    "fieldname": "fuel_average",
    "fieldtype": "Float",
-   "in_list_view": 1,
-   "label": "Calculated Fuel Average (KM/L)",
+   "in_list_view": 0,
+   "label": "Fuel Economy (KM/L)",
    "read_only": 1
   },
   {
-   "fieldname": "distance_since_last_fuel",
-   "fieldtype": "Float",
-   "label": "Distance Since Last Fuel (KM)",
+   "fieldname": "cost_per_km",
+   "fieldtype": "Currency",
+   "label": "Cost Per KM",
    "read_only": 1
   },
   {
-   "default": "0",
-   "fieldname": "is_maintenance_locked",
-   "fieldtype": "Check",
-   "label": "Maintenance Locked",
-   "read_only": 1
-  },
-  {
-   "collapsible": 1,
-   "fieldname": "vehicle_info_section",
-   "fieldtype": "Section Break",
-   "label": "Auto-Fetched Vehicle Information"
-  },
-  {
-   "fieldname": "vehicle_number",
+   "fieldname": "fuel_efficiency_rating",
    "fieldtype": "Data",
-   "label": "Vehicle Number",
-   "read_only": 1
-  },
-  {
-   "fieldname": "vehicle_name",
-   "fieldtype": "Data",
-   "label": "Vehicle Name",
-   "read_only": 1
-  },
-  {
-   "fieldname": "vehicle_brand",
-   "fieldtype": "Link",
-   "label": "Brand",
-   "options": "Vehicle Brand",
-   "read_only": 1
-  },
-  {
-   "fieldname": "vehicle_model",
-   "fieldtype": "Link",
-   "label": "Model",
-   "options": "Vehicle Model",
-   "read_only": 1
-  },
-  {
-   "fieldname": "column_break_veh",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "fuel_type",
-   "fieldtype": "Link",
-   "label": "Fuel Type",
-   "options": "Fuel Type",
-   "read_only": 1
-  },
-  {
-   "fieldname": "current_vehicle_status",
-   "fieldtype": "Data",
-   "label": "Current Vehicle Status",
-   "read_only": 1
-  },
-  {
-   "fieldname": "current_vehicle_odometer",
-   "fieldtype": "Float",
-   "label": "Current Vehicle Odometer (KM)",
-   "read_only": 1
-  },
-  {
-   "fieldname": "last_fuel_date",
-   "fieldtype": "Date",
-   "label": "Last Fuel Date",
-   "read_only": 1
-  },
-  {
-   "fieldname": "last_fuel_odometer",
-   "fieldtype": "Float",
-   "label": "Last Fuel Odometer (KM)",
-   "read_only": 1
-  },
-  {
-   "fieldname": "last_fuel_average",
-   "fieldtype": "Float",
-   "label": "Last Fuel Average (KM/L)",
-   "read_only": 1
-  },
-  {
-   "collapsible": 1,
-   "fieldname": "assignment_info_section",
-   "fieldtype": "Section Break",
-   "label": "Assignment Information"
-  },
-  {
-   "fieldname": "assignment_id",
-   "fieldtype": "Data",
-   "label": "Assignment ID",
-   "read_only": 1
-  },
-  {
-   "fieldname": "assigned_employee",
-   "fieldtype": "Data",
-   "label": "Assigned Employee",
-   "read_only": 1
-  },
-  {
-   "fieldname": "department",
-   "fieldtype": "Data",
-   "label": "Department",
-   "read_only": 1
-  },
-  {
-   "fieldname": "column_break_assign",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "assignment_status",
-   "fieldtype": "Data",
-   "label": "Assignment Status",
-   "read_only": 1
-  },
-  {
-   "fieldname": "opening_odometer",
-   "fieldtype": "Float",
-   "label": "Assignment Opening Odometer",
+   "in_list_view": 0,
+   "label": "Fuel Efficiency Rating",
    "read_only": 1
   },
   {
@@ -317,14 +196,17 @@
   }
  ],
  "index_web_pages_for_search": 1,
+ "is_submittable": 1,
  "links": [],
- "modified": "2026-07-24 16:15:00.000000",
+ "modified": "2026-07-28 08:00:00.000000",
  "modified_by": "Administrator",
  "module": "Fleet Management",
  "name": "Fuel Entry",
  "owner": "Administrator",
  "permissions": [
   {
+   "amend": 1,
+   "cancel": 1,
    "create": 1,
    "delete": 1,
    "email": 1,
@@ -333,9 +215,12 @@
    "read": 1,
    "role": "System Manager",
    "share": 1,
+   "submit": 1,
    "write": 1
   },
   {
+   "amend": 1,
+   "cancel": 1,
    "create": 1,
    "delete": 0,
    "email": 1,
@@ -344,9 +229,12 @@
    "read": 1,
    "role": "Fleet Manager",
    "share": 1,
+   "submit": 1,
    "write": 1
   },
   {
+   "amend": 1,
+   "cancel": 1,
    "create": 1,
    "delete": 0,
    "email": 1,
@@ -355,6 +243,7 @@
    "read": 1,
    "role": "Fleet Officer",
    "share": 1,
+   "submit": 1,
    "write": 1
   },
   {
@@ -366,39 +255,12 @@
    "read": 1,
    "role": "Fleet Driver",
    "share": 0,
+   "submit": 1,
    "write": 1
-  },
-  {
-   "create": 0,
-   "delete": 0,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "role": "Fleet User",
-   "share": 0,
-   "write": 0
   }
  ],
- "search_fields": "name, vehicle, vehicle_number, employee, assignment, company, receipt_number, status",
+ "search_fields": "name, assignment, receipt_number",
  "sort_field": "modified",
  "sort_order": "DESC",
- "states": [
-  {
-   "color": "Gray",
-   "title": "Draft"
-  },
-  {
-   "color": "Blue",
-   "title": "Submitted"
-  },
-  {
-   "color": "Green",
-   "title": "Verified"
-  },
-  {
-   "color": "Red",
-   "title": "Cancelled"
-  }
- ]
+ "states": []
 }

@@ -39,7 +39,7 @@ frappe.ui.form.on('Vehicle', {
 				}
 			});
 
-			// Add Manual Action Button
+			// Add Manual Action Buttons
 			frm.add_custom_button(__('Sync Operational Summary'), function() {
 				frappe.call({
 					method: 'fleet_management.api.vehicle_api.get_vehicle_summary',
@@ -52,61 +52,26 @@ frappe.ui.form.on('Vehicle', {
 					}
 				});
 			}, __('Actions'));
+
 			frm.add_custom_button(__('Assign Vehicle'), function() {
-				frappe.msgprint(__('Vehicle Assignment module will trigger assignment workflow for: ') + frm.doc.name);
+				frappe.route_options = { "vehicle": frm.doc.name };
+				frappe.new_doc("Vehicle Assignment");
 			}, __('Actions'));
 
 			frm.add_custom_button(__('Record Fuel'), function() {
-				frappe.msgprint(__('Fuel Entry module will open fuel record dialog for: ') + frm.doc.name);
+				frappe.route_options = { "vehicle": frm.doc.name };
+				frappe.new_doc("Fuel Entry");
 			}, __('Actions'));
 
 			frm.add_custom_button(__('Record Maintenance'), function() {
-				frappe.msgprint(__('Maintenance Entry module will open service log for: ') + frm.doc.name);
+				frappe.route_options = { "vehicle": frm.doc.name };
+				frappe.new_doc("Maintenance Work Order");
 			}, __('Actions'));
 
 			frm.add_custom_button(__('View Timeline'), function() {
 				frappe.route_options = { "reference_doctype": "Vehicle", "reference_name": frm.doc.name };
 				frappe.set_route("List", "Activity Log");
 			}, __('View'));
-
-			frm.add_custom_button(__('Change Status'), function() {
-				let d = new frappe.ui.Dialog({
-					title: __('Change Vehicle Status'),
-					fields: [
-						{
-							label: __('Target Status'),
-							fieldname: 'target_status',
-							fieldtype: 'Select',
-							options: 'Draft\nAvailable\nReserved\nAssigned\nMaintenance Due\nUnder Maintenance\nInspection\nOut of Service\nInactive\nSold\nScrapped\nArchived',
-							reqd: 1
-						},
-						{
-							label: __('Reason'),
-							fieldname: 'reason',
-							fieldtype: 'Small Text'
-						}
-					],
-					primary_action_label: __('Update Status'),
-					primary_action(values) {
-						frappe.call({
-							method: 'fleet_management.api.vehicle_api.change_vehicle_status',
-							args: {
-								vehicle_id: frm.doc.name,
-								new_status: values.target_status,
-								reason: values.reason
-							},
-							callback: function(r) {
-								if (!r.exc) {
-									frappe.show_alert({ message: __('Status updated to ') + values.target_status, indicator: 'green' });
-									frm.reload_doc();
-									d.hide();
-								}
-							}
-						});
-					}
-				});
-				d.show();
-			}, __('Actions'));
 		}
 	},
 

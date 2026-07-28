@@ -1,6 +1,6 @@
 """
 Maintenance Domain Whitelisted API Endpoints Implementation
-Fleet Management System
+Fleet Management System (Frappe v15)
 """
 
 from typing import Any, Dict
@@ -9,143 +9,106 @@ import frappe
 
 from fleet_management.api.base import api_endpoint
 from fleet_management.api.responses import paginated_response, success_response
-from fleet_management.services.maintenance_due_service import MaintenanceDueEngine
-from fleet_management.services.maintenance_service import MaintenanceService
+from fleet_management.services.maintenance_manager import MaintenanceManager
 
-maintenance_service = MaintenanceService()
+maintenance_manager = MaintenanceManager()
 
 
 @api_endpoint(allow_guest=False)
-def search_maintenance_requests(
+def search_maintenance_entries(
 	vehicle: str | None = None,
-	status: str | None = None,
-	priority: str | None = None,
+	assignment: str | None = None,
+	maintenance_type: str | None = None,
 	company: str | None = None,
+	docstatus: int | None = None,
 	page: int = 1,
 	page_length: int = 20
 ) -> Dict[str, Any]:
-	"""Whitelisted API endpoint for searching maintenance requests."""
+	"""Whitelisted API endpoint for searching Maintenance Entries."""
 	filters = {}
 	if vehicle:
 		filters["vehicle"] = vehicle
-	if status:
-		filters["status"] = status
-	if priority:
-		filters["priority"] = priority
+	if assignment:
+		filters["assignment"] = assignment
+	if maintenance_type:
+		filters["maintenance_type"] = maintenance_type
 	if company:
 		filters["company"] = company
+	if docstatus is not None:
+		filters["docstatus"] = docstatus
 
 	start = (page - 1) * page_length
 	items = frappe.get_list(
-		"Maintenance Request",
+		"Maintenance Entry",
 		filters=filters,
-		fields=["name", "vehicle", "vehicle_number", "maintenance_type", "priority", "status", "requested_date", "company"],
+		fields=["name", "assignment", "vehicle", "employee", "maintenance_date", "current_odometer", "maintenance_type", "rate", "qty", "total_cost", "docstatus", "company"],
 		start=start,
 		page_length=page_length,
 		order_by="modified desc"
-	)
-	total_count = frappe.db.count("Maintenance Request", filters=filters) if hasattr(frappe, "db") else len(items)
+	) if hasattr(frappe, "get_list") else []
 
+	total_count = frappe.db.count("Maintenance Entry", filters=filters) if hasattr(frappe, "db") else len(items)
 	return paginated_response(items=items, total_count=total_count, page=page, page_length=page_length)
 
 
 @api_endpoint(allow_guest=False)
-def search_maintenance_orders(
-	vehicle: str | None = None,
-	status: str | None = None,
-	workshop: str | None = None,
-	company: str | None = None,
-	page: int = 1,
-	page_length: int = 20
-) -> Dict[str, Any]:
-	"""Whitelisted API endpoint for searching maintenance work orders."""
-	filters = {}
-	if vehicle:
-		filters["vehicle"] = vehicle
-	if status:
-		filters["status"] = status
-	if workshop:
-		filters["workshop"] = workshop
-	if company:
-		filters["company"] = company
-
-	start = (page - 1) * page_length
-	items = frappe.get_list(
-		"Maintenance Work Order",
-		filters=filters,
-		fields=["name", "maintenance_request", "vehicle", "assigned_technician", "workshop", "status", "start_date", "completion_date", "completion_odometer", "total_cost", "company"],
-		start=start,
-		page_length=page_length,
-		order_by="modified desc"
-	)
-	total_count = frappe.db.count("Maintenance Work Order", filters=filters) if hasattr(frappe, "db") else len(items)
-
-	return paginated_response(items=items, total_count=total_count, page=page, page_length=page_length)
-
-
-@api_endpoint(allow_guest=False)
-def create_maintenance_request_api(
-	vehicle: str,
+def create_maintenance_entry_api(
+	assignment: str,
 	maintenance_type: str,
-	company: str,
-	priority: str = "Medium",
-	requested_date: str | None = None,
-	description: str | None = None,
-	workshop_name: str | None = None
+	rate: float,
+	qty: float = 1.0,
+	current_odometer: float | None = None,
+	maintenance_date: str | None = None,
+	vendor: str | None = None,
+	invoice_number: str | None = None,
+	remarks: str | None = None
 ) -> Dict[str, Any]:
-	"""Whitelisted API endpoint for creating a maintenance request."""
+	"""Whitelisted API endpoint for creating a Maintenance Entry."""
 	payload = {
-		"vehicle": vehicle,
+		"assignment": assignment,
 		"maintenance_type": maintenance_type,
-		"company": company,
-		"priority": priority,
-		"requested_date": requested_date,
-		"description": description,
-		"workshop_name": workshop_name
+		"rate": rate,
+		"qty": qty,
+		"current_odometer": current_odometer,
+		"maintenance_date": maintenance_date,
+		"vendor": vendor,
+		"invoice_number": invoice_number,
+		"remarks": remarks
 	}
-	res = maintenance_service.create_request(payload)
-	return success_response(data=res, message="Maintenance Request created successfully.")
+	res = maintenance_manager.create_maintenance_entry(payload)
+	return success_response(data=res, message="Maintenance Entry created successfully.")
 
 
 @api_endpoint(allow_guest=False)
-def complete_work_order_api(
-	work_order_id: str,
-	completion_odometer: float,
-	labour_cost: float = 0.0,
-	parts_cost: float = 0.0,
-	external_cost: float = 0.0,
-	tax_amount: float = 0.0,
-	discount_amount: float = 0.0
-) -> Dict[str, Any]:
-	"""Whitelisted API endpoint for completing a maintenance work order & removing Maintenance Lock."""
-	costs = {
-		"labour_cost": labour_cost,
-		"parts_cost": parts_cost,
-		"external_cost": external_cost,
-		"tax_amount": tax_amount,
-		"discount_amount": discount_amount
-	}
-	res = maintenance_service.complete_work_order(work_order_id, completion_odometer, costs)
-	return success_response(data=res, message="Maintenance Work Order completed successfully. Maintenance Lock removed.")
+def submit_maintenance_entry_api(entry_id: str) -> Dict[str, Any]:
+	"""Whitelisted API endpoint for submitting a Maintenance Entry."""
+	res = maintenance_manager.submit_maintenance_entry(entry_id)
+	return success_response(data=res, message="Maintenance Entry submitted successfully.")
 
 
 @api_endpoint(allow_guest=False)
-def calculate_next_due_api(vehicle: str, completion_odometer: float | None = None) -> Dict[str, Any]:
-	"""Whitelisted API endpoint for calculating next due thresholds."""
-	due_odo = MaintenanceDueEngine.calculate_next_due_odometer(vehicle, completion_odometer)
-	due_date = MaintenanceDueEngine.calculate_next_due_date(vehicle)
-	return success_response(data={"vehicle": vehicle, "next_due_odometer": due_odo, "next_due_date": due_date}, message="Next due thresholds calculated.")
+def cancel_maintenance_entry_api(entry_id: str, reason: str | None = None) -> Dict[str, Any]:
+	"""Whitelisted API endpoint for cancelling a Maintenance Entry."""
+	res = maintenance_manager.cancel_maintenance_entry(entry_id, reason=reason)
+	return success_response(data={"cancelled": res}, message="Maintenance Entry cancelled successfully.")
 
 
 @api_endpoint(allow_guest=False)
-def get_maintenance_summary(vehicle: str) -> Dict[str, Any]:
-	"""Whitelisted API endpoint for retrieving vehicle maintenance summary statistics."""
-	summary = maintenance_service.get_summary(vehicle)
-	return success_response(data=summary, message="Maintenance summary retrieved successfully.")
+def get_due_maintenance_api(vehicle: str) -> Dict[str, Any]:
+	"""Whitelisted API endpoint for retrieving due maintenance schedule items."""
+	due = maintenance_manager.get_due_maintenance(vehicle)
+	return success_response(data=due, message="Due maintenance items retrieved.")
 
 
 @api_endpoint(allow_guest=False)
-def get_upcoming_maintenance_api(vehicle: str) -> Dict[str, Any]:
-	"""Whitelisted API endpoint for retrieving upcoming maintenance schedule."""
-	schedule = MaintenanceDueEngine.get_upcoming_maintenance_schedule(vehicle)
-	return success_response(data=schedule, message="Upcoming maintenance schedule retrieved.")
+def get_overdue_maintenance_api(vehicle: str) -> Dict[str, Any]:
+	"""Whitelisted API endpoint for retrieving overdue maintenance schedule items."""
+	overdue = maintenance_manager.get_overdue_maintenance(vehicle)
+	return success_response(data=overdue, message="Overdue maintenance items retrieved.")
+
+
+@api_endpoint(allow_guest=False)
+def get_vehicle_health_api(vehicle: str) -> Dict[str, Any]:
+	"""Whitelisted API endpoint for calculating vehicle operational health score."""
+	health = maintenance_manager.get_vehicle_health(vehicle)
+	return success_response(data=health, message="Vehicle health retrieved.")

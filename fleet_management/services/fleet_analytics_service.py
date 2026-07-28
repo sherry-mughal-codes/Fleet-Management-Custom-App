@@ -48,7 +48,7 @@ class FleetAnalyticsService(BaseService):
 
 		today = frappe.utils.nowdate() if hasattr(frappe, "utils") else "2026-07-24"
 		today_fuel_entries = frappe.db.count("Fuel Entry", filters={**filters, "fuel_date": today, "status": ["!=", "Cancelled"]}) if hasattr(frappe, "db") else 0
-		today_maint_jobs = frappe.db.count("Maintenance Work Order", filters={**filters, "creation": [">=", today]}) if hasattr(frappe, "db") else 0
+		today_maint_jobs = frappe.db.count("Maintenance Entry", filters={"maintenance_date": today, "docstatus": 1}) if hasattr(frappe, "db") else 0
 
 		cost_stats = self.cost_service.calculate_company_cost(company)
 
@@ -190,16 +190,16 @@ class FleetAnalyticsService(BaseService):
 				"description": f"Logged fuel spend of ${f.total_cost} for vehicle {f.vehicle}."
 			})
 
-		# Maintenance work orders
-		maints = frappe.get_all("Maintenance Work Order", fields=["name", "vehicle", "status", "creation"], order_by="creation desc", limit=5)
+		# Maintenance Entries
+		maints = frappe.get_all("Maintenance Entry", fields=["name", "assignment", "maintenance_date", "total_cost"], order_by="maintenance_date desc", limit=5) if hasattr(frappe, "get_all") else []
 		for m in maints:
 			activity.append({
-				"doctype": "Maintenance Work Order",
+				"doctype": "Maintenance Entry",
 				"name": m.name,
-				"vehicle": m.vehicle,
-				"date": str(m.creation)[:10],
-				"title": f"Maintenance Work Order: {m.name}",
-				"description": f"Work order status updated to {m.status} for vehicle {m.vehicle}."
+				"vehicle": m.assignment,
+				"date": str(m.maintenance_date),
+				"title": f"Maintenance Entry: {m.name}",
+				"description": f"Maintenance servicing completed. Total cost: {m.total_cost}."
 			})
 
 		activity.sort(key=lambda x: x.get("date", ""), reverse=True)

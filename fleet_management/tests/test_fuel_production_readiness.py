@@ -13,19 +13,18 @@ from fleet_management.services.maintenance_lock_service import MaintenanceLockSe
 def test_master_fuel_entry_creation_and_autofetch():
 	"""Verify Category A minimal field creation & auto-fetch cascade (<30s UX)."""
 	payload = {
-		"vehicle": "PROD-V-101",
-		"company": "Fleet Corp",
+		"assignment": "ASN-PROD-101",
 		"fuel_qty": 50.0,
-		"total_cost": 100.0,
+		"fuel_price": 2.0,
 		"odometer": 15500.0,
 		"fuel_date": "2026-07-24"
 	}
 	doc = FuelEntry(payload)
 	doc.before_validate_hook()
 
-	assert doc.vehicle == "PROD-V-101"
-	assert doc.company == "Fleet Corp"
+	assert doc.assignment == "ASN-PROD-101"
 	assert doc.fuel_qty == 50.0
+	assert doc.fuel_price == 2.0
 	assert doc.total_cost == 100.0
 	assert doc.odometer == 15500.0
 	assert doc.status == "Draft"

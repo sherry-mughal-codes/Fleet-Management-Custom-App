@@ -275,30 +275,13 @@ class VehicleService(BaseService):
 def sync_vehicle_operational_summary(vehicle_id: str):
 	"""
 	Central Operational Summary Synchronization Engine.
-	Recalculates and saves Operational Summary fields on target Vehicle DB doc.
+	Recalculates and saves Operational Summary fields on target Vehicle DB doc via FleetStatisticsManager.
 	"""
 	if not hasattr(frappe, "db") or not vehicle_id or not frappe.db.exists("Vehicle", vehicle_id):
 		return
 
-	doc = frappe.get_doc("Vehicle", vehicle_id)
-	doc.sync_operational_summary()
-
-	update_dict = {
-		"current_odometer": doc.current_odometer,
-		"last_fuel_date": doc.last_fuel_date,
-		"average_fuel_economy": doc.average_fuel_economy,
-		"total_fuel_cost": doc.total_fuel_cost,
-		"last_maintenance_date": doc.last_maintenance_date,
-		"total_maintenance_cost": doc.total_maintenance_cost,
-		"lifetime_distance": doc.lifetime_distance,
-		"next_maintenance_due_odometer": doc.next_maintenance_due_odometer
-	}
-
-	if hasattr(frappe, "get_meta") and frappe.get_meta("Vehicle").has_field("last_maintenance_odometer"):
-		update_dict["last_maintenance_odometer"] = getattr(doc, "last_maintenance_odometer", 0.0)
-
-	frappe.db.set_value("Vehicle", doc.name, update_dict)
-	frappe.db.commit()
+	from fleet_management.services.fleet_statistics_manager import FleetStatisticsManager
+	FleetStatisticsManager.recalculate_vehicle_statistics(vehicle_id)
 
 
 def sync_all_vehicles_operational_summary():
@@ -354,56 +337,28 @@ def update_vehicle_status_on_maintenance_change(doc, method=None):
 	vehicle_id = doc.vehicle
 	current_v_status = frappe.db.get_value("Vehicle", vehicle_id, "status")
 	wo_status = getattr(doc, "status", None)
-	from fleet_management.enums import MaintenanceStatus, VehicleStatus
-
-	svc = VehicleService()
-
-	if wo_status == MaintenanceStatus.COMPLETED or wo_status == "Completed":
-		if current_v_status in (VehicleStatus.UNDER_MAINTENANCE, VehicleStatus.MAINTENANCE_DUE):
-			assigned = is_vehicle_assigned(vehicle_id)
-			target_status = VehicleStatus.ASSIGNED if assigned else VehicleStatus.AVAILABLE
-			target_assignment_status = "Assigned" if assigned else "Unassigned"
-			svc.change_status(vehicle_id, target_status, reason=f"Maintenance Work Order '{doc.name}' completed")
-			frappe.db.set_value("Vehicle", vehicle_id, "current_assignment_status", target_assignment_status)
-
-	elif wo_status == MaintenanceStatus.CANCELLED or wo_status == "Cancelled":
-		if current_v_status == VehicleStatus.UNDER_MAINTENANCE:
-			assigned = is_vehicle_assigned(vehicle_id)
-			target_status = VehicleStatus.ASSIGNED if assigned else VehicleStatus.AVAILABLE
-			target_assignment_status = "Assigned" if assigned else "Unassigned"
-			svc.change_status(vehicle_id, target_status, reason=f"Maintenance Work Order '{doc.name}' cancelled")
-			frappe.db.set_value("Vehicle", vehicle_id, "current_assignment_status", target_assignment_status)
-
-	else:
-		# Created / Draft / Scheduled / In Progress / Open Work Order
-		if current_v_status not in (
-			VehicleStatus.UNDER_MAINTENANCE,
-			VehicleStatus.INACTIVE,
-			VehicleStatus.ARCHIVED,
-			VehicleStatus.SOLD,
-			VehicleStatus.SCRAPPED,
-		):
-			svc.change_status(vehicle_id, VehicleStatus.UNDER_MAINTENANCE, reason=f"Maintenance Work Order '{doc.name}' created/active")
-
-
 # Document Event Handlers called by Frappe Hooks
 def on_fuel_entry_change(doc, method=None):
-	if getattr(doc, "vehicle", None):
-		sync_vehicle_operational_summary(doc.vehicle)
+	v_id = getattr(doc, "vehicle", None)
+	if v_id:
+		sync_vehicle_operational_summary(v_id)
+		from fleet_management.services.vehicle_state_manager import VehicleStateManager
+		VehicleStateManager.recalculate_vehicle_state(v_id, reason="Fuel Entry changed")
 
 
 def on_maint_order_change(doc, method=None):
-	if getattr(doc, "vehicle", None):
-		sync_vehicle_operational_summary(doc.vehicle)
-		update_vehicle_status_on_maintenance_change(doc, method=method)
-
-
-def on_maint_request_change(doc, method=None):
-	if getattr(doc, "vehicle", None):
-		sync_vehicle_operational_summary(doc.vehicle)
+	v_id = getattr(doc, "vehicle", None)
+	if v_id:
+		sync_vehicle_operational_summary(v_id)
+		from fleet_management.services.vehicle_state_manager import VehicleStateManager
+		VehicleStateManager.recalculate_vehicle_state(v_id, reason="Maintenance Entry changed")
 
 
 def on_assignment_change(doc, method=None):
-	if getattr(doc, "vehicle", None):
-		sync_vehicle_operational_summary(doc.vehicle)
+	v_id = getattr(doc, "vehicle", None)
+	if v_id:
+		sync_vehicle_operational_summary(v_id)
+		from fleet_management.services.vehicle_state_manager import VehicleStateManager
+		VehicleStateManager.recalculate_vehicle_state(v_id, reason="Vehicle Assignment changed")
+
 

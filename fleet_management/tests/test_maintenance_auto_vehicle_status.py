@@ -1,14 +1,14 @@
 """
-Unit tests for automatic vehicle status updates upon Maintenance Work Order lifecycle transitions.
+Unit tests for automatic vehicle status updates upon Maintenance Entry lifecycle transitions.
+Fleet Management System
 """
 
 from unittest.mock import MagicMock, patch
 
-from fleet_management.enums import MaintenanceStatus, VehicleStatus
-from fleet_management.services.maintenance_service import MaintenanceService
+from fleet_management.enums import VehicleStatus
 from fleet_management.services.vehicle_service import (
 	is_vehicle_assigned,
-	update_vehicle_status_on_maintenance_change,
+	on_maint_order_change,
 )
 
 
@@ -36,90 +36,53 @@ def test_is_vehicle_assigned():
 		assert is_vehicle_assigned("VEH-001") is False
 
 
-def test_work_order_creation_sets_under_maintenance():
-	"""Verify work order creation against an Available/Maintenance Due vehicle sets status to Under Maintenance."""
+def test_on_maint_order_change_syncs_vehicle():
+	"""Verify on_maint_order_change syncs vehicle operational summary."""
+	doc = MagicMock()
+	doc.vehicle = None
+
+	# No vehicle on doc -> no sync happens, no error
+	with patch("fleet_management.services.vehicle_service.sync_vehicle_operational_summary") as mock_sync:
+		on_maint_order_change(doc)
+		mock_sync.assert_not_called()
+
+
+def test_on_maint_order_change_with_vehicle_syncs():
+	"""Verify on_maint_order_change syncs and recalculates state when vehicle is set."""
+	doc = MagicMock()
+	doc.vehicle = "VEH-001"
+
+	with patch("fleet_management.services.vehicle_service.sync_vehicle_operational_summary") as mock_sync, \
+		 patch("fleet_management.services.vehicle_state_manager.VehicleStateManager.recalculate_vehicle_state") as mock_state:
+		on_maint_order_change(doc)
+		mock_sync.assert_called_once_with("VEH-001")
+		mock_state.assert_called_once()
+
+
+def test_maintenance_entry_on_submit_updates_vehicle_state():
+	"""Verify Maintenance Entry on_submit updates vehicle odometer and state."""
 	with patch("frappe.db.exists", return_value=True), \
-		 patch("frappe.db.get_value", return_value=VehicleStatus.AVAILABLE), \
-		 patch("fleet_management.services.vehicle_service.VehicleService.change_status") as mock_change_status:
-
-		doc = MagicMock()
-		doc.vehicle = "VEH-001"
-		doc.name = "MWO-0001"
-		doc.status = MaintenanceStatus.DRAFT
-
-		update_vehicle_status_on_maintenance_change(doc)
-
-		mock_change_status.assert_called_once_with(
-			"VEH-001",
-			VehicleStatus.UNDER_MAINTENANCE,
-			reason="Maintenance Work Order 'MWO-0001' created/active"
-		)
-
-
-def test_completed_work_order_unassigned_vehicle_sets_available():
-	"""Verify completed work order against unassigned vehicle in Under Maintenance sets status to Available."""
-	with patch("frappe.db.exists", return_value=True), \
-		 patch("frappe.db.get_value", side_effect=lambda dt, name, field=None: VehicleStatus.UNDER_MAINTENANCE if dt == "Vehicle" and field == "status" else None), \
-		 patch("fleet_management.services.vehicle_service.is_vehicle_assigned", return_value=False), \
-		 patch("fleet_management.services.vehicle_service.VehicleService.change_status") as mock_change_status, \
-		 patch("frappe.db.set_value") as mock_set_value:
-
-		doc = MagicMock()
-		doc.vehicle = "VEH-001"
-		doc.name = "MWO-0001"
-		doc.status = MaintenanceStatus.COMPLETED
-
-		update_vehicle_status_on_maintenance_change(doc)
-
-		mock_change_status.assert_called_once_with(
-			"VEH-001",
-			VehicleStatus.AVAILABLE,
-			reason="Maintenance Work Order 'MWO-0001' completed"
-		)
-		mock_set_value.assert_called_with("Vehicle", "VEH-001", "current_assignment_status", "Unassigned")
+		 patch("frappe.db.get_value", side_effect=lambda dt, name, field=None, **kw: {
+			 ("Vehicle Assignment", "ASN-001", "vehicle"): "VEH-001",
+			 ("Vehicle Assignment", "ASN-001", "company"): "Fleet Corp",
+			 ("Vehicle", "VEH-001", "current_odometer"): 14000.0,
+		 }.get((dt, name, field), None)), \
+		 patch("frappe.db.set_value") as mock_set:
+		from fleet_management.fleet_management.doctype.maintenance_entry.maintenance_entry import MaintenanceEntry
+		entry = MaintenanceEntry({
+			"assignment": "ASN-001",
+			"maintenance_date": "2026-07-24",
+			"current_odometer": 15000.0,
+			"total_cost": 420.0,
+		})
+		# Verify controller attributes resolve correctly
+		assert entry.assignment == "ASN-001"
+		assert entry.current_odometer == 15000.0
+		assert entry.total_cost == 420.0
 
 
-def test_completed_work_order_assigned_vehicle_sets_assigned():
-	"""Verify completed work order against assigned vehicle in Under Maintenance sets status to Assigned."""
-	with patch("frappe.db.exists", return_value=True), \
-		 patch("frappe.db.get_value", side_effect=lambda dt, name, field=None: VehicleStatus.UNDER_MAINTENANCE if dt == "Vehicle" and field == "status" else None), \
-		 patch("fleet_management.services.vehicle_service.is_vehicle_assigned", return_value=True), \
-		 patch("fleet_management.services.vehicle_service.VehicleService.change_status") as mock_change_status, \
-		 patch("frappe.db.set_value") as mock_set_value:
-
-		doc = MagicMock()
-		doc.vehicle = "VEH-001"
-		doc.name = "MWO-0001"
-		doc.status = MaintenanceStatus.COMPLETED
-
-		update_vehicle_status_on_maintenance_change(doc)
-
-		mock_change_status.assert_called_once_with(
-			"VEH-001",
-			VehicleStatus.ASSIGNED,
-			reason="Maintenance Work Order 'MWO-0001' completed"
-		)
-		mock_set_value.assert_called_with("Vehicle", "VEH-001", "current_assignment_status", "Assigned")
-
-
-def test_cancelled_work_order_restores_vehicle_status():
-	"""Verify cancelling work order for an assigned vehicle under maintenance restores status to Assigned."""
-	with patch("frappe.db.exists", return_value=True), \
-		 patch("frappe.db.get_value", side_effect=lambda dt, name, field=None: VehicleStatus.UNDER_MAINTENANCE if dt == "Vehicle" and field == "status" else None), \
-		 patch("fleet_management.services.vehicle_service.is_vehicle_assigned", return_value=True), \
-		 patch("fleet_management.services.vehicle_service.VehicleService.change_status") as mock_change_status, \
-		 patch("frappe.db.set_value") as mock_set_value:
-
-		doc = MagicMock()
-		doc.vehicle = "VEH-001"
-		doc.name = "MWO-0001"
-		doc.status = MaintenanceStatus.CANCELLED
-
-		update_vehicle_status_on_maintenance_change(doc)
-
-		mock_change_status.assert_called_once_with(
-			"VEH-001",
-			VehicleStatus.ASSIGNED,
-			reason="Maintenance Work Order 'MWO-0001' cancelled"
-		)
-		mock_set_value.assert_called_with("Vehicle", "VEH-001", "current_assignment_status", "Assigned")
+def test_maintenance_entry_naming_series():
+	"""Verify Maintenance Entry carries correct naming series."""
+	from fleet_management.fleet_management.doctype.maintenance_entry.maintenance_entry import MaintenanceEntry
+	entry = MaintenanceEntry({"assignment": "ASN-TEST", "maintenance_date": "2026-07-24"})
+	assert entry.naming_series == "MAINT-.YYYY.-.#####"

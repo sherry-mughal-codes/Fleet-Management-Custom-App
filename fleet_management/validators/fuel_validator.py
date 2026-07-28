@@ -20,8 +20,10 @@ class FuelValidator(BaseValidator):
 	"""
 
 	def validate(self) -> bool:
-		# FUEL-001 & FUEL-010: Required input fields check
-		validate_required_fields(self.data, ["vehicle", "company"])
+		# FUEL-001: assignment is now the primary reference (not vehicle)
+		assignment = self.data.get("assignment")
+		if not assignment:
+			self.add_error("FUEL-001: Vehicle Assignment is required for a Fuel Entry.")
 
 		# FUEL-002: Fuel quantity must be greater than zero
 		fuel_qty = self.data.get("fuel_qty") or self.data.get("liters")
@@ -47,11 +49,12 @@ class FuelValidator(BaseValidator):
 			except FleetValidationError as e:
 				self.add_error(f"FUEL-004: {e.message}")
 
-		# FUEL-008: Maintenance Lock enforcement
-		vehicle_id = self.data.get("vehicle")
-		if vehicle_id and hasattr(frappe, "db"):
-			v_status = frappe.db.get_value("Vehicle", vehicle_id, "status")
-			if v_status == VehicleStatus.UNDER_MAINTENANCE:
-				self.add_error("FUEL-008: Maintenance is due. Complete maintenance before recording more fuel.")
+		# FUEL-008: Maintenance Lock enforcement via vehicle resolved from assignment
+		if assignment and hasattr(frappe, "db") and frappe.db:
+			vehicle_id = frappe.db.get_value("Vehicle Assignment", assignment, "vehicle")
+			if vehicle_id:
+				v_status = frappe.db.get_value("Vehicle", vehicle_id, "status")
+				if v_status == VehicleStatus.UNDER_MAINTENANCE:
+					self.add_error("FUEL-008: Maintenance is due. Complete maintenance before recording more fuel.")
 
 		return len(self.errors) == 0

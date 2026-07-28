@@ -121,7 +121,8 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Assignment Status",
-   "options": "Draft\nPending Approval\nApproved\nAssigned\nIn Use\nReturned\nClosed\nCancelled"
+   "options": "Draft\nPending Approval\nApproved\nAssigned\nIn Use\nReturned\nClosed\nCancelled",
+   "read_only": 1
   },
   {
    "collapsible": 1,
@@ -288,14 +289,17 @@
   }
  ],
  "index_web_pages_for_search": 1,
+ "is_submittable": 1,
  "links": [],
- "modified": "2026-07-24 16:00:00.000000",
+ "modified": "2026-07-27 12:48:00.000000",
  "modified_by": "Administrator",
  "module": "Fleet Management",
  "name": "Vehicle Assignment",
  "owner": "Administrator",
  "permissions": [
   {
+   "amend": 1,
+   "cancel": 1,
    "create": 1,
    "delete": 1,
    "email": 1,
@@ -304,9 +308,12 @@
    "read": 1,
    "role": "System Manager",
    "share": 1,
+   "submit": 1,
    "write": 1
   },
   {
+   "amend": 1,
+   "cancel": 1,
    "create": 1,
    "delete": 0,
    "email": 1,
@@ -315,9 +322,12 @@
    "read": 1,
    "role": "Fleet Manager",
    "share": 1,
+   "submit": 1,
    "write": 1
   },
   {
+   "amend": 1,
+   "cancel": 1,
    "create": 1,
    "delete": 0,
    "email": 1,
@@ -326,6 +336,7 @@
    "read": 1,
    "role": "Fleet Officer",
    "share": 1,
+   "submit": 1,
    "write": 1
   },
   {

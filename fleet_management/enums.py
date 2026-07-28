@@ -108,6 +108,8 @@ class FuelEventType(str, Enum):
 
 
 class MaintenanceStatus(str, Enum):
+	DRAFT = "Draft"
+	OPEN = "Open"
 	SCHEDULED = constants.MAINTENANCE_STATUS_SCHEDULED
 	IN_PROGRESS = constants.MAINTENANCE_STATUS_IN_PROGRESS
 	COMPLETED = constants.MAINTENANCE_STATUS_COMPLETED

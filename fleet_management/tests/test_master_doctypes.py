@@ -9,9 +9,6 @@ from fleet_management.fleet_management.doctype.distance_unit.distance_unit impor
 from fleet_management.fleet_management.doctype.fuel_station.fuel_station import FuelStation
 from fleet_management.fleet_management.doctype.fuel_type.fuel_type import FuelType
 from fleet_management.fleet_management.doctype.fuel_unit.fuel_unit import FuelUnit
-from fleet_management.fleet_management.doctype.maintenance_type.maintenance_type import (
-	MaintenanceType,
-)
 from fleet_management.fleet_management.doctype.maintenance_vendor.maintenance_vendor import (
 	MaintenanceVendor,
 )
@@ -58,15 +55,6 @@ def test_fuel_type_validation():
 	with pytest.raises(FleetValidationError):
 		invalid_fuel = FuelType({"fuel_name": "Petrol", "default_density": -0.5})
 		invalid_fuel.before_validate_hook()
-
-
-def test_maintenance_type_validation():
-	maint = MaintenanceType({"maintenance_name": "Oil Change", "default_interval_km": 5000, "estimated_duration_hours": 1.5})
-	maint.before_validate_hook()
-
-	with pytest.raises(FleetValidationError):
-		invalid_maint = MaintenanceType({"maintenance_name": "Oil Change", "default_interval_km": -50})
-		invalid_maint.before_validate_hook()
 
 
 def test_fuel_station_gps_validation():

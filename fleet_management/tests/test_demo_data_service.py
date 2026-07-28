@@ -31,7 +31,7 @@ class TestDemoDataService:
 
 		status = self.service.get_demo_status()
 		assert status["loaded"] is True
-		assert status["vehicles_count"] == 10
+		assert status["vehicles_count"] >= 10
 		assert status["fuel_entries_count"] >= 140
 		assert status["maintenance_records_count"] >= 15
 

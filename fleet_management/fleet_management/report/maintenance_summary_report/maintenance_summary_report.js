@@ -15,9 +15,8 @@ frappe.query_reports["Maintenance Summary Report"] = {
 		},
 		{
 			"fieldname": "maintenance_type",
-			"label": __("Maintenance Type"),
-			"fieldtype": "Link",
-			"options": "Maintenance Type"
+			"label": __("Item / Activity Name"),
+			"fieldtype": "Data"
 		},
 		{
 			"fieldname": "from_date",
@@ -28,12 +27,6 @@ frappe.query_reports["Maintenance Summary Report"] = {
 			"fieldname": "to_date",
 			"label": __("To Date"),
 			"fieldtype": "Date"
-		},
-		{
-			"fieldname": "status",
-			"label": __("Status"),
-			"fieldtype": "Select",
-			"options": "\nDraft\nScheduled\nIn Progress\nCompleted\nCancelled"
 		}
 	]
 };

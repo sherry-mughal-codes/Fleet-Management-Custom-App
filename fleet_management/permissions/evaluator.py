@@ -59,3 +59,15 @@ class PermissionEvaluator:
 		user_roles = set(frappe.get_roles(user_id))
 		if not user_roles.intersection(set(roles)):
 			raise FleetPermissionError(message=f"Action requires one of the following roles: {', '.join(roles)}")
+
+	@staticmethod
+	def evaluate(role_name: str, doctype: str, action: str = "read") -> dict:
+		"""Evaluates if role has permission on doctype action."""
+		allowed = False
+		if role_name in ("Fleet Manager", "System Manager", "Administrator"):
+			allowed = True
+		elif role_name == "Fleet Officer" and action in ("read", "create", "write"):
+			allowed = True
+		elif role_name == "Fleet User" and action == "read":
+			allowed = True
+		return {"allowed": allowed, "role": role_name, "doctype": doctype, "action": action}

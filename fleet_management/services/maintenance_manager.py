@@ -1,0 +1,335 @@
+"""
+Maintenance Manager Service
+Fleet Management System (Frappe v15)
+
+Centralized engine for template-driven maintenance resolution,
+due/overdue activity calculation, servicing completion, and history tracking.
+"""
+
+from typing import Any, Dict, List, Optional
+import frappe
+
+from fleet_management.enums import VehicleStatus
+from fleet_management.services.base_service import BaseService
+from fleet_management.services.vehicle_state_manager import VehicleStateManager
+from fleet_management.utils.exceptions import FleetNotFoundError, FleetValidationError
+from fleet_management.utils.logger import get_logger
+
+logger = get_logger("fleet_management.services.maintenance_manager")
+
+
+class MaintenanceManager(BaseService):
+	"""
+	Enterprise service for simplified template-driven Maintenance Entries
+	and maintenance intelligence calculations.
+	"""
+
+	def __init__(self):
+		super().__init__()
+		self.state_manager = VehicleStateManager()
+
+	def get_active_template(self, vehicle_id: str) -> Optional[str]:
+		"""
+		Category-Based Template Resolution:
+		Vehicle -> Vehicle Category -> Maintenance Template Category mapping.
+		"""
+		if not frappe.db.exists("Vehicle", vehicle_id):
+			return None
+
+		category = frappe.db.get_value("Vehicle", vehicle_id, "vehicle_category")
+		if not category:
+			return None
+
+		# Query Maintenance Template Category child table for active template
+		if frappe.db.table_exists("Maintenance Template Category"):
+			try:
+				matching = frappe.db.sql("""
+					SELECT parent
+					FROM `tabMaintenance Template Category`
+					WHERE vehicle_category = %s
+					ORDER BY creation DESC
+					LIMIT 1
+				""", (category,), as_dict=True)
+
+				if matching:
+					parent_name = matching[0].get("parent") if isinstance(matching[0], dict) else getattr(matching[0], "parent", None)
+					if parent_name and frappe.db.exists("Maintenance Template", parent_name):
+						if frappe.db.get_value("Maintenance Template", parent_name, "is_active"):
+							return parent_name
+			except Exception:
+				pass
+
+		# Fallback: get any active Maintenance Template
+		active_t = frappe.db.get_value("Maintenance Template", {"is_active": 1}, "name")
+		return active_t
+
+	def get_template_lines(self, template_id: str) -> List[Dict[str, Any]]:
+		"""Retrieves schedule lines for a Maintenance Template."""
+		if not template_id or not frappe.db.exists("Maintenance Template", template_id):
+			return []
+
+		return frappe.get_all(
+			"Maintenance Schedule Line",
+			filters={"parent": template_id},
+			fields=["maintenance_type", "interval_km", "priority", "is_mandatory", "grace_distance", "description"]
+		) if hasattr(frappe, "get_all") else []
+
+	def get_last_serviced_odometer(self, vehicle_id: str, maintenance_type: str) -> float:
+		"""Retrieves the highest odometer reading when target maintenance_type was last serviced."""
+		if hasattr(frappe, "db") and frappe.db.table_exists("Maintenance Entry"):
+			try:
+				m_entries = frappe.db.sql("""
+					SELECT current_odometer
+					FROM `tabMaintenance Entry`
+					WHERE vehicle = %s
+					  AND maintenance_type = %s
+					  AND docstatus = 1
+					ORDER BY current_odometer DESC, maintenance_date DESC
+					LIMIT 1
+				""", (vehicle_id, maintenance_type), as_dict=True)
+
+				if m_entries:
+					return float(m_entries[0].get("current_odometer") or 0.0)
+			except Exception:
+				pass
+
+		# Check initial vehicle odometer fallback
+		initial_odo = float(frappe.db.get_value("Vehicle", vehicle_id, "initial_odometer") or 0.0) if hasattr(frappe, "db") else 0.0
+		return initial_odo
+
+	def get_due_maintenance(self, vehicle_id: str) -> List[Dict[str, Any]]:
+		"""
+		Returns list of template schedule lines currently due for servicing on target vehicle.
+		"""
+		template_id = self.get_active_template(vehicle_id)
+		if not template_id:
+			return []
+
+		curr_odo = float(frappe.db.get_value("Vehicle", vehicle_id, "current_odometer") or 0.0)
+		lines = self.get_template_lines(template_id)
+		due_items = []
+
+		for line in lines:
+			m_type = line.maintenance_type
+			interval = float(line.interval_km or 5000)
+			last_odo = self.get_last_serviced_odometer(vehicle_id, m_type)
+			next_due = last_odo + interval
+
+			if curr_odo >= next_due:
+				due_items.append({
+					"maintenance_type": m_type,
+					"interval_km": interval,
+					"priority": line.priority,
+					"is_mandatory": bool(line.is_mandatory),
+					"last_serviced_odometer": last_odo,
+					"current_odometer": curr_odo,
+					"next_due_odometer": next_due,
+					"exceeded_km": round(curr_odo - next_due, 2)
+				})
+
+		return due_items
+
+	def get_overdue_maintenance(self, vehicle_id: str) -> List[Dict[str, Any]]:
+		"""
+		Returns list of mandatory template schedule lines whose (interval + grace) distance is exceeded.
+		Used by Fuel Entry Validation Engine to enforce Fuel Lock.
+		"""
+		template_id = self.get_active_template(vehicle_id)
+		if not template_id:
+			return []
+
+		curr_odo = float(frappe.db.get_value("Vehicle", vehicle_id, "current_odometer") or 0.0)
+		lines = self.get_template_lines(template_id)
+		overdue_items = []
+
+		for line in lines:
+			if not line.is_mandatory:
+				continue
+
+			m_type = line.maintenance_type
+			interval = float(line.interval_km or 5000)
+			grace = float(line.grace_distance or 0)
+			last_odo = self.get_last_serviced_odometer(vehicle_id, m_type)
+			threshold = last_odo + interval + grace
+
+			if curr_odo >= threshold:
+				overdue_items.append({
+					"maintenance_type": m_type,
+					"interval_km": interval,
+					"grace_distance": grace,
+					"last_serviced_odometer": last_odo,
+					"current_odometer": curr_odo,
+					"threshold_odometer": threshold,
+					"exceeded_km": round(curr_odo - (last_odo + interval), 2)
+				})
+
+		return overdue_items
+
+	def get_next_service(self, vehicle_id: str) -> Optional[Dict[str, Any]]:
+		"""Returns the closest upcoming maintenance schedule line."""
+		template_id = self.get_active_template(vehicle_id)
+		if not template_id:
+			return None
+
+		curr_odo = float(frappe.db.get_value("Vehicle", vehicle_id, "current_odometer") or 0.0)
+		lines = self.get_template_lines(template_id)
+
+		upcoming = []
+		for line in lines:
+			m_type = line.maintenance_type
+			interval = float(line.interval_km or 5000)
+			last_odo = self.get_last_serviced_odometer(vehicle_id, m_type)
+			next_due = last_odo + interval
+			remaining = next_due - curr_odo
+
+			upcoming.append({
+				"maintenance_type": m_type,
+				"next_due_odometer": next_due,
+				"remaining_km": round(remaining, 2)
+			})
+
+		if not upcoming:
+			return None
+
+		upcoming.sort(key=lambda x: x["remaining_km"])
+		return upcoming[0]
+
+	def get_remaining_distance(self, vehicle_id: str) -> Dict[str, float]:
+		"""Returns remaining distance dict for all template schedule lines."""
+		template_id = self.get_active_template(vehicle_id)
+		if not template_id:
+			return {}
+
+		curr_odo = float(frappe.db.get_value("Vehicle", vehicle_id, "current_odometer") or 0.0)
+		lines = self.get_template_lines(template_id)
+		result = {}
+
+		for line in lines:
+			m_type = line.maintenance_type
+			interval = float(line.interval_km or 5000)
+			last_odo = self.get_last_serviced_odometer(vehicle_id, m_type)
+			remaining = (last_odo + interval) - curr_odo
+			result[m_type] = round(remaining, 2)
+
+		return result
+
+	def get_vehicle_health(self, vehicle_id: str) -> Dict[str, Any]:
+		"""
+		Calculates vehicle health score (0-100%) and operational health status.
+		Health Status: Healthy | Due Soon | Overdue | Fuel Locked
+		"""
+		overdue = self.get_overdue_maintenance(vehicle_id)
+		due = self.get_due_maintenance(vehicle_id)
+
+		if overdue:
+			status = "Fuel Locked"
+			score = max(0, 100 - len(overdue) * 30)
+		elif due:
+			status = "Overdue" if any(d.get("is_mandatory") for d in due) else "Due Soon"
+			score = max(50, 100 - len(due) * 15)
+		else:
+			status = "Healthy"
+			score = 100
+
+		return {
+			"vehicle": vehicle_id,
+			"health_score": score,
+			"health_status": status,
+			"due_items_count": len(due),
+			"overdue_items_count": len(overdue)
+		}
+
+	def create_maintenance_entry(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+		"""Creates a new Maintenance Entry document."""
+		doc = frappe.get_doc({
+			"doctype": "Maintenance Entry",
+			**payload
+		})
+		doc.insert()
+		return doc.as_dict()
+
+	def submit_maintenance_entry(self, entry_id: str) -> Dict[str, Any]:
+		"""
+		Submits Maintenance Entry:
+		Records history, resets ONLY the completed maintenance_type,
+		recalculates next maintenance due odometer, and triggers VehicleStateManager.
+		"""
+		if not frappe.db.exists("Maintenance Entry", entry_id):
+			raise FleetNotFoundError(f"Maintenance Entry '{entry_id}' not found.")
+
+		doc = frappe.get_doc("Maintenance Entry", entry_id)
+
+		if doc.docstatus == 0:
+			doc.submit()
+
+		vehicle_id = doc.vehicle
+		if vehicle_id:
+			# Update Vehicle last maintenance odometer & date
+			comp_odo = float(doc.current_odometer or 0.0)
+			frappe.db.set_value("Vehicle", vehicle_id, "last_maintenance_odometer", comp_odo)
+			frappe.db.set_value("Vehicle", vehicle_id, "last_maintenance_date", doc.maintenance_date)
+
+			# Calculate new next_maintenance_due_odometer from template lines
+			next_svc = self.get_next_service(vehicle_id)
+			if next_svc and next_svc.get("next_due_odometer"):
+				frappe.db.set_value("Vehicle", vehicle_id, "next_maintenance_due_odometer", next_svc["next_due_odometer"])
+
+			from fleet_management.services.vehicle_service import sync_vehicle_operational_summary
+			sync_vehicle_operational_summary(vehicle_id)
+
+			# Recalculate Vehicle state via VehicleStateManager
+			self.state_manager.update_vehicle_state(vehicle_id, reason=f"Maintenance Entry {entry_id} submitted")
+
+		logger.info(f"Submitted Maintenance Entry: {entry_id}")
+		return doc.as_dict()
+
+	def cancel_maintenance_entry(self, entry_id: str, reason: Optional[str] = None) -> bool:
+		"""
+		Transaction Reversal for Maintenance Entry:
+		Cancels entry, restores previous maintenance counters, recalculates vehicle state.
+		"""
+		if not frappe.db.exists("Maintenance Entry", entry_id):
+			raise FleetNotFoundError(f"Maintenance Entry '{entry_id}' not found.")
+
+		doc = frappe.get_doc("Maintenance Entry", entry_id)
+		vehicle_id = doc.vehicle
+
+		if doc.docstatus == 1:
+			doc.cancel()
+
+		if vehicle_id:
+			from fleet_management.services.vehicle_service import sync_vehicle_operational_summary
+			sync_vehicle_operational_summary(vehicle_id)
+			self.state_manager.update_vehicle_state(vehicle_id, reason=reason or f"Maintenance Entry {entry_id} cancelled")
+
+		logger.info(f"Cancelled Maintenance Entry: {entry_id}")
+		return True
+
+	# --- Legacy Subsystem Handlers for Backward Compatibility ---
+	def create_request(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+		"""Legacy wrapper creating Maintenance Request."""
+		doc = frappe.get_doc({"doctype": "Maintenance Request", **payload})
+		doc.insert()
+		return doc.as_dict()
+
+	def create_work_order(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+		"""Legacy wrapper creating Maintenance Work Order."""
+		doc = frappe.get_doc({"doctype": "Maintenance Work Order", **payload})
+		doc.insert()
+		return doc.as_dict()
+
+	def complete_work_order(self, work_order_id: str, completion_odometer: Optional[float] = None, costs: Optional[Dict[str, float]] = None) -> Dict[str, Any]:
+		"""Legacy wrapper completing Maintenance Work Order."""
+		if not frappe.db.exists("Maintenance Work Order", work_order_id):
+			return {}
+		doc = frappe.get_doc("Maintenance Work Order", work_order_id)
+		if costs:
+			for k, v in costs.items():
+				if hasattr(doc, k):
+					setattr(doc, k, float(v or 0.0))
+		if completion_odometer:
+			doc.completion_odometer = float(completion_odometer)
+		doc.status = "Completed"
+		if doc.docstatus == 0:
+			doc.submit()
+		return doc.as_dict()

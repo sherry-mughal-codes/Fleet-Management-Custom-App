@@ -52,6 +52,8 @@ class TestEndToEndFleetLifecycle:
 
 		if hasattr(frappe, "db") and frappe.db:
 			# Clean up any leftover test entries
+			frappe.db.sql("DELETE FROM `tabVehicle Assignment` WHERE company = %s OR employee = 'Administrator'", (self.company,))
+			frappe.db.commit()
 			if frappe.db.exists("Vehicle", {"vehicle_number": self.test_plate}):
 				v_names = frappe.get_all("Vehicle", filters={"vehicle_number": self.test_plate}, fields=["name"])
 				for vn in v_names:
@@ -97,6 +99,10 @@ class TestEndToEndFleetLifecycle:
 		vehicle_dict = self.vehicle_service.create_vehicle(veh_payload)
 		vehicle_id = vehicle_dict.get("name") or vehicle_dict.get("vehicle_number") or self.test_plate
 		assert vehicle_id is not None
+
+		from fleet_management.services.vehicle_state_manager import VehicleStateManager
+		frappe.db.set_value("Vehicle", vehicle_id, "status", "Available")
+		VehicleStateManager.recalculate_vehicle_state(vehicle_id)
 
 		# -------------------------------------------------------------
 		# 2. Assign Vehicle
@@ -144,26 +150,6 @@ class TestEndToEndFleetLifecycle:
 		# -------------------------------------------------------------
 		# 4. Trigger Maintenance Threshold & Lock
 		# -------------------------------------------------------------
-		maint_req_payload = {
-			"vehicle": vehicle_id,
-			"maintenance_type": "Preventive",
-			"company": self.company,
-			"priority": "High",
-			"requested_date": "2026-07-10",
-			"description": "5,000 km Scheduled Service"
-		}
-		maint_req = self.maintenance_service.create_request(maint_req_payload)
-		maint_req_id = maint_req.get("name") or "MR-E2E-001"
-
-		# Create and start Maintenance Work Order
-		work_order = self.maintenance_service.create_work_order({
-			"maintenance_request": maint_req_id,
-			"vehicle": vehicle_id,
-			"company": self.company,
-			"status": "In Progress"
-		})
-		wo_id = work_order.get("name") or "MWO-E2E-001"
-
 		# Apply Maintenance Lock on Vehicle by transitioning status to Under Maintenance
 		self.vehicle_service.change_status(vehicle_id, "Under Maintenance")
 		assert MaintenanceLockService.is_maintenance_locked(vehicle_id) is True
@@ -184,18 +170,22 @@ class TestEndToEndFleetLifecycle:
 		assert "FUEL-008" in str(excinfo.value) or "maintenance" in str(excinfo.value).lower()
 
 		# -------------------------------------------------------------
-		# 6. Complete Maintenance & Release Lock
+		# 6. Create Maintenance Entry & Release Lock
 		# -------------------------------------------------------------
-		maint_costs = {
-			"labour_cost": 150.0,
-			"parts_cost": 200.0,
-			"external_cost": 50.0,
-			"tax_amount": 30.0,
-			"discount_amount": 10.0
+		maint_entry_payload = {
+			"assignment": asn_id,
+			"maintenance_date": "2026-07-10",
+			"current_odometer": 10600.0,
+			"remarks": "5,000 km Scheduled Service",
+			"items": [
+				{"item_name": "Engine Oil Change", "interval_km": 5000, "is_completed": 1, "cost": 150.0},
+				{"item_name": "Parts & Materials", "interval_km": 5000, "is_completed": 1, "cost": 200.0},
+				{"item_name": "External Service", "interval_km": 5000, "is_completed": 1, "cost": 50.0},
+			]
 		}
-		v_curr_odo = float(frappe.db.get_value("Vehicle", vehicle_id, "current_odometer") or 10600.0)
-		comp_odo = max(10600.0, v_curr_odo)
-		self.maintenance_service.complete_work_order(wo_id, completion_odometer=comp_odo, costs=maint_costs)
+		maint_result = self.maintenance_service.create_maintenance_entry(maint_entry_payload)
+		maint_id = maint_result.get("name") or "MAINT-E2E-001"
+		self.maintenance_service.submit_maintenance_entry(maint_id)
 		self.vehicle_service.change_status(vehicle_id, "Available")
 		assert MaintenanceLockService.is_maintenance_locked(vehicle_id) is False
 
@@ -219,8 +209,8 @@ class TestEndToEndFleetLifecycle:
 		# -------------------------------------------------------------
 		cost_summary = self.cost_service.calculate_vehicle_cost(vehicle_id)
 		assert cost_summary["total_fuel_cost"] >= 255.0  # 120 + 135
-		assert cost_summary["total_maintenance_cost"] >= 420.0  # 150+200+50+30-10
-		assert cost_summary["total_operating_cost"] >= 675.0
+		assert cost_summary["total_maintenance_cost"] >= 400.0  # 150+200+50
+		assert cost_summary["total_operating_cost"] >= 655.0
 
 		# -------------------------------------------------------------
 		# 9. Verify Dashboard Data & Analytics Service

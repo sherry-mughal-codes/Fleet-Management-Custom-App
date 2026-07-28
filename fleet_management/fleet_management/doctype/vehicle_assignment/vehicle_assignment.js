@@ -1,4 +1,15 @@
 frappe.ui.form.on('Vehicle Assignment', {
+	setup: function(frm) {
+		// Only Available vehicles should be selectable
+		frm.set_query('vehicle', function() {
+			return {
+				filters: {
+					'status': 'Available'
+				}
+			};
+		});
+	},
+
 	refresh: function(frm) {
 		if (!frm.is_new()) {
 			let status = frm.doc.status;

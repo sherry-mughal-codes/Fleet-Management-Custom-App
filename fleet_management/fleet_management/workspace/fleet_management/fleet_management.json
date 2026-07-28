@@ -1,16 +1,7 @@
 {
- "charts": [
-  {
-   "chart_name": "Fleet Vehicle Status Distribution",
-   "label": "Fleet Vehicle Status"
-  },
-  {
-   "chart_name": "Monthly Fuel Expense",
-   "label": "Monthly Fuel Spend"
-  }
- ],
- "content": "[{\"id\":\"yQs5qG3NoU\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Fleet Command Center Overview</span>\",\"col\":12}},{\"id\":\"h1vMbqxpY_\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Vehicle\",\"col\":3}},{\"id\":\"Nv7kiAQPEH\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Vehicle Assignment\",\"col\":3}},{\"id\":\"Jwo4FBfSpG\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Fuel Entry\",\"col\":3}},{\"id\":\"VQMb7YfPGZ\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Maintenance Request\",\"col\":3}},{\"id\":\"SBBy-T9OTP\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Maintenance Work Order\",\"col\":3}},{\"id\":\"sqiVvp7p2-\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Fleet Settings\",\"col\":3}},{\"id\":\"Vo4TzXiaGs\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Fleet Management Modules (Sequence of Work)</span>\",\"col\":12}},{\"id\":\"lUNaG6Wc6o\",\"type\":\"card\",\"data\":{\"card_name\":\"\u2699\ufe0f System & Master Setup\",\"col\":4}},{\"id\":\"cEKgC1kw5N\",\"type\":\"card\",\"data\":{\"card_name\":\"\ud83d\ude97 Asset Management\",\"col\":4}},{\"id\":\"uihzwgAVvf\",\"type\":\"card\",\"data\":{\"card_name\":\"\ud83d\udd11 Dispatch & Assignments\",\"col\":4}},{\"id\":\"dbmSd2n-AF\",\"type\":\"card\",\"data\":{\"card_name\":\"\u26fd Fuel & Energy Intelligence\",\"col\":4}},{\"id\":\"IKCXCqKiFg\",\"type\":\"card\",\"data\":{\"card_name\":\"\ud83d\udd27 Maintenance & Repairs\",\"col\":4}},{\"id\":\"QrVWxHlV9X\",\"type\":\"card\",\"data\":{\"card_name\":\"\ud83d\udcca Reports & Fleet Analytics\",\"col\":4}}]",
- "creation": "2026-07-24 16:51:00",
+ "charts": [],
+ "content": "[{\"id\":\"yQs5qG3NoU\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Fleet Command Center</span>\",\"col\":12}},{\"id\":\"h1vMbqxpY_\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Vehicle\",\"col\":3}},{\"id\":\"Nv7kiAQPEH\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Vehicle Assignment\",\"col\":3}},{\"id\":\"Jwo4FBfSpG\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Fuel Entry\",\"col\":3}},{\"id\":\"VQMb7YfPGZ\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Maintenance Entry\",\"col\":3}},{\"id\":\"SBBy-T9OTP\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Maintenance Template\",\"col\":3}},{\"id\":\"sqiVvp7p2-\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Fleet Settings\",\"col\":3}},{\"id\":\"Vo4TzXiaGs\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Fleet Operations &amp; Management</span>\",\"col\":12}},{\"id\":\"lUNaG6Wc6o\",\"type\":\"card\",\"data\":{\"card_name\":\"\ud83d\ude80 Daily Operations\",\"col\":4}},{\"id\":\"cEKgC1kw5N\",\"type\":\"card\",\"data\":{\"card_name\":\"\ud83d\ude97 Fleet Assets\",\"col\":4}},{\"id\":\"IKCXCqKiFg\",\"type\":\"card\",\"data\":{\"card_name\":\"\ud83d\udd27 Maintenance Engine\",\"col\":4}},{\"id\":\"dbmSd2n-AF\",\"type\":\"card\",\"data\":{\"card_name\":\"\u26fd Fuel Intelligence\",\"col\":4}},{\"id\":\"QrVWxHlV9X\",\"type\":\"card\",\"data\":{\"card_name\":\"\ud83d\udcca Executive Analytics\",\"col\":4}},{\"id\":\"uihzwgAVvf\",\"type\":\"card\",\"data\":{\"card_name\":\"\u2699\ufe0f System & Masters\",\"col\":4}}]",
+ "creation": "2026-07-28 13:39:31.896004",
  "custom_blocks": [],
  "docstatus": 0,
  "doctype": "Workspace",
@@ -25,7 +16,7 @@
   {
    "hidden": 0,
    "is_query_report": 0,
-   "label": "\u2699\ufe0f System & Master Setup",
+   "label": "\ud83d\ude80 Daily Operations",
    "link_count": 0,
    "link_type": "DocType",
    "onboard": 0,
@@ -34,9 +25,9 @@
   {
    "hidden": 0,
    "is_query_report": 0,
-   "label": "Fleet Settings",
+   "label": "Vehicle Assignment",
    "link_count": 0,
-   "link_to": "Fleet Settings",
+   "link_to": "Vehicle Assignment",
    "link_type": "DocType",
    "onboard": 0,
    "type": "Link"
@@ -44,9 +35,9 @@
   {
    "hidden": 0,
    "is_query_report": 0,
-   "label": "Company",
+   "label": "Fuel Entry",
    "link_count": 0,
-   "link_to": "Company",
+   "link_to": "Fuel Entry",
    "link_type": "DocType",
    "onboard": 0,
    "type": "Link"
@@ -54,9 +45,9 @@
   {
    "hidden": 0,
    "is_query_report": 0,
-   "label": "Distance Unit",
+   "label": "Maintenance Entry",
    "link_count": 0,
-   "link_to": "Distance Unit",
+   "link_to": "Maintenance Entry",
    "link_type": "DocType",
    "onboard": 0,
    "type": "Link"
@@ -64,9 +55,18 @@
   {
    "hidden": 0,
    "is_query_report": 0,
-   "label": "Fuel Unit",
+   "label": "\ud83d\ude97 Fleet Assets",
    "link_count": 0,
-   "link_to": "Fuel Unit",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Vehicle",
+   "link_count": 0,
+   "link_to": "Vehicle",
    "link_type": "DocType",
    "onboard": 0,
    "type": "Link"
@@ -114,9 +114,18 @@
   {
    "hidden": 0,
    "is_query_report": 0,
-   "label": "Fuel Type",
+   "label": "\ud83d\udd27 Maintenance Engine",
    "link_count": 0,
-   "link_to": "Fuel Type",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Maintenance Entry",
+   "link_count": 0,
+   "link_to": "Maintenance Entry",
    "link_type": "DocType",
    "onboard": 0,
    "type": "Link"
@@ -124,19 +133,9 @@
   {
    "hidden": 0,
    "is_query_report": 0,
-   "label": "Fuel Station",
+   "label": "Maintenance Template",
    "link_count": 0,
-   "link_to": "Fuel Station",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Maintenance Type",
-   "link_count": 0,
-   "link_to": "Maintenance Type",
+   "link_to": "Maintenance Template",
    "link_type": "DocType",
    "onboard": 0,
    "type": "Link"
@@ -154,65 +153,7 @@
   {
    "hidden": 0,
    "is_query_report": 0,
-   "label": "Maintenance Task Template",
-   "link_count": 0,
-   "link_to": "Maintenance Task Template",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Expense Category",
-   "link_count": 0,
-   "link_to": "Expense Category",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "\ud83d\ude97 Asset Management",
-   "link_count": 0,
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Card Break"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Vehicle",
-   "link_count": 0,
-   "link_to": "Vehicle",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "\ud83d\udd11 Dispatch & Assignments",
-   "link_count": 0,
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Card Break"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Vehicle Assignment",
-   "link_count": 0,
-   "link_to": "Vehicle Assignment",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "\u26fd Fuel & Energy Intelligence",
+   "label": "\u26fd Fuel Intelligence",
    "link_count": 0,
    "link_type": "DocType",
    "onboard": 0,
@@ -241,18 +182,9 @@
   {
    "hidden": 0,
    "is_query_report": 0,
-   "label": "\ud83d\udd27 Maintenance & Repairs",
+   "label": "Fuel Type",
    "link_count": 0,
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Card Break"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Maintenance Request",
-   "link_count": 0,
-   "link_to": "Maintenance Request",
+   "link_to": "Fuel Type",
    "link_type": "DocType",
    "onboard": 0,
    "type": "Link"
@@ -260,27 +192,7 @@
   {
    "hidden": 0,
    "is_query_report": 0,
-   "label": "Maintenance Work Order",
-   "link_count": 0,
-   "link_to": "Maintenance Work Order",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Maintenance Task Template",
-   "link_count": 0,
-   "link_to": "Maintenance Task Template",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "\ud83d\udcca Reports & Fleet Analytics",
+   "label": "\ud83d\udcca Executive Analytics",
    "link_count": 0,
    "link_type": "Report",
    "onboard": 0,
@@ -325,9 +237,38 @@
    "link_type": "Report",
    "onboard": 0,
    "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "\u2699\ufe0f System & Masters",
+   "link_count": 0,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Fleet Settings",
+   "link_count": 0,
+   "link_to": "Fleet Settings",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Company",
+   "link_count": 0,
+   "link_to": "Company",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
   }
  ],
- "modified": "2026-07-26 16:07:32.113988",
+ "modified": "2026-07-28 13:39:31.896004",
  "modified_by": "Administrator",
  "module": "Fleet Management",
  "name": "Fleet Management",
@@ -363,15 +304,15 @@
   {
    "color": "Orange",
    "doc_view": "List",
-   "label": "Maintenance Request",
-   "link_to": "Maintenance Request",
+   "label": "Maintenance Entry",
+   "link_to": "Maintenance Entry",
    "type": "DocType"
   },
   {
    "color": "Red",
    "doc_view": "List",
-   "label": "Maintenance Work Order",
-   "link_to": "Maintenance Work Order",
+   "label": "Maintenance Template",
+   "link_to": "Maintenance Template",
    "type": "DocType"
   },
   {

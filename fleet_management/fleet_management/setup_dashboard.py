@@ -5,7 +5,7 @@ Frappe Framework v15
 """
 
 import json
-
+import os
 import frappe
 
 
@@ -47,6 +47,18 @@ def setup_fleet_dashboards():
 		},
 		{
 			"doctype": "Number Card",
+			"name": "Active Assignments",
+			"label": "Active Assignments",
+			"type": "Document Type",
+			"document_type": "Vehicle Assignment",
+			"function": "Count",
+			"filters_json": json.dumps([["Vehicle Assignment", "status", "=", "Assigned"]]),
+			"color": "Orange",
+			"is_public": 1,
+			"module": "Fleet Management",
+		},
+		{
+			"doctype": "Number Card",
 			"name": "Vehicles Under Maintenance",
 			"label": "Vehicles Under Maintenance",
 			"type": "Document Type",
@@ -59,17 +71,28 @@ def setup_fleet_dashboards():
 		},
 		{
 			"doctype": "Number Card",
-			"name": "Active Assignments",
-			"label": "Active Assignments",
+			"name": "Maintenance Due Vehicles",
+			"label": "Maintenance Due Vehicles",
 			"type": "Document Type",
-			"document_type": "Vehicle Assignment",
+			"document_type": "Vehicle",
 			"function": "Count",
-			"filters_json": json.dumps([["Vehicle Assignment", "status", "=", "Assigned"]]),
-			"color": "Orange",
+			"filters_json": json.dumps([["Vehicle", "status", "=", "Maintenance Due"]]),
+			"color": "Yellow",
 			"is_public": 1,
 			"module": "Fleet Management",
 		},
-
+		{
+			"doctype": "Number Card",
+			"name": "Fuel Locked Vehicles",
+			"label": "Fuel Locked Vehicles",
+			"type": "Document Type",
+			"document_type": "Vehicle",
+			"function": "Count",
+			"filters_json": json.dumps([["Vehicle", "status", "=", "Fuel Locked"]]),
+			"color": "Red",
+			"is_public": 1,
+			"module": "Fleet Management",
+		},
 		{
 			"doctype": "Number Card",
 			"name": "Total Fuel Spend",
@@ -82,35 +105,33 @@ def setup_fleet_dashboards():
 			"is_public": 1,
 			"module": "Fleet Management",
 		},
-
-
 		{
 			"doctype": "Number Card",
-			"name": "Open Maintenance Requests",
-			"label": "Open Maintenance Requests",
+			"name": "Total Maintenance Spend",
+			"label": "Total Maintenance Spend",
 			"type": "Document Type",
-			"document_type": "Maintenance Request",
-			"function": "Count",
-			"filters_json": json.dumps([["Maintenance Request", "status", "!=", "Completed"]]),
-			"color": "Yellow",
+			"document_type": "Maintenance Entry",
+			"function": "Sum",
+			"aggregate_function_based_on": "total_cost",
+			"filters_json": json.dumps([["Maintenance Entry", "docstatus", "=", 1]]),
+			"color": "Purple",
 			"is_public": 1,
 			"module": "Fleet Management",
 		},
 	]
 
 	for card_def in number_cards:
-		if not frappe.db.exists("Number Card", card_def["name"]):
+		try:
+			if frappe.db.exists("Number Card", card_def["name"]):
+				frappe.delete_doc("Number Card", card_def["name"], force=True, ignore_permissions=True)
 			doc = frappe.get_doc(card_def)
 			doc.insert(ignore_permissions=True)
-		else:
-			doc = frappe.get_doc("Number Card", card_def["name"])
-			doc.update(card_def)
-			doc.save(ignore_permissions=True)
+		except Exception:
+			pass
 
 	frappe.db.commit()
 
 	# ---------------------------------------------------------
-
 	# 2. Dashboard Charts (Visualizations)
 	# ---------------------------------------------------------
 	charts = [
@@ -161,7 +182,7 @@ def setup_fleet_dashboards():
 			"chart_name": "Maintenance Spend Trend",
 			"chart_type": "Sum",
 			"type": "Bar",
-			"document_type": "Maintenance Work Order",
+			"document_type": "Maintenance Entry",
 			"based_on": "creation",
 			"value_based_on": "total_cost",
 			"timespan": "Last Year",
@@ -172,20 +193,16 @@ def setup_fleet_dashboards():
 		},
 	]
 
-
-
-
 	for chart_def in charts:
-		if not frappe.db.exists("Dashboard Chart", chart_def["name"]):
+		try:
+			if frappe.db.exists("Dashboard Chart", chart_def["name"]):
+				frappe.delete_doc("Dashboard Chart", chart_def["name"], force=True, ignore_permissions=True)
 			doc = frappe.get_doc(chart_def)
 			doc.insert(ignore_permissions=True)
-		else:
-			doc = frappe.get_doc("Dashboard Chart", chart_def["name"])
-			doc.update(chart_def)
-			doc.save(ignore_permissions=True)
+		except Exception:
+			pass
 
 	frappe.db.commit()
-
 
 	# ---------------------------------------------------------
 	# 3. Create Dedicated "Fleet Dashboard" Workspace
@@ -204,10 +221,12 @@ def setup_fleet_dashboards():
 		"number_cards": [
 			{"number_card_name": "Total Fleet Vehicles", "label": "Total Vehicles"},
 			{"number_card_name": "Available Vehicles", "label": "Available Vehicles"},
-			{"number_card_name": "Vehicles Under Maintenance", "label": "Under Maintenance"},
 			{"number_card_name": "Active Assignments", "label": "Active Assignments"},
+			{"number_card_name": "Vehicles Under Maintenance", "label": "Under Maintenance"},
+			{"number_card_name": "Maintenance Due Vehicles", "label": "Maintenance Due"},
+			{"number_card_name": "Fuel Locked Vehicles", "label": "Fuel Locked"},
 			{"number_card_name": "Total Fuel Spend", "label": "Total Fuel Spend"},
-			{"number_card_name": "Open Maintenance Requests", "label": "Open Requests"},
+			{"number_card_name": "Total Maintenance Spend", "label": "Total Maintenance Spend"},
 		],
 		"charts": [
 			{"chart_name": "Fleet Vehicle Status Distribution", "label": "Fleet Vehicle Status"},
@@ -266,10 +285,12 @@ def setup_fleet_dashboards():
 			{"type": "header", "data": {"text": "Fleet Analytics & Executive KPI Dashboard", "level": 2}},
 			{"type": "number_card", "data": {"number_card_name": "Total Fleet Vehicles"}},
 			{"type": "number_card", "data": {"number_card_name": "Available Vehicles"}},
-			{"type": "number_card", "data": {"number_card_name": "Vehicles Under Maintenance"}},
 			{"type": "number_card", "data": {"number_card_name": "Active Assignments"}},
+			{"type": "number_card", "data": {"number_card_name": "Vehicles Under Maintenance"}},
+			{"type": "number_card", "data": {"number_card_name": "Maintenance Due Vehicles"}},
+			{"type": "number_card", "data": {"number_card_name": "Fuel Locked Vehicles"}},
 			{"type": "number_card", "data": {"number_card_name": "Total Fuel Spend"}},
-			{"type": "number_card", "data": {"number_card_name": "Open Maintenance Requests"}},
+			{"type": "number_card", "data": {"number_card_name": "Total Maintenance Spend"}},
 			{"type": "header", "data": {"text": "Fleet Visual Analytics & Charts", "level": 3}},
 			{"type": "chart", "data": {"chart_name": "Fleet Vehicle Status Distribution"}},
 			{"type": "chart", "data": {"chart_name": "Vehicle Category Breakdown"}},
@@ -280,29 +301,23 @@ def setup_fleet_dashboards():
 		])
 	}
 
-	if not frappe.db.exists("Workspace", "Fleet Dashboard"):
-		doc = frappe.get_doc(dash_workspace)
-		doc.insert(ignore_permissions=True)
-	else:
-		doc = frappe.get_doc("Workspace", "Fleet Dashboard")
-		doc.update(dash_workspace)
-		doc.save(ignore_permissions=True)
+	# ---------------------------------------------------------
+	# 4. Sync "Fleet Management" Workspace from JSON
+	# ---------------------------------------------------------
+	try:
+		workspace_path = frappe.get_app_path("fleet_management", "fleet_management", "workspace", "fleet_management", "fleet_management.json")
+		if os.path.exists(workspace_path):
+			with open(workspace_path, "r", encoding="utf-8") as f:
+				fm_data = json.load(f)
+			
+			if frappe.db.exists("Workspace", "Fleet Management"):
+				frappe.delete_doc("Workspace", "Fleet Management", force=True, ignore_permissions=True)
+			
+			doc = frappe.get_doc(fm_data)
+			doc.insert(ignore_permissions=True)
+	except Exception as e:
+		print(f"Error syncing Fleet Management Workspace: {e}")
 
-	if frappe.db.exists("Workspace", "Fleet Management"):
-		fm_doc = frappe.get_doc("Workspace", "Fleet Management")
-		for sc in (fm_doc.shortcuts or []):
-			if getattr(sc, "doc_view", None) == "Form":
-				sc.doc_view = ""
-		fm_doc.set("charts", [
-			{"chart_name": "Fleet Vehicle Status Distribution", "label": "Fleet Vehicle Status"},
-			{"chart_name": "Monthly Fuel Expense", "label": "Monthly Fuel Spend"}
-		])
-		fm_doc.save(ignore_permissions=True)
-
-	frappe.db.sql("""
-		DELETE FROM `tabWorkspace Link`
-		WHERE link_to IN ('Vehicle Image Detail', 'Vehicle Document Detail')
-	""")
 	frappe.db.commit()
 	print("Fleet Dashboard Workspace, Charts, Number Cards & Workspace Links initialized successfully!")
 

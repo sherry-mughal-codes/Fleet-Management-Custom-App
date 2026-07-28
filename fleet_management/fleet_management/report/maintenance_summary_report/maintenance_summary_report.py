@@ -1,6 +1,6 @@
 """
 Maintenance Summary Script Report Implementation
-Fleet Management System
+Fleet Management System (Frappe v15)
 """
 
 import frappe
@@ -15,119 +15,98 @@ def execute(filters=None):
 
 def get_columns():
 	return [
-		{"label": "Work Order ID", "fieldname": "name", "fieldtype": "Link", "options": "Maintenance Work Order", "width": 140},
-		{"label": "Request Ref", "fieldname": "maintenance_request", "fieldtype": "Link", "options": "Maintenance Request", "width": 140},
+		{"label": "Entry ID", "fieldname": "name", "fieldtype": "Link", "options": "Maintenance Entry", "width": 140},
+		{"label": "Assignment", "fieldname": "assignment", "fieldtype": "Link", "options": "Vehicle Assignment", "width": 140},
 		{"label": "Vehicle", "fieldname": "vehicle", "fieldtype": "Link", "options": "Vehicle", "width": 140},
-		{"label": "Maintenance Type", "fieldname": "maintenance_type", "fieldtype": "Data", "width": 130},
-		{"label": "Start Date", "fieldname": "start_date", "fieldtype": "Date", "width": 110},
-		{"label": "Completion Date", "fieldname": "completion_date", "fieldtype": "Date", "width": 120},
-		{"label": "Workshop", "fieldname": "workshop", "fieldtype": "Data", "width": 140},
-		{"label": "Technician", "fieldname": "assigned_technician", "fieldtype": "Link", "options": "User", "width": 130},
-		{"label": "Labour Cost", "fieldname": "labour_cost", "fieldtype": "Currency", "width": 120},
-		{"label": "Parts Cost", "fieldname": "parts_cost", "fieldtype": "Currency", "width": 120},
-		{"label": "External Cost", "fieldname": "external_cost", "fieldtype": "Currency", "width": 120},
+		{"label": "Employee", "fieldname": "employee", "fieldtype": "Link", "options": "User", "width": 130},
+		{"label": "Maintenance Type", "fieldname": "maintenance_type", "fieldtype": "Data", "width": 140},
+		{"label": "Date", "fieldname": "maintenance_date", "fieldtype": "Date", "width": 110},
+		{"label": "Odometer (KM)", "fieldname": "current_odometer", "fieldtype": "Float", "width": 120},
 		{"label": "Total Cost", "fieldname": "total_cost", "fieldtype": "Currency", "width": 130},
-		{"label": "Status", "fieldname": "status", "fieldtype": "Data", "width": 120},
+		{"label": "Vendor", "fieldname": "vendor", "fieldtype": "Link", "options": "Maintenance Vendor", "width": 140},
+		{"label": "DocStatus", "fieldname": "docstatus_label", "fieldtype": "Data", "width": 110},
 		{"label": "Company", "fieldname": "company", "fieldtype": "Link", "options": "Company", "width": 140}
 	]
 
 
 def get_data_and_summary(filters):
 	conditions = {}
-	if filters.get("company"):
-		conditions["company"] = filters.get("company")
-	if filters.get("vehicle"):
-		conditions["vehicle"] = filters.get("vehicle")
-	if filters.get("status"):
-		conditions["status"] = filters.get("status")
-	else:
-		conditions["status"] = ["!=", "Cancelled"]
-
 	if filters.get("from_date") and filters.get("to_date"):
-		conditions["creation"] = ["between", [filters.get("from_date"), filters.get("to_date")]]
+		conditions["maintenance_date"] = ["between", [filters.get("from_date"), filters.get("to_date")]]
 	elif filters.get("from_date"):
-		conditions["creation"] = [">=", filters.get("from_date")]
+		conditions["maintenance_date"] = [">=", filters.get("from_date")]
 	elif filters.get("to_date"):
-		conditions["creation"] = ["<=", filters.get("to_date")]
+		conditions["maintenance_date"] = ["<=", filters.get("to_date")]
 
-	work_orders = frappe.get_all(
-		"Maintenance Work Order",
+	# Fetch Maintenance Entry records
+	entries = frappe.get_all(
+		"Maintenance Entry",
 		filters=conditions,
-		fields=[
-			"name", "maintenance_request", "vehicle", "assigned_technician", "workshop",
-			"start_date", "completion_date", "labour_cost", "parts_cost", "external_cost",
-			"tax_amount", "discount_amount", "total_cost", "status", "company"
-		],
-		order_by="creation desc"
-	) if hasattr(frappe, "get_all") else []
-
-	# Pre-fetch Maintenance Types from linked Maintenance Requests
-	req_type_map = {}
-	req_ids = [w.maintenance_request for w in work_orders if w.get("maintenance_request")]
-	if req_ids and hasattr(frappe, "get_all"):
-		reqs = frappe.get_all("Maintenance Request", filters={"name": ["in", req_ids]}, fields=["name", "maintenance_type"])
-		for r in reqs:
-			req_type_map[r.name] = r.maintenance_type
+		fields=["name", "assignment", "maintenance_date", "current_odometer", "total_cost", "vendor", "docstatus"],
+		order_by="maintenance_date desc, creation desc"
+	) if (hasattr(frappe, "get_all") and frappe.db.exists("DocType", "Maintenance Entry")) else []
 
 	data = []
 	total_maint_cost = 0.0
-	completed_cnt = 0
-	in_progress_cnt = 0
-	scheduled_cnt = 0
-
-	status_counts = {}
+	submitted_cnt = 0
+	draft_cnt = 0
 	type_costs = {}
 
-	for w in work_orders:
-		status = w.get("status") or "Draft"
-		status_counts[status] = status_counts.get(status, 0) + 1
+	docstatus_map = {0: "Draft", 1: "Submitted", 2: "Cancelled"}
 
-		if status == "Completed":
-			completed_cnt += 1
-		elif status == "In Progress":
-			in_progress_cnt += 1
-		elif status == "Scheduled":
-			scheduled_cnt += 1
+	for e in entries:
+		doc = frappe.get_doc("Maintenance Entry", e.name)
+		v_id = doc.vehicle
+		emp_id = doc.employee
+		comp_id = doc.company
 
-		maint_type = req_type_map.get(w.maintenance_request) or "General Maintenance"
-		labour = float(w.get("labour_cost") or 0.0)
-		parts = float(w.get("parts_cost") or 0.0)
-		external = float(w.get("external_cost") or 0.0)
-		total = float(w.get("total_cost") or (labour + parts + external))
+		if filters.get("vehicle") and v_id != filters.get("vehicle"):
+			continue
+		if filters.get("company") and comp_id != filters.get("company"):
+			continue
 
-		total_maint_cost += total
-		type_costs[maint_type] = type_costs.get(maint_type, 0.0) + total
+		docstatus = int(doc.docstatus or 0)
+		status_str = docstatus_map.get(docstatus, "Draft")
+
+		if docstatus == 1:
+			submitted_cnt += 1
+		elif docstatus == 0:
+			draft_cnt += 1
+
+		maint_type = doc.maintenance_type
+		total = float(doc.total_cost or 0.0)
+
+		if docstatus != 2:
+			total_maint_cost += total
+			type_costs[maint_type] = type_costs.get(maint_type, 0.0) + total
 
 		data.append({
-			"name": w.name,
-			"maintenance_request": w.get("maintenance_request") or "",
-			"vehicle": w.get("vehicle") or "",
+			"name": doc.name,
+			"assignment": doc.assignment or "",
+			"vehicle": v_id or "",
+			"employee": emp_id or "",
 			"maintenance_type": maint_type,
-			"start_date": w.get("start_date"),
-			"completion_date": w.get("completion_date"),
-			"workshop": w.get("workshop") or "",
-			"assigned_technician": w.get("assigned_technician") or "",
-			"labour_cost": labour,
-			"parts_cost": parts,
-			"external_cost": external,
+			"maintenance_date": doc.maintenance_date,
+			"current_odometer": float(doc.current_odometer or 0.0),
 			"total_cost": total,
-			"status": status,
-			"company": w.get("company") or ""
+			"vendor": doc.vendor or "",
+			"docstatus_label": status_str,
+			"company": comp_id or ""
 		})
 
-	avg_job_cost = round(total_maint_cost / len(data), 2) if data else 0.0
+	avg_entry_cost = round(total_maint_cost / len(data), 2) if data else 0.0
 
 	report_summary = [
-		{"value": len(data), "indicator": "Blue", "label": "Total Work Orders", "datatype": "Int"},
-		{"value": completed_cnt, "indicator": "Green", "label": "Completed Jobs", "datatype": "Int"},
-		{"value": in_progress_cnt, "indicator": "Orange", "label": "In Progress", "datatype": "Int"},
-		{"value": total_maint_cost, "indicator": "Purple", "label": "Total Maintenance Cost", "datatype": "Currency"},
-		{"value": avg_job_cost, "indicator": "Cyan", "label": "Avg Cost / Work Order", "datatype": "Currency"}
+		{"value": len(data), "indicator": "Blue", "label": "Total Maintenance Entries", "datatype": "Int"},
+		{"value": submitted_cnt, "indicator": "Green", "label": "Submitted Entries", "datatype": "Int"},
+		{"value": draft_cnt, "indicator": "Orange", "label": "Draft Entries", "datatype": "Int"},
+		{"value": total_maint_cost, "indicator": "Purple", "label": "Total Spend", "datatype": "Currency"},
+		{"value": avg_entry_cost, "indicator": "Cyan", "label": "Avg Spend / Servicing", "datatype": "Currency"}
 	]
 
 	chart = {
 		"data": {
-			"labels": list(type_costs.keys()) if type_costs else ["General Maintenance"],
+			"labels": list(type_costs.keys()) if type_costs else ["General Servicing"],
 			"datasets": [{"name": "Spend by Type", "values": list(type_costs.values()) if type_costs else [0]}]
 		},
 		"type": "bar",

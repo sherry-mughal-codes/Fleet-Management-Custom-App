@@ -32,16 +32,21 @@ class FuelService(BaseService):
 	def create_fuel_entry(self, payload: Dict[str, Any]) -> Dict[str, Any]:
 		"""
 		Creates a new Fuel Entry using minimal Category A fields.
-		Runs MaintenanceLockService check (FUEL-008).
+		Runs MaintenanceLockService check (FUEL-008) if vehicle can be resolved.
 		"""
-		vehicle_id = payload.get("vehicle")
-		odometer = payload.get("odometer")
+		# Resolve vehicle from assignment if available (for maintenance lock check)
+		vehicle_id = None
+		assignment_id = payload.get("assignment")
+		if assignment_id and hasattr(frappe, "db") and frappe.db:
+			vehicle_id = frappe.db.get_value("Vehicle Assignment", assignment_id, "vehicle")
+		if not vehicle_id:
+			vehicle_id = payload.get("vehicle")
 
 		# FUEL-008: Check Maintenance Lock
 		if vehicle_id:
-			MaintenanceLockService.enforce_maintenance_lock(vehicle_id, odometer)
+			MaintenanceLockService.enforce_maintenance_lock(vehicle_id, payload.get("odometer"))
 
-		logger.info("Creating fuel entry via FuelService", {"vehicle": vehicle_id, "qty": payload.get("fuel_qty")})
+		logger.info("Creating fuel entry via FuelService", {"assignment": assignment_id, "qty": payload.get("fuel_qty")})
 		doc = frappe.get_doc({
 			"doctype": "Fuel Entry",
 			**payload
@@ -58,26 +63,11 @@ class FuelService(BaseService):
 			raise FleetNotFoundError(f"Fuel Entry '{fuel_entry_id}' not found.")
 
 		doc = frappe.get_doc("Fuel Entry", fuel_entry_id)
-
-		# 1. Enforce Maintenance Lock (FUEL-008)
-		MaintenanceLockService.enforce_maintenance_lock(doc.vehicle, doc.odometer)
-
-		# 2. Calculate Fuel Average (FUEL-007)
-		avg_stats = FuelAverageService.calculate_entry_average(doc.vehicle, doc.odometer, doc.fuel_qty)
-		doc.distance_since_last_fuel = avg_stats["distance_travelled"]
-		doc.fuel_average = avg_stats["fuel_average"]
-		doc.status = FuelEntryStatus.SUBMITTED
-		doc.save()
-
-		# 3. Update Vehicle statistics & current odometer
-		self.update_vehicle_statistics(doc.vehicle, doc)
-
-		# 4. Update Assignment statistics if linked
-		if doc.assignment:
-			self.update_assignment_statistics(doc.assignment, doc)
+		if doc.docstatus == 0:
+			doc.submit()
 
 		FuelEventDispatcher.notify_fuel_submitted(doc)
-		logger.info(f"Submitted Fuel Entry: {fuel_entry_id}, Calculated Average: {doc.fuel_average} KM/L")
+		logger.info(f"Submitted Fuel Entry: {fuel_entry_id}")
 		return doc.as_dict()
 
 	def update_vehicle_statistics(self, vehicle_id: str, fuel_doc: Any):
@@ -147,12 +137,16 @@ class FuelService(BaseService):
 		"""Returns total fuel cost spent on a vehicle."""
 		if not hasattr(frappe, "get_all"):
 			return 0.0
-		entries = frappe.get_all("Fuel Entry", filters={"vehicle": vehicle_id, "status": ["!=", "Cancelled"]}, fields=["total_cost"])
+		asn_names = [a.name for a in frappe.get_all("Vehicle Assignment", filters={"vehicle": vehicle_id}, fields=["name"])]
+		if not asn_names:
+			return 0.0
+		entries = frappe.get_all("Fuel Entry", filters={"assignment": ["in", asn_names], "docstatus": ["!=", 2]}, fields=["total_cost"])
 		return sum(float(e.get("total_cost") or 0.0) for e in entries)
 
 	def get_driver_fuel_cost_stats(self, employee_id: str) -> Dict[str, Any]:
 		"""Returns total fuel entries count and total spend for a driver."""
-		entries = frappe.get_all("Fuel Entry", filters={"employee": employee_id, "status": ["!=", "Cancelled"]}, fields=["total_cost", "fuel_qty"]) if hasattr(frappe, "get_all") else []
+		asn_names = [a.name for a in frappe.get_all("Vehicle Assignment", filters={"employee": employee_id}, fields=["name"])]
+		entries = frappe.get_all("Fuel Entry", filters={"assignment": ["in", asn_names], "docstatus": ["!=", 2]}, fields=["total_cost", "fuel_qty"]) if (asn_names and hasattr(frappe, "get_all")) else []
 		return {
 			"employee": employee_id,
 			"total_entries": len(entries),
@@ -162,9 +156,7 @@ class FuelService(BaseService):
 
 	def get_monthly_consumption_stats(self, company: str | None = None) -> Dict[str, Any]:
 		"""Returns monthly aggregated fuel consumption and cost statistics."""
-		filters = {"status": ["!=", "Cancelled"]}
-		if company:
-			filters["company"] = company
+		filters = {"docstatus": ["!=", 2]}
 		entries = frappe.get_all("Fuel Entry", filters=filters, fields=["fuel_qty", "total_cost"]) if hasattr(frappe, "get_all") else []
 		return {
 			"total_entries": len(entries),
@@ -177,8 +169,8 @@ class FuelService(BaseService):
 		return frappe.get_all(
 			"Vehicle",
 			filters={"company": company} if company else {},
-			fields=["name", "vehicle_number", "vehicle_brand", "vehicle_model", "last_fuel_average"],
-			order_by="last_fuel_average desc",
+			fields=["name", "vehicle_number", "vehicle_brand", "vehicle_model", "average_fuel_economy"],
+			order_by="average_fuel_economy desc",
 			limit=limit
 		) if hasattr(frappe, "get_all") else []
 
@@ -187,11 +179,12 @@ class FuelService(BaseService):
 		if not frappe.db.exists("Vehicle", vehicle_id):
 			raise FleetNotFoundError(f"Vehicle '{vehicle_id}' not found.")
 
+		asn_names = [a.name for a in frappe.get_all("Vehicle Assignment", filters={"vehicle": vehicle_id}, fields=["name"])]
 		entries = frappe.get_all(
 			"Fuel Entry",
-			filters={"vehicle": vehicle_id, "status": ["!=", "Cancelled"]},
-			fields=["name", "fuel_qty", "total_cost", "odometer", "fuel_date", "fuel_average"]
-		) if hasattr(frappe, "get_all") else []
+			filters={"assignment": ["in", asn_names], "docstatus": ["!=", 2]},
+			fields=["name", "fuel_qty", "total_cost", "odometer", "fuel_date"]
+		) if (asn_names and hasattr(frappe, "get_all")) else []
 
 		total_liters = sum(float(e.get("fuel_qty") or 0.0) for e in entries)
 		total_cost = sum(float(e.get("total_cost") or 0.0) for e in entries)
@@ -207,23 +200,33 @@ class FuelService(BaseService):
 
 	def get_vehicle_history(self, vehicle_id: str, limit: int = 20) -> List[Dict[str, Any]]:
 		"""Retrieves fuel entry history for a vehicle."""
+		asn_names = [a.name for a in frappe.get_all("Vehicle Assignment", filters={"vehicle": vehicle_id}, fields=["name"])]
+		if not asn_names:
+			return []
 		return frappe.get_all(
 			"Fuel Entry",
-			filters={"vehicle": vehicle_id},
-			fields=["name", "fuel_date", "fuel_qty", "total_cost", "odometer", "fuel_average", "status"],
+			filters={"assignment": ["in", asn_names]},
+			fields=["name", "fuel_date", "fuel_qty", "total_cost", "odometer", "docstatus"],
 			order_by="creation desc",
 			limit=limit
-		)
+		) if hasattr(frappe, "get_all") else []
 
 	def get_employee_history(self, employee_id: str, limit: int = 20) -> List[Dict[str, Any]]:
-		"""Retrieves fuel entry history for an employee."""
-		return frappe.get_all(
-			"Fuel Entry",
-			filters={"employee": employee_id},
-			fields=["name", "vehicle", "fuel_date", "fuel_qty", "total_cost", "status"],
-			order_by="creation desc",
-			limit=limit
-		)
+		"""Retrieves fuel entry history for an employee via assignment join."""
+		if not hasattr(frappe, "db") or not frappe.db:
+			return []
+		try:
+			return frappe.db.sql("""
+				SELECT fe.name, fe.assignment, fe.fuel_date, fe.fuel_qty, fe.total_cost, fe.fuel_average, fe.docstatus
+				FROM `tabFuel Entry` fe
+				INNER JOIN `tabVehicle Assignment` va ON va.name = fe.assignment
+				WHERE va.employee = %s
+				ORDER BY fe.fuel_date DESC, fe.creation DESC
+				LIMIT %s
+			""", (employee_id, limit), as_dict=True)
+		except Exception as e:
+			logger.warning(f"get_employee_history failed for {employee_id}: {e}")
+			return []
 
 	def validate_entry(self, payload: Dict[str, Any]) -> bool:
 		return True

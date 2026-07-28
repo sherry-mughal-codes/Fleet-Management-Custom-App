@@ -1,3 +1,0 @@
-"""
-Maintenance Type DocType Package
-"""

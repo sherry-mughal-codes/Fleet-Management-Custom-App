@@ -1,3 +1,0 @@
-"""
-Fleet Management workspace definition
-"""

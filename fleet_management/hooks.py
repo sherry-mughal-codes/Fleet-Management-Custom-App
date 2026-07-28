@@ -1,50 +1,29 @@
-"""
-Fleet Management Hooks Configuration
-Frappe Framework v15
-"""
-
 app_name = "fleet_management"
 app_title = "Fleet Management"
 app_publisher = "Fleet Management Team"
-app_description = "Production-Grade Enterprise Fleet Management System for Frappe Framework v15"
-app_email = "developer@fleetmanagement.local"
+app_description = "Enterprise Fleet Management System for Frappe Framework v15"
+app_email = "admin@fleet.local"
 app_license = "mit"
 
 # Includes in <head>
 # ------------------
-
-# include js, css files in header of desk.html
-# app_include_css = "/assets/fleet_management/css/fleet_management.css"
-# app_include_js = ["/assets/fleet_management/js/fleet_management.js"]
-
-# DocType JS Hooks
-doctype_js = {
-	"Fleet Settings": "public/js/fleet_settings.js"
-}
+app_include_css = "/assets/fleet_management/css/fleet_management.css"
+app_include_js = "/assets/fleet_management/js/fleet_management.js"
 
 # Document Events Hooks
 # ---------------------
 doc_events = {
-	"*": {
-		"on_update": "fleet_management.permissions.audit.audit_document_change",
-	},
 	"Fuel Entry": {
 		"on_update": "fleet_management.services.vehicle_service.on_fuel_entry_change",
 		"on_submit": "fleet_management.services.vehicle_service.on_fuel_entry_change",
 		"on_cancel": "fleet_management.services.vehicle_service.on_fuel_entry_change",
 		"on_trash": "fleet_management.services.vehicle_service.on_fuel_entry_change"
 	},
-	"Maintenance Work Order": {
+	"Maintenance Entry": {
 		"on_update": "fleet_management.services.vehicle_service.on_maint_order_change",
 		"on_submit": "fleet_management.services.vehicle_service.on_maint_order_change",
 		"on_cancel": "fleet_management.services.vehicle_service.on_maint_order_change",
 		"on_trash": "fleet_management.services.vehicle_service.on_maint_order_change"
-	},
-	"Maintenance Request": {
-		"on_update": "fleet_management.services.vehicle_service.on_maint_request_change",
-		"on_submit": "fleet_management.services.vehicle_service.on_maint_request_change",
-		"on_cancel": "fleet_management.services.vehicle_service.on_maint_request_change",
-		"on_trash": "fleet_management.services.vehicle_service.on_maint_request_change"
 	},
 	"Vehicle Assignment": {
 		"on_update": "fleet_management.services.vehicle_service.on_assignment_change",
@@ -56,7 +35,6 @@ doc_events = {
 
 # Migration Hook
 after_migrate = "fleet_management.fleet_management.setup_dashboard.setup_fleet_dashboards"
-
 
 # Scheduled Tasks
 # ---------------
@@ -108,10 +86,6 @@ fixtures = [
 		"filters": [["is_active", "=", 1]]
 	},
 	{
-		"dt": "Maintenance Type",
-		"filters": [["is_active", "=", 1]]
-	},
-	{
 		"dt": "Expense Category",
 		"filters": [["is_active", "=", 1]]
 	},
@@ -122,11 +96,5 @@ fixtures = [
 	{
 		"dt": "Fuel Unit",
 		"filters": [["is_active", "=", 1]]
-	},
-	{
-		"dt": "Company",
-		"filters": [["name", "is", "set"]]
 	}
 ]
-
-
