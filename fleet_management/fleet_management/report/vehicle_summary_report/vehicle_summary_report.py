@@ -114,7 +114,6 @@ def get_data_and_summary(filters):
 		{"value": total_vehicles, "indicator": "Blue", "label": "Total Vehicles", "datatype": "Int"},
 		{"value": assigned_cnt, "indicator": "Green", "label": "Assigned", "datatype": "Int"},
 		{"value": available_cnt, "indicator": "Cyan", "label": "Available", "datatype": "Int"},
-		{"value": maintenance_cnt, "indicator": "Orange", "label": "Maintenance Due / In Service", "datatype": "Int"},
 		{"value": grand_total_operating, "indicator": "Purple", "label": "Total Fleet Operating Cost", "datatype": "Currency"}
 	]
 

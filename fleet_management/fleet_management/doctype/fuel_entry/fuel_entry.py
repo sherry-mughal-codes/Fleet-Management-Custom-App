@@ -101,10 +101,15 @@ class FuelEntry(Document):
 		1. Resolve assignment if only vehicle_hint provided (legacy service calls)
 		2. Calculate total_cost from qty × rate
 		3. Auto-populate all Fuel Intelligence fields
+		4. Auto-resolve fuel_type from Vehicle if missing
 		"""
 		self._auto_resolve_assignment()
 		self._calculate_total_cost()
 		self._populate_intelligence()
+		if not getattr(self, "fuel_type", None) and self.vehicle and hasattr(frappe, "db") and frappe.db:
+			v_fuel_type = frappe.db.get_value("Vehicle", self.vehicle, "fuel_type")
+			if v_fuel_type:
+				self.fuel_type = v_fuel_type
 
 	def validate(self):
 		"""

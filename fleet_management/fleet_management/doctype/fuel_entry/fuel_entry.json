@@ -9,6 +9,7 @@
   "naming_series",
   "assignment",
   "fuel_date",
+  "fuel_type",
   "column_break_basic",
   "odometer",
   "fuel_price",
@@ -29,8 +30,7 @@
   "receipt_attachment",
   "fuel_station_name",
   "supplier",
-  "remarks",
-  "system_info_section"
+  "remarks"
  ],
  "fields": [
   {
@@ -60,6 +60,15 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Fuel Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "fuel_type",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Fuel Type",
+   "options": "Fuel Type",
    "reqd": 1
   },
   {
@@ -175,8 +184,9 @@
   },
   {
    "fieldname": "fuel_station_name",
-   "fieldtype": "Data",
-   "label": "Fuel Station Name"
+   "fieldtype": "Link",
+   "label": "Fuel Station",
+   "options": "Fuel Station"
   },
   {
    "fieldname": "supplier",
@@ -187,12 +197,6 @@
    "fieldname": "remarks",
    "fieldtype": "Small Text",
    "label": "Remarks / Notes"
-  },
-  {
-   "collapsible": 1,
-   "fieldname": "system_info_section",
-   "fieldtype": "Section Break",
-   "label": "System Information"
   }
  ],
  "index_web_pages_for_search": 1,

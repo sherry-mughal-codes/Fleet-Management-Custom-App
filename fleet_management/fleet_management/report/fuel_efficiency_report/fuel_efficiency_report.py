@@ -21,28 +21,21 @@ def get_columns():
 		{"label": "Vehicle Name", "fieldname": "vehicle_name", "fieldtype": "Data", "width": 140},
 		{"label": "Employee / Driver", "fieldname": "employee", "fieldtype": "Link", "options": "User", "width": 140},
 		{"label": "Odometer (KM)", "fieldname": "odometer", "fieldtype": "Float", "width": 130},
-		{"label": "Distance Travelled (KM)", "fieldname": "distance_since_last_fuel", "fieldtype": "Float", "width": 160},
+		{"label": "Distance Travelled (KM)", "fieldname": "distance_travelled", "fieldtype": "Float", "width": 160},
 		{"label": "Fuel Qty (L)", "fieldname": "fuel_qty", "fieldtype": "Float", "width": 120},
 		{"label": "Total Cost", "fieldname": "total_cost", "fieldtype": "Currency", "width": 130},
 		{"label": "Fuel Average (KM/L)", "fieldname": "fuel_average", "fieldtype": "Float", "width": 160},
-		{"label": "Station Name", "fieldname": "fuel_station_name", "fieldtype": "Data", "width": 140},
+		{"label": "Cost Per KM", "fieldname": "cost_per_km", "fieldtype": "Currency", "width": 120},
+		{"label": "Efficiency Rating", "fieldname": "fuel_efficiency_rating", "fieldtype": "Data", "width": 140},
+		{"label": "Fuel Type", "fieldname": "fuel_type", "fieldtype": "Link", "options": "Fuel Type", "width": 120},
+		{"label": "Station Name", "fieldname": "fuel_station_name", "fieldtype": "Link", "options": "Fuel Station", "width": 140},
 		{"label": "Company", "fieldname": "company", "fieldtype": "Link", "options": "Company", "width": 140},
 		{"label": "Status", "fieldname": "status", "fieldtype": "Data", "width": 110}
 	]
 
 
 def get_data_and_summary(filters):
-	conditions = {}
-	if filters.get("company"):
-		conditions["company"] = filters.get("company")
-	if filters.get("vehicle"):
-		conditions["vehicle"] = filters.get("vehicle")
-	if filters.get("employee"):
-		conditions["employee"] = filters.get("employee")
-	if filters.get("status"):
-		conditions["status"] = filters.get("status")
-	else:
-		conditions["status"] = ["!=", "Cancelled"]
+	conditions = {"docstatus": 1}
 
 	if filters.get("from_date") and filters.get("to_date"):
 		conditions["fuel_date"] = ["between", [filters.get("from_date"), filters.get("to_date")]]
@@ -55,54 +48,90 @@ def get_data_and_summary(filters):
 		"Fuel Entry",
 		filters=conditions,
 		fields=[
-			"name", "fuel_date", "vehicle", "vehicle_name", "employee", "odometer",
-			"distance_since_last_fuel", "fuel_qty", "total_cost", "fuel_average",
-			"fuel_station_name", "company", "status"
+			"name", "assignment", "fuel_date", "odometer", "previous_odometer",
+			"distance_travelled", "fuel_qty", "fuel_price", "total_cost", "fuel_average",
+			"cost_per_km", "fuel_efficiency_rating", "fuel_type", "fuel_station_name"
 		],
 		order_by="fuel_date desc, creation desc"
 	) if hasattr(frappe, "get_all") else []
+
+	asn_map = {}
+	if entries:
+		asn_names = list(set([e.assignment for e in entries if getattr(e, "assignment", None)]))
+		asns = frappe.get_all(
+			"Vehicle Assignment",
+			filters={"name": ["in", asn_names]},
+			fields=["name", "vehicle", "employee", "company"]
+		) if hasattr(frappe, "get_all") else []
+		asn_map = {a.name: a for a in asns}
+
+	v_map = {}
+	if asn_map:
+		v_names = list(set([a.vehicle for a in asn_map.values() if getattr(a, "vehicle", None)]))
+		vehicles = frappe.get_all("Vehicle", filters={"name": ["in", v_names]}, fields=["name", "vehicle_name"]) if hasattr(frappe, "get_all") else []
+		v_map = {v.name: v.vehicle_name for v in vehicles}
 
 	data = []
 	total_cost = 0.0
 	total_qty = 0.0
 	total_distance = 0.0
+	eval_qty = 0.0
 	valid_avg_list = []
-
 	dates_dict = {}
 
 	for e in entries:
+		asn_doc = asn_map.get(e.assignment) or {}
+		v_id = asn_doc.get("vehicle") or ""
+		v_name = v_map.get(v_id) or ""
+		emp_id = asn_doc.get("employee") or ""
+		comp_id = asn_doc.get("company") or ""
+
+		if filters.get("company") and comp_id != filters.get("company"):
+			continue
+		if filters.get("vehicle") and v_id != filters.get("vehicle"):
+			continue
+		if filters.get("employee") and emp_id != filters.get("employee"):
+			continue
+
 		cost = float(e.get("total_cost") or 0.0)
 		qty = float(e.get("fuel_qty") or 0.0)
-		dist = float(e.get("distance_since_last_fuel") or 0.0)
+		dist = float(e.get("distance_travelled") or 0.0)
 		avg = float(e.get("fuel_average") or 0.0)
+		cpkm = float(e.get("cost_per_km") or 0.0)
 
 		total_cost += cost
 		total_qty += qty
-		total_distance += dist
+		if dist > 0:
+			total_distance += dist
+			eval_qty += qty
+
 		if avg > 0:
 			valid_avg_list.append(avg)
 
 		f_date = str(e.get("fuel_date") or "")
-		if f_date:
-			dates_dict[f_date] = dates_dict.get(f_date, 0.0) + cost
+		if f_date and avg > 0:
+			dates_dict[f_date] = avg
 
 		data.append({
 			"name": e.name,
 			"fuel_date": e.get("fuel_date"),
-			"vehicle": e.get("vehicle") or "",
-			"vehicle_name": e.get("vehicle_name") or "",
-			"employee": e.get("employee") or "",
+			"vehicle": v_id,
+			"vehicle_name": v_name,
+			"employee": emp_id,
 			"odometer": float(e.get("odometer") or 0.0),
-			"distance_since_last_fuel": dist,
+			"distance_travelled": dist,
 			"fuel_qty": qty,
 			"total_cost": cost,
 			"fuel_average": avg,
+			"cost_per_km": cpkm,
+			"fuel_efficiency_rating": e.get("fuel_efficiency_rating") or "",
+			"fuel_type": e.get("fuel_type") or "",
 			"fuel_station_name": e.get("fuel_station_name") or "",
-			"company": e.get("company") or "",
-			"status": e.get("status") or "Draft"
+			"company": comp_id,
+			"status": "Submitted"
 		})
 
-	fleet_overall_avg = round(total_distance / total_qty, 2) if total_qty > 0 else (round(sum(valid_avg_list) / len(valid_avg_list), 2) if valid_avg_list else 0.0)
+	fleet_overall_avg = round(total_distance / eval_qty, 2) if eval_qty > 0 else (round(sum(valid_avg_list) / len(valid_avg_list), 2) if valid_avg_list else 0.0)
 
 	report_summary = [
 		{"value": len(data), "indicator": "Blue", "label": "Total Fuel Entries", "datatype": "Int"},
@@ -111,17 +140,16 @@ def get_data_and_summary(filters):
 		{"value": fleet_overall_avg, "indicator": "Green", "label": "Overall Fuel Average (KM/L)", "datatype": "Float"}
 	]
 
-	# Chart: Daily Fuel Spend timeline
-	sorted_dates = sorted(dates_dict.keys())[-10:] if dates_dict else []
+	sorted_dates = sorted(dates_dict.keys())[-15:] if dates_dict else []
 	date_values = [dates_dict[d] for d in sorted_dates] if sorted_dates else [0]
 
 	chart = {
 		"data": {
 			"labels": sorted_dates if sorted_dates else ["No Data"],
-			"datasets": [{"name": "Daily Fuel Cost", "values": date_values}]
+			"datasets": [{"name": "Fleet Fuel Average (KM/L)", "values": date_values}]
 		},
 		"type": "line",
-		"colors": ["#007bff"]
+		"colors": ["#28a745"]
 	}
 
 	return data, report_summary, chart

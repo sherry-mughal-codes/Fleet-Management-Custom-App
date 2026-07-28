@@ -80,6 +80,17 @@ frappe.ui.form.on('Fuel Entry', {
 			return;
 		}
 
+		// Auto-fetch Vehicle Fuel Type if missing
+		frappe.db.get_value('Vehicle Assignment', frm.doc.assignment, 'vehicle', function(r) {
+			if (r && r.vehicle) {
+				frappe.db.get_value('Vehicle', r.vehicle, 'fuel_type', function(v) {
+					if (v && v.fuel_type && !frm.doc.fuel_type) {
+						frm.set_value('fuel_type', v.fuel_type);
+					}
+				});
+			}
+		});
+
 		frm.call({
 			method: 'fleet_management.api.fuel_api.get_assignment_fuel_context',
 			args: { assignment: frm.doc.assignment },
