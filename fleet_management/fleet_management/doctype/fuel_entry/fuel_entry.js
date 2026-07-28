@@ -14,6 +14,18 @@
 
 frappe.ui.form.on('Fuel Entry', {
 
+	setup: function(frm) {
+		// Filter Vehicle Assignment query to Assigned status only
+		frm.set_query('assignment', function() {
+			return {
+				filters: {
+					'docstatus': 1,
+					'status': 'Assigned'
+				}
+			};
+		});
+	},
+
 	// -----------------------------------------------------------------------
 	// Form Load / Refresh
 	// -----------------------------------------------------------------------
@@ -132,6 +144,21 @@ frappe.ui.form.on('Fuel Entry', {
 
 	fuel_date: function(frm) {
 		fleet_recalculate_intelligence(frm);
+	},
+
+	before_submit: function(frm) {
+		const odo = flt(frm.doc.odometer);
+		const prev_odo = frm._prev_odo || flt(frm.doc.previous_odometer);
+
+		if (prev_odo > 0 && odo < prev_odo) {
+			frappe.msgprint({
+				title: __('Validation Error'),
+				message: __('Odometer reading ({0} KM) is below the previous recorded fuel entry odometer ({1} KM), so the document will not submit. Please correct the odometer reading.', [format_number(odo, null, 1), format_number(prev_odo, null, 1)]),
+				indicator: 'red'
+			});
+			frappe.validated = false;
+			return false;
+		}
 	},
 
 });

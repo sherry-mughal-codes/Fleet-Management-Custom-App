@@ -19,6 +19,18 @@ class MaintenanceLockService:
 	"""
 
 	@staticmethod
+	def _is_lock_enabled() -> bool:
+		"""Checks if Maintenance Lock on Fuel Entry is enabled in Fleet Settings."""
+		if hasattr(frappe, "db") and frappe.db and hasattr(frappe, "get_single"):
+			try:
+				val = frappe.db.get_single_value("Fleet Settings", "fuel_entry_lock_when_maintenance_due")
+				if val is not None:
+					return bool(val)
+			except Exception:
+				pass
+		return True
+
+	@staticmethod
 	def is_maintenance_locked(vehicle_id: str, current_odometer: float | None = None) -> bool:
 		"""Checks if target vehicle is currently maintenance locked."""
 		if not vehicle_id or not hasattr(frappe, "db") or not frappe.db.exists("Vehicle", vehicle_id):
@@ -32,14 +44,18 @@ class MaintenanceLockService:
 		if v.status == VehicleStatus.UNDER_MAINTENANCE:
 			return True
 
+		# Check Fleet Settings toggle
+		if not MaintenanceLockService._is_lock_enabled():
+			return False
+
 		# 2. Check template-driven overdue mandatory maintenance items
 		from fleet_management.services.maintenance_manager import MaintenanceManager
-		overdue_items = MaintenanceManager().get_overdue_maintenance(vehicle_id)
+		odo = float(current_odometer or v.current_odometer or 0.0)
+		overdue_items = MaintenanceManager().get_overdue_maintenance(vehicle_id, current_odometer=odo)
 		if overdue_items:
 			return True
 
 		# 3. Check legacy next_maintenance_due_odometer fallback
-		odo = float(current_odometer or v.current_odometer or 0.0)
 		next_due = frappe.db.get_value("Vehicle", vehicle_id, "next_maintenance_due_odometer")
 		if next_due and float(next_due) > 0 and odo >= float(next_due):
 			return True
@@ -58,29 +74,39 @@ class MaintenanceLockService:
 		if not hasattr(frappe, "db") or not frappe.db.exists("Vehicle", vehicle_id):
 			return
 
+		v_status = frappe.db.get_value("Vehicle", vehicle_id, "status")
+		if v_status == VehicleStatus.UNDER_MAINTENANCE:
+			raise FleetValidationError("FUEL-008: Vehicle is Under Maintenance. Complete maintenance before recording additional fuel.")
+
 		from fleet_management.services.maintenance_manager import MaintenanceManager
 		mgr = MaintenanceManager()
-		overdue_items = mgr.get_overdue_maintenance(vehicle_id)
+		odo = float(current_odometer or frappe.db.get_value("Vehicle", vehicle_id, "current_odometer") or 0.0)
+		overdue_items = mgr.get_overdue_maintenance(vehicle_id, current_odometer=odo)
 
 		if overdue_items:
-			lines = ["Fuel Entry cannot be submitted.", "The following maintenance items are overdue:"]
+			lines = ["<strong>Fuel Entry submission is not allowed because the following maintenance item(s) are due:</strong><br><ul>"]
 			for item in overdue_items:
 				m_type = item["maintenance_type"]
 				last_done = int(item["last_serviced_odometer"])
 				curr = int(item["current_odometer"])
 				interval = int(item["interval_km"])
 				exceeded = int(item["exceeded_km"])
-				lines.append(f"• {m_type} (Last Done: {last_done:,} KM | Current: {curr:,} KM | Interval: {interval:,} KM | Exceeded by: {exceeded:,} KM)")
-			lines.append("Complete the required maintenance before recording additional fuel.")
-			msg = "\n".join(lines)
-			logger.warning(f"FUEL-008: Fuel lock enforced for vehicle '{vehicle_id}'")
-			raise FleetValidationError(msg)
+				lines.append(f"<li><strong>{m_type}</strong> — Last Serviced: {last_done:,} KM | Current Odometer: {curr:,} KM | Interval: {interval:,} KM (Exceeded by {exceeded:,} KM)</li>")
+			lines.append("</ul>Please complete the required maintenance before submitting this fuel entry.")
+			msg = "".join(lines)
 
-		v_status = frappe.db.get_value("Vehicle", vehicle_id, "status")
-		if v_status == VehicleStatus.UNDER_MAINTENANCE:
-			raise FleetValidationError("FUEL-008: Vehicle is Under Maintenance. Complete maintenance before recording additional fuel.")
+			# Enforce lock if Fleet Settings enables it
+			if MaintenanceLockService._is_lock_enabled():
+				logger.warning(f"FUEL-008: Fuel lock enforced for vehicle '{vehicle_id}'")
+				raise FleetValidationError(msg)
+			else:
+				logger.info(f"FUEL-008: Lock disabled in Fleet Settings; showing advisory warning for '{vehicle_id}'")
+				frappe.msgprint(msg, indicator="orange", alert=True)
 
-		odo = float(current_odometer or frappe.db.get_value("Vehicle", vehicle_id, "current_odometer") or 0.0)
 		next_due = frappe.db.get_value("Vehicle", vehicle_id, "next_maintenance_due_odometer")
 		if next_due and float(next_due) > 0 and odo >= float(next_due):
-			raise FleetValidationError(f"FUEL-008: Vehicle has reached maintenance threshold ({int(float(next_due)):,} KM). Complete maintenance before recording fuel.")
+			msg = f"FUEL-008: Vehicle has reached maintenance threshold ({int(float(next_due)):,} KM). Complete maintenance before recording fuel."
+			if MaintenanceLockService._is_lock_enabled():
+				raise FleetValidationError(msg)
+			else:
+				frappe.msgprint(msg, indicator="orange", alert=True)

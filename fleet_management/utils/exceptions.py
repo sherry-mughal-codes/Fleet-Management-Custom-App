@@ -24,6 +24,11 @@ class FleetManagementError(frappe.ValidationError):
 		self.details = details or {}
 		if status_code:
 			self.status_code = status_code
+		if hasattr(frappe, "msgprint") and hasattr(frappe, "local") and getattr(frappe.local, "initialised", False):
+			try:
+				frappe.msgprint(self.message, title="Validation Error", indicator="red", alert=False)
+			except Exception:
+				pass
 		super().__init__(self.message)
 
 	def to_dict(self) -> Dict[str, Any]:

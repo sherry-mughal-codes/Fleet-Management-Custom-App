@@ -321,8 +321,8 @@ class FuelEntry(Document):
 			prev_odo = float(prev.get("odometer") or 0.0)
 			if current_odo < prev_odo:
 				raise FleetValidationError(
-					f"FUEL-004: Odometer reading ({current_odo} KM) cannot be less than the "
-					f"previous recorded odometer ({prev_odo} KM)."
+					f"Odometer reading ({current_odo:,.1f} KM) is below the previous recorded fuel entry odometer "
+					f"({prev_odo:,.1f} KM), so the document will not submit. Please correct the odometer reading."
 				)
 
 	# ------------------------------------------------------------------

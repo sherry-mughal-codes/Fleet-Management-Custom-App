@@ -144,16 +144,17 @@ class AssignmentService(BaseService):
 		if closing < opening:
 			raise FleetValidationError(f"ASSIGN-005: Closing Odometer ({closing}) cannot be less than Opening Odometer ({opening}).")
 
-		doc.closing_odometer = closing
-		doc.distance_travelled = closing - opening
-		doc.return_date = frappe.utils.nowdate() if hasattr(frappe, "utils") else None
+		doc.db_set("closing_odometer", closing)
+		doc.db_set("distance_travelled", closing - opening)
+		r_date = frappe.utils.nowdate() if hasattr(frappe, "utils") else None
+		if r_date:
+			doc.db_set("return_date", r_date)
 		if return_notes:
-			doc.return_notes = return_notes
+			doc.db_set("return_notes", return_notes)
 		if return_condition:
-			doc.return_condition = return_condition
+			doc.db_set("return_condition", return_condition)
 
-		doc.status = AssignmentStatus.RETURNED
-		doc.save()
+		doc.db_set("status", AssignmentStatus.RETURNED)
 
 		# 2. Update Vehicle Current Odometer & reset assigned employee
 		frappe.db.set_value("Vehicle", doc.vehicle, "current_odometer", closing)
@@ -164,7 +165,7 @@ class AssignmentService(BaseService):
 		self.vehicle_service.change_status(doc.vehicle, VehicleStatus.AVAILABLE, reason=f"Returned via Assignment {assignment_id}")
 
 		AssignmentEventDispatcher.notify_returned(doc)
-		logger.info(f"Vehicle Returned for assignment: {assignment_id}, Distance: {doc.distance_travelled} KM")
+		logger.info(f"Vehicle Returned for assignment: {assignment_id}, Distance: {closing - opening} KM")
 		return True
 
 	def close_assignment(self, assignment_id: str) -> bool:
@@ -172,8 +173,7 @@ class AssignmentService(BaseService):
 		if not frappe.db.exists("Vehicle Assignment", assignment_id):
 			raise FleetNotFoundError(f"Assignment '{assignment_id}' not found.")
 		doc = frappe.get_doc("Vehicle Assignment", assignment_id)
-		doc.status = AssignmentStatus.CLOSED
-		doc.save()
+		doc.db_set("status", AssignmentStatus.CLOSED)
 		AssignmentEventDispatcher.notify_closed(doc)
 		logger.info(f"Closed assignment: {assignment_id}")
 		return True
@@ -187,10 +187,13 @@ class AssignmentService(BaseService):
 			raise FleetNotFoundError(f"Assignment '{assignment_id}' not found.")
 		doc = frappe.get_doc("Vehicle Assignment", assignment_id)
 		old_status = doc.status
-		doc.status = AssignmentStatus.CANCELLED
-		doc.save()
 
-		if old_status in (AssignmentStatus.ASSIGNED, AssignmentStatus.APPROVED, AssignmentStatus.IN_USE):
+		if doc.docstatus == 1:
+			doc.cancel()
+		else:
+			doc.db_set("status", AssignmentStatus.CANCELLED)
+
+		if old_status in (AssignmentStatus.ASSIGNED, AssignmentStatus.APPROVED, AssignmentStatus.IN_USE) or doc.docstatus == 1:
 			frappe.db.set_value("Vehicle", doc.vehicle, "current_employee", None)
 			frappe.db.set_value("Vehicle", doc.vehicle, "current_assignment_status", "Unassigned")
 			self.vehicle_service.change_status(doc.vehicle, VehicleStatus.AVAILABLE, reason=reason or f"Cancelled via {assignment_id}")

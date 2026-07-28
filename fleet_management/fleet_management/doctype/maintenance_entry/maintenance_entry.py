@@ -138,20 +138,36 @@ class MaintenanceEntry(Document):
 		if not v_id:
 			return
 
-		manager = MaintenanceManager()
 		odo = float(self.current_odometer or 0.0)
 
 		# Update vehicle current odometer if higher
-		curr_odo = frappe.db.get_value("Vehicle", v_id, "current_odometer") or 0.0
-		if odo > float(curr_odo):
+		curr_odo = float(frappe.db.get_value("Vehicle", v_id, "current_odometer") or 0.0)
+		if odo > curr_odo:
 			frappe.db.set_value("Vehicle", v_id, "current_odometer", round(odo, 1))
 
-		# Update last maintenance odometer on vehicle
-		frappe.db.set_value("Vehicle", v_id, "last_maintenance_odometer", round(odo, 1))
+		# Update last maintenance odometer and date on vehicle
+		m_date = self.maintenance_date or (frappe.utils.nowdate() if hasattr(frappe, "utils") else None)
+		frappe.db.set_value("Vehicle", v_id, {
+			"last_maintenance_odometer": round(odo, 1),
+			"last_maintenance_date": m_date
+		})
 
-		# Recalculate operational statistics & vehicle state
+		# Recalculate operational statistics (updates last_maintenance_date & advances next_due_odo)
 		from fleet_management.services.fleet_statistics_manager import FleetStatisticsManager
 		FleetStatisticsManager.recalculate_vehicle_statistics(v_id)
+
+		# Clear 'Under Maintenance' / 'Maintenance Due' / 'Fuel Locked' status upon servicing completion
+		curr_status = frappe.db.get_value("Vehicle", v_id, "status")
+		if curr_status in ("Under Maintenance", "Maintenance Due", "Fuel Locked"):
+			active_asn = frappe.db.exists("Vehicle Assignment", {
+				"vehicle": v_id,
+				"docstatus": 1,
+				"return_date": ["is", "not set"],
+				"status": ["in", ["Assigned", "In Use", "Approved"]]
+			})
+			new_st = "Assigned" if active_asn else "Available"
+			frappe.db.set_value("Vehicle", v_id, "status", new_st)
+
 		VehicleStateManager.recalculate_vehicle_state(v_id)
 
 		logger.info(f"Submitted Maintenance Entry {self.name} for Vehicle {v_id}")

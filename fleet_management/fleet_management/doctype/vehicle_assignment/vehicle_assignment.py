@@ -83,6 +83,48 @@ class VehicleAssignment(BaseFleetDocument):
 		if self.assignment_date and self.expected_return_date:
 			validate_date_range(self.assignment_date, self.expected_return_date, "Assignment Date", "Expected Return Date")
 
+	def on_submit(self):
+		"""
+		On Submit:
+		1. Set assignment status to Assigned
+		2. Mutate linked Vehicle status to Assigned and set current_employee
+		3. Sync Vehicle operational summary
+		"""
+		self.db_set("status", AssignmentStatus.ASSIGNED)
+		self.status = AssignmentStatus.ASSIGNED
+
+		if self.vehicle:
+			from fleet_management.enums import VehicleStatus
+			from fleet_management.services.vehicle_service import VehicleService, sync_vehicle_operational_summary
+
+			VehicleService().change_status(self.vehicle, VehicleStatus.ASSIGNED, reason=f"Assigned via Assignment {self.name}")
+			frappe.db.set_value("Vehicle", self.vehicle, {
+				"current_employee": self.employee,
+				"current_assignment_status": "Assigned"
+			})
+			sync_vehicle_operational_summary(self.vehicle)
+
+	def on_cancel(self):
+		"""
+		On Cancel:
+		1. Set assignment status to Cancelled
+		2. Reset linked Vehicle status to Available and clear current_employee
+		3. Sync Vehicle operational summary
+		"""
+		self.db_set("status", AssignmentStatus.CANCELLED)
+		self.status = AssignmentStatus.CANCELLED
+
+		if self.vehicle:
+			from fleet_management.enums import VehicleStatus
+			from fleet_management.services.vehicle_service import VehicleService, sync_vehicle_operational_summary
+
+			VehicleService().change_status(self.vehicle, VehicleStatus.AVAILABLE, reason=f"Cancelled Assignment {self.name}")
+			frappe.db.set_value("Vehicle", self.vehicle, {
+				"current_employee": None,
+				"current_assignment_status": "Unassigned"
+			})
+			sync_vehicle_operational_summary(self.vehicle)
+
 	def on_update(self):
 		if self.vehicle:
 			from fleet_management.services.vehicle_service import sync_vehicle_operational_summary

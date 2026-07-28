@@ -79,16 +79,18 @@ class MaintenanceManager(BaseService):
 		if hasattr(frappe, "db") and frappe.db.table_exists("Maintenance Entry"):
 			try:
 				m_entries = frappe.db.sql("""
-					SELECT current_odometer
-					FROM `tabMaintenance Entry`
-					WHERE vehicle = %s
-					  AND maintenance_type = %s
-					  AND docstatus = 1
-					ORDER BY current_odometer DESC, maintenance_date DESC
+					SELECT me.current_odometer
+					FROM `tabMaintenance Entry` me
+					JOIN `tabVehicle Assignment` va ON me.assignment = va.name
+					LEFT JOIN `tabMaintenance Entry Item` mei ON mei.parent = me.name
+					WHERE va.vehicle = %s
+					  AND me.docstatus = 1
+					  AND (mei.item_name = %s OR mei.item_name LIKE %s OR me.maintenance_type LIKE %s)
+					ORDER BY me.current_odometer DESC, me.maintenance_date DESC
 					LIMIT 1
-				""", (vehicle_id, maintenance_type), as_dict=True)
+				""", (vehicle_id, maintenance_type, f"%{maintenance_type}%", f"%{maintenance_type}%"), as_dict=True)
 
-				if m_entries:
+				if m_entries and m_entries[0].get("current_odometer") is not None:
 					return float(m_entries[0].get("current_odometer") or 0.0)
 			except Exception:
 				pass
@@ -129,7 +131,7 @@ class MaintenanceManager(BaseService):
 
 		return due_items
 
-	def get_overdue_maintenance(self, vehicle_id: str) -> List[Dict[str, Any]]:
+	def get_overdue_maintenance(self, vehicle_id: str, current_odometer: Optional[float] = None) -> List[Dict[str, Any]]:
 		"""
 		Returns list of mandatory template schedule lines whose (interval + grace) distance is exceeded.
 		Used by Fuel Entry Validation Engine to enforce Fuel Lock.
@@ -138,7 +140,10 @@ class MaintenanceManager(BaseService):
 		if not template_id:
 			return []
 
-		curr_odo = float(frappe.db.get_value("Vehicle", vehicle_id, "current_odometer") or 0.0)
+		if current_odometer and float(current_odometer) > 0:
+			curr_odo = float(current_odometer)
+		else:
+			curr_odo = float(frappe.db.get_value("Vehicle", vehicle_id, "current_odometer") or 0.0) if hasattr(frappe, "db") and frappe.db else 0.0
 		lines = self.get_template_lines(template_id)
 		overdue_items = []
 

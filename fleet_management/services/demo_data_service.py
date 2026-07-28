@@ -524,7 +524,14 @@ class DemoDataService(BaseService):
 						"assignment": active_assign,
 						"maintenance_date": entry_date,
 						"current_odometer": curr_odo - (5000 * (1 - m_idx)),
-						"remarks": f"Routine Servicing #{m_idx + 1}"
+						"remarks": f"Routine Servicing #{m_idx + 1}",
+						"items": [
+							{"maintenance_type": "Engine Oil Change", "cost": 5000.0, "status": "Completed"},
+							{"maintenance_type": "Brake Inspection", "cost": 3500.0, "status": "Completed"},
+							{"maintenance_type": "Transmission Oil", "cost": 9000.0, "status": "Completed"},
+							{"maintenance_type": "Air Filter", "cost": 2500.0, "status": "Completed"},
+							{"maintenance_type": "Tyre Rotation", "cost": 2000.0, "status": "Completed"},
+						]
 					}
 					try:
 						entry_doc = self.maintenance_service.create_maintenance_entry(m_payload)
@@ -534,6 +541,5 @@ class DemoDataService(BaseService):
 						frappe.db.commit()
 					except Exception as e:
 						logger.error(f"Failed creating Maintenance Entry for {v_id}: {e}")
-						logger.error(f"Failed creating legacy Work Order for {v_id}: {e}")
 
 		return count
