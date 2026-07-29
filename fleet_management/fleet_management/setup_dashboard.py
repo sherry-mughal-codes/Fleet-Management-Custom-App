@@ -310,6 +310,23 @@ def setup_fleet_dashboards():
 		])
 	}
 
+	try:
+		dash_path = frappe.get_app_path("fleet_management", "fleet_management", "workspace", "fleet_dashboard", "fleet_dashboard.json")
+		if os.path.exists(dash_path):
+			with open(dash_path, "r", encoding="utf-8") as f:
+				dash_data = json.load(f)
+			if frappe.db.exists("Workspace", "Fleet Dashboard"):
+				frappe.delete_doc("Workspace", "Fleet Dashboard", force=True, ignore_permissions=True)
+			doc = frappe.get_doc(dash_data)
+			doc.insert(ignore_permissions=True)
+		else:
+			if frappe.db.exists("Workspace", "Fleet Dashboard"):
+				frappe.delete_doc("Workspace", "Fleet Dashboard", force=True, ignore_permissions=True)
+			doc = frappe.get_doc(dash_workspace)
+			doc.insert(ignore_permissions=True)
+	except Exception as e:
+		print(f"Error syncing Fleet Dashboard Workspace: {e}")
+
 	# ---------------------------------------------------------
 	# 4. Sync "Fleet Management" Workspace from JSON
 	# ---------------------------------------------------------

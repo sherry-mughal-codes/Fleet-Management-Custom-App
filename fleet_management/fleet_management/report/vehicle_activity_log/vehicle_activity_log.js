@@ -14,6 +14,12 @@ frappe.query_reports["Vehicle Activity Log"] = {
 			"default": frappe.defaults.get_user_default("Company")
 		},
 		{
+			"fieldname": "employee",
+			"label": __("Assigned User / Driver"),
+			"fieldtype": "Link",
+			"options": "User"
+		},
+		{
 			"fieldname": "activity_type",
 			"label": __("Activity Type"),
 			"fieldtype": "Select",

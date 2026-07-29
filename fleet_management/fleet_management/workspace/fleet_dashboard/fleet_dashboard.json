@@ -18,7 +18,7 @@
   }
  ],
  "content": "[{\"type\": \"header\", \"data\": {\"text\": \"Fleet Analytics & Executive KPI Dashboard\", \"level\": 2}}, {\"type\": \"number_card\", \"data\": {\"number_card_name\": \"Total Fleet Vehicles\"}}, {\"type\": \"number_card\", \"data\": {\"number_card_name\": \"Available Vehicles\"}}, {\"type\": \"number_card\", \"data\": {\"number_card_name\": \"Active Assignments\"}}, {\"type\": \"number_card\", \"data\": {\"number_card_name\": \"Vehicles Under Maintenance\"}}, {\"type\": \"number_card\", \"data\": {\"number_card_name\": \"Maintenance Due Vehicles\"}}, {\"type\": \"number_card\", \"data\": {\"number_card_name\": \"Fuel Locked Vehicles\"}}, {\"type\": \"number_card\", \"data\": {\"number_card_name\": \"Total Fuel Spend\"}}, {\"type\": \"number_card\", \"data\": {\"number_card_name\": \"Total Maintenance Spend\"}}, {\"type\": \"header\", \"data\": {\"text\": \"Fleet Visual Analytics & Charts\", \"level\": 3}}, {\"type\": \"chart\", \"data\": {\"chart_name\": \"Fleet Vehicle Status Distribution\"}}, {\"type\": \"chart\", \"data\": {\"chart_name\": \"Vehicle Category Breakdown\"}}, {\"type\": \"chart\", \"data\": {\"chart_name\": \"Monthly Fuel Expense\"}}, {\"type\": \"chart\", \"data\": {\"chart_name\": \"Maintenance Spend Trend\"}}, {\"type\": \"header\", \"data\": {\"text\": \"Reports & Analytics\", \"level\": 3}}, {\"type\": \"card\", \"data\": {\"card_name\": \"\\ud83d\\udcca Executive Fleet Reports\"}}]",
- "creation": "2026-07-25 15:38:50.692996",
+ "creation": "2026-07-29 15:07:41.987879",
  "custom_blocks": [],
  "docstatus": 0,
  "doctype": "Workspace",
@@ -77,9 +77,19 @@
    "link_type": "Report",
    "onboard": 0,
    "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "Vehicle Activity Log",
+   "link_count": 0,
+   "link_to": "Vehicle Activity Log",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
   }
  ],
- "modified": "2026-07-27 13:47:00.000000",
+ "modified": "2026-07-29 15:07:41.987879",
  "modified_by": "Administrator",
  "module": "Fleet Management",
  "name": "Fleet Dashboard",
