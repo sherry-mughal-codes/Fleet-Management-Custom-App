@@ -1,5 +1,11 @@
-frappe.query_reports["Vendor Summary Report"] = {
+frappe.query_reports["Vehicle Activity Log"] = {
 	"filters": [
+		{
+			"fieldname": "vehicle",
+			"label": __("Vehicle"),
+			"fieldtype": "Link",
+			"options": "Vehicle"
+		},
 		{
 			"fieldname": "company",
 			"label": __("Company"),
@@ -8,9 +14,10 @@ frappe.query_reports["Vendor Summary Report"] = {
 			"default": frappe.defaults.get_user_default("Company")
 		},
 		{
-			"fieldname": "workshop",
-			"label": __("Workshop / Service Center"),
-			"fieldtype": "Data"
+			"fieldname": "activity_type",
+			"label": __("Activity Type"),
+			"fieldtype": "Select",
+			"options": "\nAll\nVehicle Creation\nAssignment Handover\nAssignment Return\nFuel Entry\nMaintenance Entry"
 		},
 		{
 			"fieldname": "from_date",
@@ -21,12 +28,6 @@ frappe.query_reports["Vendor Summary Report"] = {
 			"fieldname": "to_date",
 			"label": __("To Date"),
 			"fieldtype": "Date"
-		},
-		{
-			"fieldname": "status",
-			"label": __("Status"),
-			"fieldtype": "Select",
-			"options": "\nDraft\nScheduled\nIn Progress\nCompleted\nCancelled"
 		}
 	]
 };

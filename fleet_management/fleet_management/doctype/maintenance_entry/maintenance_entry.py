@@ -100,6 +100,15 @@ class MaintenanceEntry(Document):
 		if not v_id:
 			raise FleetValidationError(f"Could not resolve linked Vehicle for Assignment '{self.assignment}'.")
 
+		# Validate odometer reading cannot be less than the vehicle's last recorded odometer
+		if hasattr(frappe, "db") and frappe.db and v_id:
+			last_odo = float(frappe.db.get_value("Vehicle", v_id, "current_odometer") or 0.0)
+			if last_odo == 0.0:
+				last_odo = float(frappe.db.get_value("Vehicle", v_id, "initial_odometer") or 0.0)
+			curr_odo = float(self.current_odometer or 0.0)
+			if last_odo > 0 and curr_odo > 0 and curr_odo < last_odo:
+				raise FleetValidationError(f"Odometer reading ({curr_odo} KM) cannot be less than the previous recorded vehicle odometer ({last_odo} KM).")
+
 		# Auto-load template schedule lines if items child table is empty
 		if not getattr(self, "items", None):
 			self.auto_load_template_items(v_id)
@@ -114,20 +123,17 @@ class MaintenanceEntry(Document):
 		self.total_cost = round(total, 2)
 
 	def auto_load_template_items(self, vehicle_id: str):
-		"""Auto-populates items child table from resolved Maintenance Template."""
+		"""Auto-populates items child table with due maintenance items."""
 		manager = MaintenanceManager()
-		template = manager.get_active_template(vehicle_id)
-		if not template:
-			return
-
-		for line in getattr(template, "schedule_lines", []):
+		due_items = manager.get_due_maintenance(vehicle_id)
+		for item in due_items:
 			self.append("items", {
-				"item_name": line.maintenance_type,
-				"interval_km": float(line.interval_km or 0.0),
-				"is_mandatory": getattr(line, "is_mandatory", 0),
-				"priority": getattr(line, "priority", "Medium"),
-				"grace_distance": float(line.grace_distance or 0.0),
-				"description": line.description,
+				"item_name": item["maintenance_type"],
+				"interval_km": item["interval_km"],
+				"is_mandatory": 1 if item["is_mandatory"] else 0,
+				"priority": item.get("priority", "Medium"),
+				"grace_distance": item.get("grace_distance", 0.0),
+				"description": f"Servicing Due at {item['next_due_odometer']} KM",
 				"is_completed": 1,
 				"cost": 0.0
 			})

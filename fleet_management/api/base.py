@@ -15,7 +15,7 @@ from fleet_management.utils.logger import get_logger
 
 logger = get_logger("fleet_management.api")
 
-def api_endpoint(allow_guest: bool = False, rate_limit: bool = True):
+def api_endpoint(allow_guest: bool = False, rate_limit: bool = True, roles: list = None):
 	"""
 	Enterprise API Decorator for Frappe `@frappe.whitelist()` methods.
 	Provides:
@@ -32,6 +32,11 @@ def api_endpoint(allow_guest: bool = False, rate_limit: bool = True):
 			endpoint_name = f"{func.__module__}.{func.__name__}"
 
 			try:
+				if roles and hasattr(frappe, "get_roles") and hasattr(frappe, "session") and getattr(frappe.session, "user", None) != "Administrator":
+					user_roles = set(frappe.get_roles())
+					if not any(r in user_roles for r in roles):
+						raise FleetManagementError("Permission Denied: Insufficient Role Privileges", status_code=403)
+
 				if rate_limit and hasattr(frappe, "rate_limit"):
 					# Placeholder hook for rate limiting evaluation
 					pass

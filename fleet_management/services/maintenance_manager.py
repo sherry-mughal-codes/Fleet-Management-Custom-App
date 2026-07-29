@@ -76,32 +76,50 @@ class MaintenanceManager(BaseService):
 
 	def get_last_serviced_odometer(self, vehicle_id: str, maintenance_type: str) -> float:
 		"""Retrieves the highest odometer reading when target maintenance_type was last serviced."""
-		if hasattr(frappe, "db") and frappe.db.table_exists("Maintenance Entry"):
-			try:
-				m_entries = frappe.db.sql("""
-					SELECT me.current_odometer
-					FROM `tabMaintenance Entry` me
-					JOIN `tabVehicle Assignment` va ON me.assignment = va.name
-					LEFT JOIN `tabMaintenance Entry Item` mei ON mei.parent = me.name
-					WHERE va.vehicle = %s
-					  AND me.docstatus = 1
-					  AND (mei.item_name = %s OR mei.item_name LIKE %s OR me.maintenance_type LIKE %s)
-					ORDER BY me.current_odometer DESC, me.maintenance_date DESC
-					LIMIT 1
-				""", (vehicle_id, maintenance_type, f"%{maintenance_type}%", f"%{maintenance_type}%"), as_dict=True)
+		highest_odo = 0.0
 
-				if m_entries and m_entries[0].get("current_odometer") is not None:
-					return float(m_entries[0].get("current_odometer") or 0.0)
-			except Exception:
-				pass
+		if hasattr(frappe, "db"):
+			# 1. Check Maintenance Entry (both direct vehicle reference and via assignment)
+			if frappe.db.table_exists("Maintenance Entry"):
+				try:
+					res = frappe.db.sql("""
+						SELECT MAX(me.current_odometer) as max_odo
+						FROM `tabMaintenance Entry` me
+						LEFT JOIN `tabMaintenance Entry Item` mei ON mei.parent = me.name
+						WHERE me.docstatus = 1
+						  AND (me.vehicle = %s OR me.assignment IN (SELECT name FROM `tabVehicle Assignment` WHERE vehicle = %s))
+						  AND (mei.item_name = %s OR mei.item_name LIKE %s OR me.maintenance_type LIKE %s)
+					""", (vehicle_id, vehicle_id, maintenance_type, f"%{maintenance_type}%", f"%{maintenance_type}%"), as_dict=True)
 
-		# Check initial vehicle odometer fallback
-		initial_odo = float(frappe.db.get_value("Vehicle", vehicle_id, "initial_odometer") or 0.0) if hasattr(frappe, "db") else 0.0
-		return initial_odo
+					if res and res[0].get("max_odo") is not None:
+						highest_odo = max(highest_odo, float(res[0].get("max_odo") or 0.0))
+				except Exception as e:
+					logger.error(f"Error checking Maintenance Entry last serviced odo: {e}")
+
+			# 2. Check Maintenance Work Order (legacy / formal work orders)
+			if frappe.db.table_exists("Maintenance Work Order"):
+				try:
+					res2 = frappe.db.sql("""
+						SELECT MAX(completion_odometer) as max_odo
+						FROM `tabMaintenance Work Order`
+						WHERE vehicle = %s
+						  AND docstatus = 1
+						  AND status = 'Completed'
+					""", (vehicle_id,), as_dict=True)
+
+					if res2 and res2[0].get("max_odo") is not None:
+						highest_odo = max(highest_odo, float(res2[0].get("max_odo") or 0.0))
+				except Exception:
+					pass
+
+		# Fallback to initial vehicle odometer if no maintenance has been completed yet
+		initial_odo = float(frappe.db.get_value("Vehicle", vehicle_id, "initial_odometer") or 0.0) if hasattr(frappe, "db") and frappe.db.exists("Vehicle", vehicle_id) else 0.0
+		return max(highest_odo, initial_odo)
 
 	def get_due_maintenance(self, vehicle_id: str) -> List[Dict[str, Any]]:
 		"""
 		Returns list of template schedule lines currently due for servicing on target vehicle.
+		A line is due if current_odometer >= last_serviced_odometer + interval_km.
 		"""
 		template_id = self.get_active_template(vehicle_id)
 		if not template_id:
@@ -112,8 +130,14 @@ class MaintenanceManager(BaseService):
 		due_items = []
 
 		for line in lines:
-			m_type = line.maintenance_type
-			interval = float(line.interval_km or 5000)
+			m_type = line.get("maintenance_type") if isinstance(line, dict) else getattr(line, "maintenance_type", "")
+			if not m_type:
+				continue
+			interval = float(line.get("interval_km", 5000) if isinstance(line, dict) else getattr(line, "interval_km", 5000) or 5000)
+			priority = line.get("priority", "Medium") if isinstance(line, dict) else getattr(line, "priority", "Medium")
+			is_mandatory = bool(line.get("is_mandatory", 0) if isinstance(line, dict) else getattr(line, "is_mandatory", 0))
+			grace = float(line.get("grace_distance", 0) if isinstance(line, dict) else getattr(line, "grace_distance", 0) or 0)
+
 			last_odo = self.get_last_serviced_odometer(vehicle_id, m_type)
 			next_due = last_odo + interval
 
@@ -121,8 +145,9 @@ class MaintenanceManager(BaseService):
 				due_items.append({
 					"maintenance_type": m_type,
 					"interval_km": interval,
-					"priority": line.priority,
-					"is_mandatory": bool(line.is_mandatory),
+					"priority": priority,
+					"is_mandatory": is_mandatory,
+					"grace_distance": grace,
 					"last_serviced_odometer": last_odo,
 					"current_odometer": curr_odo,
 					"next_due_odometer": next_due,
@@ -161,6 +186,8 @@ class MaintenanceManager(BaseService):
 				overdue_items.append({
 					"maintenance_type": m_type,
 					"interval_km": interval,
+					"is_mandatory": 1,
+					"priority": line.get("priority", "High") if isinstance(line, dict) else getattr(line, "priority", "High"),
 					"grace_distance": grace,
 					"last_serviced_odometer": last_odo,
 					"current_odometer": curr_odo,

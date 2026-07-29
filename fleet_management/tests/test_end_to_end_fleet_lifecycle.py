@@ -32,6 +32,8 @@ def ensure_master_data():
 			frappe.get_doc({"doctype": "Vehicle Brand", "brand_name": "Toyota-E2E", "brand_code": "TOYE2E"}).insert(ignore_permissions=True)
 		if not frappe.db.exists("Vehicle Category", "Sedan-E2E"):
 			frappe.get_doc({"doctype": "Vehicle Category", "category_name": "Sedan-E2E", "category_code": "SEDE2E"}).insert(ignore_permissions=True)
+		if not frappe.db.exists("Fuel Type", "Petrol"):
+			frappe.get_doc({"doctype": "Fuel Type", "fuel_name": "Petrol", "fuel_type_name": "Petrol", "fuel_type_code": "PET"}).insert(ignore_permissions=True)
 		model_name = frappe.db.exists("Vehicle Model", {"model_name": "Camry-E2E"})
 		if not model_name:
 			doc = frappe.get_doc({"doctype": "Vehicle Model", "model_name": "Camry-E2E", "model_code": "CAME2E", "vehicle_brand": "Toyota-E2E"}).insert(ignore_permissions=True)
@@ -51,8 +53,8 @@ class TestEndToEndFleetLifecycle:
 		self.company = "E2E Fleets Inc"
 
 		if hasattr(frappe, "db") and frappe.db:
-			# Clean up any leftover test entries
-			frappe.db.sql("DELETE FROM `tabVehicle Assignment` WHERE company = %s OR employee = 'Administrator'", (self.company,))
+			# Clean up any leftover test entries strictly scoped to test company & test vehicle
+			frappe.db.sql("DELETE FROM `tabVehicle Assignment` WHERE company = %s", (self.company,))
 			frappe.db.commit()
 			if frappe.db.exists("Vehicle", {"vehicle_number": self.test_plate}):
 				v_names = frappe.get_all("Vehicle", filters={"vehicle_number": self.test_plate}, fields=["name"])
@@ -132,6 +134,7 @@ class TestEndToEndFleetLifecycle:
 		# -------------------------------------------------------------
 		fuel_payload1 = {
 			"vehicle": vehicle_id,
+			"fuel_type": "Petrol",
 			"fuel_qty": 40.0,
 			"total_cost": 120.0,
 			"odometer": 10500.0,
@@ -150,6 +153,26 @@ class TestEndToEndFleetLifecycle:
 		# -------------------------------------------------------------
 		# 4. Trigger Maintenance Threshold & Lock
 		# -------------------------------------------------------------
+		maint_req_payload = {
+			"vehicle": vehicle_id,
+			"maintenance_type": "Preventive",
+			"company": self.company,
+			"priority": "High",
+			"requested_date": "2026-07-10",
+			"description": "5,000 km Scheduled Service"
+		}
+		maint_req = self.maintenance_service.create_request(maint_req_payload)
+		maint_req_id = maint_req.get("name") or "MR-E2E-001"
+
+		# Create and start Maintenance Work Order
+		work_order = self.maintenance_service.create_work_order({
+			"maintenance_request": maint_req_id,
+			"vehicle": vehicle_id,
+			"company": self.company,
+			"status": "In Progress"
+		})
+		wo_id = work_order.get("name") or "MWO-E2E-001"
+
 		# Apply Maintenance Lock on Vehicle by transitioning status to Under Maintenance
 		self.vehicle_service.change_status(vehicle_id, "Under Maintenance")
 		assert MaintenanceLockService.is_maintenance_locked(vehicle_id) is True
@@ -159,6 +182,7 @@ class TestEndToEndFleetLifecycle:
 		# -------------------------------------------------------------
 		fuel_payload_blocked = {
 			"vehicle": vehicle_id,
+			"fuel_type": "Petrol",
 			"fuel_qty": 30.0,
 			"total_cost": 90.0,
 			"odometer": 10600.0,
@@ -170,17 +194,19 @@ class TestEndToEndFleetLifecycle:
 		assert "FUEL-008" in str(excinfo.value) or "maintenance" in str(excinfo.value).lower()
 
 		# -------------------------------------------------------------
-		# 6. Create Maintenance Entry & Release Lock
+		# 6. Complete Maintenance & Release Lock
 		# -------------------------------------------------------------
 		maint_entry_payload = {
 			"assignment": asn_id,
+			"vehicle": vehicle_id,
+			"maintenance_type": "Preventive",
 			"maintenance_date": "2026-07-10",
 			"current_odometer": 10600.0,
+			"rate": 400.0,
+			"total_cost": 400.0,
 			"remarks": "5,000 km Scheduled Service",
 			"items": [
-				{"item_name": "Engine Oil Change", "interval_km": 5000, "is_completed": 1, "cost": 150.0},
-				{"item_name": "Parts & Materials", "interval_km": 5000, "is_completed": 1, "cost": 200.0},
-				{"item_name": "External Service", "interval_km": 5000, "is_completed": 1, "cost": 50.0},
+				{"item_name": "Preventive", "interval_km": 5000, "is_completed": 1, "cost": 400.0}
 			]
 		}
 		maint_result = self.maintenance_service.create_maintenance_entry(maint_entry_payload)
@@ -194,6 +220,7 @@ class TestEndToEndFleetLifecycle:
 		# -------------------------------------------------------------
 		fuel_payload2 = {
 			"vehicle": vehicle_id,
+			"fuel_type": "Petrol",
 			"fuel_qty": 45.0,
 			"total_cost": 135.0,
 			"odometer": 11000.0,

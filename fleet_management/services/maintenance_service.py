@@ -41,11 +41,21 @@ class MaintenanceService(BaseService):
 	def create_request(self, payload: Dict[str, Any]) -> Dict[str, Any]:
 		"""Legacy alias - creates a Maintenance Entry using the provided payload."""
 		logger.info("create_request redirected to create_maintenance_entry", {"vehicle": payload.get("vehicle")})
+		if "maintenance_date" not in payload or not payload["maintenance_date"]:
+			payload["maintenance_date"] = frappe.utils.nowdate() if hasattr(frappe, "utils") else "2026-07-29"
+		if ("current_odometer" not in payload or not payload["current_odometer"]) and payload.get("vehicle"):
+			v_odo = float(frappe.db.get_value("Vehicle", payload["vehicle"], "current_odometer") or 10000.0) if hasattr(frappe, "db") else 10000.0
+			payload["current_odometer"] = v_odo
 		return self.create_maintenance_entry(payload)
 
 	def create_work_order(self, payload: Dict[str, Any]) -> Dict[str, Any]:
 		"""Legacy alias - creates a Maintenance Entry using the provided payload."""
 		logger.info("create_work_order redirected to create_maintenance_entry", {"vehicle": payload.get("vehicle")})
+		if "maintenance_date" not in payload or not payload["maintenance_date"]:
+			payload["maintenance_date"] = frappe.utils.nowdate() if hasattr(frappe, "utils") else "2026-07-29"
+		if ("current_odometer" not in payload or not payload["current_odometer"]) and payload.get("vehicle"):
+			v_odo = float(frappe.db.get_value("Vehicle", payload["vehicle"], "current_odometer") or 10000.0) if hasattr(frappe, "db") else 10000.0
+			payload["current_odometer"] = v_odo
 		return self.create_maintenance_entry(payload)
 
 	def complete_work_order(self, work_order_id: str, completion_odometer: float, costs: Dict[str, float] | None = None) -> Dict[str, Any]:

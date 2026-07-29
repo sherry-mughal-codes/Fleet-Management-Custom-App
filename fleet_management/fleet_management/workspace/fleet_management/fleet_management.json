@@ -1,7 +1,7 @@
 {
  "charts": [],
  "content": "[{\"id\":\"yQs5qG3NoU\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Fleet Command Center</span>\",\"col\":12}},{\"id\":\"h1vMbqxpY_\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Vehicle\",\"col\":3}},{\"id\":\"Nv7kiAQPEH\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Vehicle Assignment\",\"col\":3}},{\"id\":\"Jwo4FBfSpG\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Fuel Entry\",\"col\":3}},{\"id\":\"VQMb7YfPGZ\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Maintenance Entry\",\"col\":3}},{\"id\":\"SBBy-T9OTP\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Maintenance Template\",\"col\":3}},{\"id\":\"sqiVvp7p2-\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Fleet Settings\",\"col\":3}},{\"id\":\"Vo4TzXiaGs\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Fleet Operations &amp; Management</span>\",\"col\":12}},{\"id\":\"lUNaG6Wc6o\",\"type\":\"card\",\"data\":{\"card_name\":\"\ud83d\ude80 Daily Operations\",\"col\":4}},{\"id\":\"cEKgC1kw5N\",\"type\":\"card\",\"data\":{\"card_name\":\"\ud83d\ude97 Fleet Assets\",\"col\":4}},{\"id\":\"IKCXCqKiFg\",\"type\":\"card\",\"data\":{\"card_name\":\"\ud83d\udd27 Maintenance Engine\",\"col\":4}},{\"id\":\"dbmSd2n-AF\",\"type\":\"card\",\"data\":{\"card_name\":\"\u26fd Fuel Intelligence\",\"col\":4}},{\"id\":\"QrVWxHlV9X\",\"type\":\"card\",\"data\":{\"card_name\":\"\ud83d\udcca Executive Analytics\",\"col\":4}},{\"id\":\"uihzwgAVvf\",\"type\":\"card\",\"data\":{\"card_name\":\"\u2699\ufe0f System & Masters\",\"col\":4}}]",
- "creation": "2026-07-28 13:39:31.896004",
+ "creation": "2026-07-29 14:01:02.048904",
  "custom_blocks": [],
  "docstatus": 0,
  "doctype": "Workspace",
@@ -240,6 +240,16 @@
   },
   {
    "hidden": 0,
+   "is_query_report": 1,
+   "label": "Vehicle Activity Log",
+   "link_count": 0,
+   "link_to": "Vehicle Activity Log",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
    "is_query_report": 0,
    "label": "\u2699\ufe0f System & Masters",
    "link_count": 0,
@@ -268,7 +278,7 @@
    "type": "Link"
   }
  ],
- "modified": "2026-07-28 13:39:31.896004",
+ "modified": "2026-07-29 14:01:02.048904",
  "modified_by": "Administrator",
  "module": "Fleet Management",
  "name": "Fleet Management",

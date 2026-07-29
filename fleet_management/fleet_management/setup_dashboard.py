@@ -239,6 +239,7 @@ def setup_fleet_dashboards():
 			{"label": "Fuel Efficiency Report", "link_to": "Fuel Efficiency Report", "type": "Report", "color": "Green"},
 			{"label": "Maintenance Summary Report", "link_to": "Maintenance Summary Report", "type": "Report", "color": "Orange"},
 			{"label": "Fleet Cost Summary Report", "link_to": "Fleet Cost Summary Report", "type": "Report", "color": "Purple"},
+			{"label": "Vehicle Activity Log", "link_to": "Vehicle Activity Log", "type": "Report", "color": "Cyan"},
 		],
 		"links": [
 			{
@@ -277,6 +278,14 @@ def setup_fleet_dashboards():
 				"is_query_report": 1,
 				"label": "Fleet Cost Summary Report",
 				"link_to": "Fleet Cost Summary Report",
+				"link_type": "Report",
+				"type": "Link"
+			},
+			{
+				"hidden": 0,
+				"is_query_report": 1,
+				"label": "Vehicle Activity Log",
+				"link_to": "Vehicle Activity Log",
 				"link_type": "Report",
 				"type": "Link"
 			}

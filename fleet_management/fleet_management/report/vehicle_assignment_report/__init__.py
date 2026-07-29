@@ -1,3 +1,0 @@
-"""
-Vehicle Assignment Report Package
-"""
