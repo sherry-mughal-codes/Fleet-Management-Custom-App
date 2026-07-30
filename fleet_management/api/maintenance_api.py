@@ -53,7 +53,7 @@ def search_maintenance_entries(
 
 @api_endpoint(allow_guest=False)
 def create_maintenance_entry_api(
-	assignment: str,
+	vehicle: str,
 	maintenance_type: str,
 	rate: float,
 	qty: float = 1.0,
@@ -65,7 +65,7 @@ def create_maintenance_entry_api(
 ) -> Dict[str, Any]:
 	"""Whitelisted API endpoint for creating a Maintenance Entry."""
 	payload = {
-		"assignment": assignment,
+		"vehicle": vehicle,
 		"maintenance_type": maintenance_type,
 		"rate": rate,
 		"qty": qty,
@@ -115,22 +115,24 @@ def get_vehicle_health_api(vehicle: str) -> Dict[str, Any]:
 
 
 @api_endpoint(allow_guest=False)
-def get_due_maintenance_items_api(assignment: str, current_odometer: float | None = None) -> Dict[str, Any]:
+def get_due_maintenance_items_api(vehicle: str, current_odometer: float | None = None) -> Dict[str, Any]:
 	"""
-	Resolves vehicle from assignment, evaluates template interval schedule lines
-	against current_odometer and last serviced odometer, and returns items that are due or overdue.
+	Evaluates template interval schedule lines against current_odometer and
+	last serviced odometer for a vehicle, returning all due or overdue items.
 	"""
-	if not assignment or not hasattr(frappe, "db") or not frappe.db.exists("Vehicle Assignment", assignment):
-		return success_response(data=[], message="Assignment not found.")
-
-	v_id = frappe.db.get_value("Vehicle Assignment", assignment, "vehicle")
-	if not v_id:
+	if not vehicle or not hasattr(frappe, "db") or not frappe.db.exists("Vehicle", vehicle):
 		return success_response(data=[], message="Vehicle not found.")
 
-	odo = float(current_odometer) if current_odometer and float(current_odometer) > 0 else float(frappe.db.get_value("Vehicle", v_id, "current_odometer") or 0.0)
+	if current_odometer and float(current_odometer) > 0:
+		ado = float(current_odometer)
+	else:
+		latest_fuel_odo = frappe.db.get_value("Fuel Entry", {"vehicle": vehicle, "docstatus": 1}, "MAX(odometer)") or 0.0
+		ado = float(latest_fuel_odo)
+		if not ado:
+			ado = float(frappe.db.get_value("Vehicle", vehicle, "initial_odometer") or 0.0)
 
-	due_items = maintenance_manager.get_due_maintenance(v_id)
-	overdue_items = maintenance_manager.get_overdue_maintenance(v_id, current_odometer=odo)
+	due_items = maintenance_manager.get_due_maintenance(vehicle)
+	overdue_items = maintenance_manager.get_overdue_maintenance(vehicle, current_odometer=ado)
 
 	due_map = {}
 	for item in due_items:
@@ -155,7 +157,6 @@ def get_due_maintenance_items_api(assignment: str, current_odometer: float | Non
 			"interval_km": float(item.get("interval_km") or 0.0),
 			"is_mandatory": is_mand,
 			"priority": item.get("priority", "Medium"),
-			"grace_distance": float(item.get("grace_distance") or 0.0),
 			"description": f"Servicing due (exceeded by {item.get('exceeded_km', 0)} KM)" if item.get("exceeded_km") else "Routine Servicing Due",
 			"is_completed": 1,
 			"cost": 0.0

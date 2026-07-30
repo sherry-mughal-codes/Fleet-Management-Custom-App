@@ -281,18 +281,23 @@ def get_data(filters: Dict[str, Any]) -> List[Dict[str, Any]]:
 		maint_conditions.append("me.vehicle = %s")
 		maint_args.append(vehicle_filter)
 	if company_filter:
-		maint_conditions.append("me.company = %s")
+		maint_conditions.append("EXISTS (SELECT 1 FROM `tabVehicle` v WHERE v.name = me.vehicle AND v.company = %s)")
 		maint_args.append(company_filter)
 	if employee_filter:
-		maint_conditions.append("va.employee = %s")
+		# Employee is now resolved via active assignment — filter on subquery
+		maint_conditions.append("EXISTS (SELECT 1 FROM `tabVehicle Assignment` va WHERE va.vehicle = me.vehicle AND va.docstatus = 1 AND va.employee = %s)")
 		maint_args.append(employee_filter)
 
 	maint_where = " WHERE " + " AND ".join(maint_conditions)
 	try:
 		maints = frappe.db.sql(f"""
-			SELECT me.name, me.vehicle, me.maintenance_date, me.current_odometer, me.total_cost, me.maintenance_type, va.employee
+			SELECT
+				me.name, me.vehicle, me.maintenance_date, me.current_odometer,
+				me.total_cost, me.maintenance_type,
+				(SELECT va.employee FROM `tabVehicle Assignment` va
+				 WHERE va.vehicle = me.vehicle AND va.docstatus = 1
+				 ORDER BY va.modified DESC LIMIT 1) AS employee
 			FROM `tabMaintenance Entry` me
-			LEFT JOIN `tabVehicle Assignment` va ON me.assignment = va.name
 			{maint_where}
 		""", tuple(maint_args), as_dict=True)
 

@@ -73,11 +73,17 @@ class FleetCostService(BaseService):
 		if not hasattr(frappe, "db") or not frappe.db.exists("Vehicle", vehicle_id):
 			return 0.0
 
-		v_doc = frappe.db.get_value("Vehicle", vehicle_id, ["current_odometer", "initial_odometer"], as_dict=True)
+		v_doc = frappe.db.get_value("Vehicle", vehicle_id, ["initial_odometer"], as_dict=True)
 		if not v_doc:
 			return 0.0
 
-		current_odo = float(v_doc.get("current_odometer") or 0.0)
+		# Derive current odometer as the max odometer reading from fuel entries
+		max_fuel_odo = frappe.db.get_value(
+			"Fuel Entry",
+			filters={"vehicle": vehicle_id, "docstatus": 1},
+			fieldname="MAX(odometer)"
+		) or 0.0
+		current_odo = float(max_fuel_odo)
 		initial_odo = float(v_doc.get("initial_odometer") or 0.0)
 		distance = max(0.0, current_odo - initial_odo)
 

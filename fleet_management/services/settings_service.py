@@ -48,6 +48,39 @@ class SettingsService(BaseService):
 		return settings.get(key, default)
 
 	@staticmethod
+	def resolve_default_company(user: str | None = None) -> str:
+		"""
+		Auto-resolve default company from the logged-in user profile / defaults.
+		"""
+		target_user = user or (frappe.session.user if hasattr(frappe, "session") else "Administrator")
+		comp = None
+		if hasattr(frappe, "defaults") and hasattr(frappe.defaults, "get_user_default"):
+			try:
+				comp = frappe.defaults.get_user_default("company", user=target_user)
+			except Exception:
+				pass
+		if not comp and hasattr(frappe, "db") and frappe.db:
+			comp = frappe.db.get_value("User", target_user, "company")
+			if not comp:
+				comp = frappe.db.get_value("Company", {"is_group": 0}, "name")
+		return comp or "ABC Logistics (Private) Limited"
+
+	@staticmethod
+	def resolve_default_currency(company: str | None = None) -> str:
+		"""
+		Auto-resolve default currency from company or user default company (defaults to PKR).
+		"""
+		comp = company or SettingsService.resolve_default_company()
+		if comp and hasattr(frappe, "db") and frappe.db:
+			try:
+				curr = frappe.db.get_value("Company", comp, "default_currency")
+				if curr:
+					return curr
+			except Exception:
+				pass
+		return "PKR"
+
+	@staticmethod
 	def clear_cache():
 		"""Clear Redis cached settings."""
 		try:
@@ -59,19 +92,13 @@ class SettingsService(BaseService):
 	def get_default_fallbacks() -> Dict[str, Any]:
 		"""Fallback dictionary when settings DocType has not been saved yet."""
 		return {
-			"default_maintenance_interval_km": constants.DEFAULT_MAINTENANCE_INTERVAL_KM,
-			"default_reminder_distance_km": constants.DEFAULT_REMINDER_DISTANCE_KM,
 			"fuel_entry_lock_when_maintenance_due": 1,
-			"allow_backdated_entries": 1,
-			"allow_odometer_rollback": 0,
 			"max_fuel_capacity_validation": constants.DEFAULT_MAX_FUEL_CAPACITY,
 			"default_currency": constants.DEFAULT_CURRENCY,
 			"default_distance_unit": constants.DISTANCE_UNIT_KM,
 			"default_fuel_unit": constants.FUEL_UNIT_LITERS,
 			"enable_email_notifications": 1,
 			"enable_system_notifications": 1,
-			"enable_audit_logging": 1,
-			"enable_expense_analytics": 1,
 			"enable_scheduler": 1,
 			"enable_notifications": 1,
 			"maintenance_reminder_days": 7,
@@ -93,20 +120,8 @@ class SettingsService(BaseService):
 		return bool(SettingsService.get_value("fuel_entry_lock_when_maintenance_due", 1))
 
 	@staticmethod
-	def is_backdated_allowed() -> bool:
-		return bool(SettingsService.get_value("allow_backdated_entries", 1))
-
-	@staticmethod
-	def is_odometer_rollback_allowed() -> bool:
-		return bool(SettingsService.get_value("allow_odometer_rollback", 0))
-
-	@staticmethod
 	def get_max_fuel_capacity() -> float:
 		return float(SettingsService.get_value("max_fuel_capacity_validation", constants.DEFAULT_MAX_FUEL_CAPACITY))
-
-	@staticmethod
-	def is_audit_logging_enabled() -> bool:
-		return bool(SettingsService.get_value("enable_audit_logging", 1))
 
 	@staticmethod
 	def is_email_notification_enabled() -> bool:
@@ -148,7 +163,5 @@ class SettingsService(BaseService):
 		interval = data.get("default_maintenance_interval_km", 0)
 		reminder = data.get("default_reminder_distance_km", 0)
 
-		if interval <= 0:
-			raise FleetConfigurationError("Default Maintenance Interval must be greater than zero.")
-		if reminder < 0 or reminder >= interval:
+		if interval > 0 and (reminder < 0 or reminder >= interval):
 			raise FleetConfigurationError("Reminder Distance must be non-negative and less than Maintenance Interval.")

@@ -1,28 +1,13 @@
 frappe.ui.form.on('Maintenance Entry', {
 	setup: function(frm) {
-		// Filter Vehicle Assignment query
-		frm.set_query('assignment', function() {
+		// Filter Vehicle query — only Assigned and Maintenance Due vehicles
+		frm.set_query('vehicle', function() {
 			return {
-				filters: {
-					'docstatus': 1,
-					'status': 'Assigned'
-				}
+				filters: [
+					['Vehicle', 'status', 'in', ['Assigned', 'Maintenance Due']]
+				]
 			};
 		});
-	},
-
-	rate: function(frm) {
-		frm.trigger('calculate_total_cost');
-	},
-
-	qty: function(frm) {
-		frm.trigger('calculate_total_cost');
-	},
-
-	calculate_total_cost: function(frm) {
-		let rate = flt(frm.doc.rate);
-		let qty = flt(frm.doc.qty) || 1.0;
-		frm.set_value('total_cost', flt(rate * qty, 2));
 	},
 
 	refresh: function(frm) {
@@ -30,35 +15,24 @@ frappe.ui.form.on('Maintenance Entry', {
 		fleet_show_maintenance_odometer_hint(frm, prev_odo);
 	},
 
-	assignment: function(frm) {
-		if (frm.doc.assignment) {
-			frappe.db.get_value('Vehicle Assignment', frm.doc.assignment,
-				['vehicle', 'opening_odometer'],
-				function(r) {
-					if (r) {
-						if (r.vehicle) {
-							frappe.db.get_value('Vehicle', r.vehicle, ['current_odometer', 'initial_odometer'], function(v_res) {
-								let last_odo = 0;
-								if (v_res) {
-									last_odo = flt(v_res.current_odometer) || flt(v_res.initial_odometer) || 0;
-								}
-								if (last_odo === 0 && r.opening_odometer) {
-									last_odo = flt(r.opening_odometer);
-								}
-								frm._prev_odo = last_odo;
-
-								if (last_odo > 0 && (!frm.doc.current_odometer || frm.doc.current_odometer === 0)) {
-									frm.set_value('current_odometer', last_odo);
-								}
-								fleet_show_maintenance_odometer_hint(frm, last_odo);
-								fleet_load_due_items(frm);
-							});
-						} else {
-							fleet_load_due_items(frm);
-						}
+	vehicle: function(frm) {
+		if (frm.doc.vehicle) {
+			frappe.call({
+				method: 'fleet_management.api.fuel_api.get_vehicle_previous_odometer_api',
+				args: { vehicle: frm.doc.vehicle },
+				callback: function(r) {
+					let last_odo = 0;
+					if (r && r.message && r.message.data) {
+						last_odo = flt(r.message.data.previous_odometer) || 0;
 					}
+					frm._prev_odo = last_odo;
+					if (last_odo > 0 && (!frm.doc.current_odometer || frm.doc.current_odometer === 0)) {
+						frm.set_value('current_odometer', last_odo);
+					}
+					fleet_show_maintenance_odometer_hint(frm, last_odo);
+					fleet_load_due_items(frm);
 				}
-			);
+			});
 		} else {
 			frm._prev_odo = 0;
 			fleet_show_maintenance_odometer_hint(frm, 0);
@@ -67,7 +41,7 @@ frappe.ui.form.on('Maintenance Entry', {
 
 	current_odometer: function(frm) {
 		if (!fleet_validate_maintenance_odometer(frm)) return;
-		if (frm.doc.assignment && flt(frm.doc.current_odometer) > 0) {
+		if (frm.doc.vehicle && flt(frm.doc.current_odometer) > 0) {
 			fleet_load_due_items(frm);
 		}
 	},
@@ -75,7 +49,6 @@ frappe.ui.form.on('Maintenance Entry', {
 	before_submit: function(frm) {
 		const odo = flt(frm.doc.current_odometer);
 		const prev_odo = frm._prev_odo || 0;
-
 		if (prev_odo > 0 && odo < prev_odo) {
 			frappe.msgprint({
 				title: __('Validation Error'),
@@ -113,11 +86,7 @@ function fleet_show_maintenance_odometer_hint(frm, prev_odo) {
 function fleet_validate_maintenance_odometer(frm) {
 	const entered = flt(frm.doc.current_odometer);
 	const prev_odo = frm._prev_odo || 0;
-
-	if (entered <= 0) {
-		return false;
-	}
-
+	if (entered <= 0) return false;
 	if (prev_odo > 0 && entered < prev_odo) {
 		if (frm.fields_dict['current_odometer']) {
 			frm.get_field('current_odometer').set_description(
@@ -132,24 +101,23 @@ function fleet_validate_maintenance_odometer(frm) {
 		}, 5);
 		return false;
 	}
-
 	fleet_show_maintenance_odometer_hint(frm, prev_odo);
 	return true;
 }
 
 
 // ---------------------------------------------------------------------------
-// Helper: Auto-load due maintenance items based on template intervals & odometer
+// Helper: Auto-load due maintenance items from Vehicle.maintenance_template
 // ---------------------------------------------------------------------------
 
 function fleet_load_due_items(frm) {
-	if (!frm.doc.assignment) return;
+	if (!frm.doc.vehicle) return;
 	const odo = flt(frm.doc.current_odometer);
 
 	frm.call({
 		method: 'fleet_management.api.maintenance_api.get_due_maintenance_items_api',
 		args: {
-			assignment: frm.doc.assignment,
+			vehicle: frm.doc.vehicle,
 			current_odometer: odo > 0 ? odo : null
 		},
 		callback: function(r) {
@@ -163,7 +131,6 @@ function fleet_load_due_items(frm) {
 					row.interval_km = item.interval_km;
 					row.is_mandatory = item.is_mandatory;
 					row.priority = item.priority;
-					row.grace_distance = item.grace_distance;
 					row.description = item.description;
 					row.is_completed = 1;
 					row.cost = item.cost || 0.0;

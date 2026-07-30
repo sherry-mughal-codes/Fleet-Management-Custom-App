@@ -27,8 +27,7 @@ logger = get_logger("fleet_management.doctype.fuel_entry")
 class FuelEntry(Document):
 	"""
 	Submittable transactional document for a fuel refilling event.
-	The only stored reference is the Vehicle Assignment (field: assignment).
-	Vehicle, employee, and company are resolved at runtime via the assignment.
+	Linked directly to Vehicle.
 	"""
 
 	doctype = "Fuel Entry"
@@ -40,10 +39,6 @@ class FuelEntry(Document):
 				d["doctype"] = "Fuel Entry"
 			if "naming_series" not in d:
 				d["naming_series"] = "FUEL-.YYYY.-.#####"
-			# Accept a vehicle kwarg for backwards-compat with service layer tests
-			# but do NOT store it as a DB field — store temporarily for resolution
-			if "vehicle" in d:
-				self._vehicle_hint = d.pop("vehicle", None)
 		elif not args:
 			if "doctype" not in kwargs:
 				kwargs["doctype"] = "Fuel Entry"
@@ -51,40 +46,30 @@ class FuelEntry(Document):
 				kwargs["naming_series"] = "FUEL-.YYYY.-.#####"
 		super().__init__(*args, **kwargs)
 
-	# ------------------------------------------------------------------
-	# Dynamic Properties — resolved from Vehicle Assignment
-	# ------------------------------------------------------------------
-
 	@property
-	def vehicle(self) -> Optional[str]:
-		"""Resolves linked Vehicle via Vehicle Assignment — never stored directly."""
-		if hasattr(self, "_vehicle_hint") and self._vehicle_hint:
-			return self._vehicle_hint
-		if getattr(self, "assignment", None) and hasattr(frappe, "db") and frappe.db:
-			v = frappe.db.get_value("Vehicle Assignment", self.assignment, "vehicle")
-			if v:
-				self._vehicle_hint = v
-				return v
+	def assignment(self) -> Optional[str]:
+		"""Auto-resolves active assignment for vehicle if available."""
+		if getattr(self, "vehicle", None) and hasattr(frappe, "db") and frappe.db:
+			return frappe.db.get_value("Vehicle Assignment", {"vehicle": self.vehicle, "docstatus": 1}, "name")
 		return None
-
-	@vehicle.setter
-	def vehicle(self, val: str):
-		"""Accept vehicle assignment in service layer but store only as a hint."""
-		self._vehicle_hint = val
 
 	@property
 	def employee(self) -> Optional[str]:
-		"""Resolves linked Employee via Vehicle Assignment."""
-		if getattr(self, "assignment", None) and hasattr(frappe, "db") and frappe.db:
-			return frappe.db.get_value("Vehicle Assignment", self.assignment, "employee")
+		"""Resolves driver / user from vehicle active assignment."""
+		asn = self.assignment
+		if asn and hasattr(frappe, "db") and frappe.db:
+			return frappe.db.get_value("Vehicle Assignment", asn, "employee")
 		return None
 
 	@property
 	def company(self) -> Optional[str]:
-		"""Resolves company via Vehicle Assignment."""
-		if getattr(self, "assignment", None) and hasattr(frappe, "db") and frappe.db:
-			return frappe.db.get_value("Vehicle Assignment", self.assignment, "company")
-		return None
+		"""Resolves company from vehicle or settings."""
+		if getattr(self, "vehicle", None) and hasattr(frappe, "db") and frappe.db:
+			comp = frappe.db.get_value("Vehicle", self.vehicle, "company")
+			if comp:
+				return comp
+		from fleet_management.services.settings_service import SettingsService
+		return SettingsService.resolve_default_company()
 
 	@property
 	def status(self) -> str:
@@ -98,257 +83,119 @@ class FuelEntry(Document):
 	def before_validate(self):
 		"""
 		Runs before validate():
-		1. Resolve assignment if only vehicle_hint provided (legacy service calls)
-		2. Calculate total_cost from qty × rate
-		3. Auto-populate all Fuel Intelligence fields
-		4. Auto-resolve fuel_type from Vehicle if missing
+		1. Auto-resolve 3-way fuel calculation (Rate, Quantity, Total Cost)
+		2. Auto-resolve fuel_type from Vehicle if missing
 		"""
-		self._auto_resolve_assignment()
-		self._calculate_total_cost()
-		self._populate_intelligence()
-		if not getattr(self, "fuel_type", None) and self.vehicle and hasattr(frappe, "db") and frappe.db:
+		self._calculate_three_way_fuel()
+		if not getattr(self, "fuel_type", None) and getattr(self, "vehicle", None) and hasattr(frappe, "db") and frappe.db:
 			v_fuel_type = frappe.db.get_value("Vehicle", self.vehicle, "fuel_type")
 			if v_fuel_type:
 				self.fuel_type = v_fuel_type
 
 	def validate(self):
 		"""
-		Full server-side validation. Never rely on client scripts alone.
+		Full server-side validation.
 		"""
-		# 1. Assignment is mandatory
-		if not self.assignment:
-			raise FleetValidationError("FUEL-001: Vehicle Assignment is mandatory for Fuel Entry.")
+		# 1. Vehicle is mandatory
+		if not self.vehicle:
+			raise FleetValidationError("FUEL-001: Vehicle is mandatory for Fuel Entry.")
 
-		# 2. Assignment must exist
-		if hasattr(frappe, "db") and frappe.db and not frappe.db.exists("Vehicle Assignment", self.assignment):
-			raise FleetValidationError(f"FUEL-001: Vehicle Assignment '{self.assignment}' does not exist.")
+		# 2. Vehicle must exist
+		if hasattr(frappe, "db") and frappe.db and not frappe.db.exists("Vehicle", self.vehicle):
+			raise FleetValidationError(f"FUEL-001: Vehicle '{self.vehicle}' does not exist.")
 
-		# 3. Vehicle must resolve
-		v_id = self.vehicle
-		if not v_id:
-			raise FleetValidationError(f"FUEL-001: Could not resolve Vehicle from Assignment '{self.assignment}'.")
+		# 3. Perform 3-way fuel calculation validation (Rate, Quantity, Total Cost)
+		self._calculate_three_way_fuel()
 
-		# 4. Fuel Quantity
 		qty = float(self.fuel_qty or 0.0)
+		rate = float(self.fuel_price or 0.0)
+		total = float(self.total_cost or 0.0)
+
+		if qty <= 0 and rate <= 0 and total <= 0:
+			raise FleetValidationError("FUEL-002: Please provide at least two values among Rate Per Litre, Fuel Quantity, and Total Cost.")
+
 		if qty <= 0:
-			raise FleetValidationError("FUEL-002: Fuel quantity (litres) must be greater than zero.")
-
-		# 5. Rate Per Litre
-		price = float(self.fuel_price or 0.0)
-		if price <= 0:
+			raise FleetValidationError("FUEL-002: Fuel quantity must be greater than zero.")
+		if rate <= 0:
 			raise FleetValidationError("FUEL-003: Rate per litre must be greater than zero.")
+		if total <= 0:
+			raise FleetValidationError("FUEL-004: Total cost must be greater than zero.")
 
-		# 6. Odometer
+		# 4. Odometer validation
 		odo = float(self.odometer or 0.0)
 		if odo <= 0:
-			raise FleetValidationError("FUEL-004: Odometer reading must be greater than zero.")
+			raise FleetValidationError("FUEL-005: Odometer reading must be greater than zero.")
 
-		# 7. Odometer must not go backwards (non-decreasing sequence)
+		# 5. Odometer sequence validation
 		if hasattr(frappe, "db") and frappe.db:
-			self._validate_odometer_sequence(v_id, odo)
-
-		# 8. Re-verify total cost on server
-		expected_total = round(qty * price, 2)
-		self.total_cost = expected_total
-
-	def before_save(self):
-		"""
-		Non-blocking advisory check: warn if the odometer entered is
-		suspiciously close (within 1 KM) to the previous submitted entry.
-		This guards against accidental near-duplicate readings.
-		"""
-		v_id = self.vehicle
-		odo = float(self.odometer or 0.0)
-		if not v_id or odo <= 0 or not hasattr(frappe, "db") or not frappe.db:
-			return
-
-		prev = FuelIntelligenceEngine.get_previous_fuel_record(
-			v_id,
-			exclude_entry=self.name if getattr(self, "name", None) else None,
-		)
-		if prev:
-			prev_odo = float(prev.get("odometer") or 0.0)
-			gap = odo - prev_odo
-			if 0 < gap < 1:
-				frappe.msgprint(
-					f"⚠️ Odometer reading ({odo:,.1f} KM) is only {gap:.2f} KM above "
-					f"the previous entry ({prev_odo:,.1f} KM). Please verify the reading is correct.",
-					indicator="orange",
-					alert=True,
-				)
+			self._validate_odometer_sequence(self.vehicle, odo)
 
 	def on_submit(self):
 		"""
 		Post-submission business logic:
 		1. Enforce Maintenance Lock (FUEL-008)
-		2. Update Vehicle current_odometer if this entry has a higher reading
-		3. Sync Vehicle operational summary
-		4. Recalculate vehicle state
 		"""
 		v_id = self.vehicle
 		odo = float(self.odometer or 0.0)
 
 		if not v_id:
-			logger.warning(f"Fuel Entry {self.name}: could not resolve vehicle on submit.")
 			return
 
-		# FUEL-008: Reject submission if vehicle is under maintenance
+		# Enforce Maintenance Lock
 		MaintenanceLockService.enforce_maintenance_lock(v_id, odo)
 
-		# Update vehicle current_odometer
-		if hasattr(frappe, "db") and frappe.db:
-			curr = float(frappe.db.get_value("Vehicle", v_id, "current_odometer") or 0.0)
-			if odo > curr:
-				frappe.db.set_value("Vehicle", v_id, "current_odometer", round(odo, 1))
-
-		# Sync operational summary & recalculate state
-		try:
-			from fleet_management.services.fleet_statistics_manager import FleetStatisticsManager
-			FleetStatisticsManager.recalculate_vehicle_statistics(v_id)
-		except Exception as e:
-			logger.warning(f"FleetStatisticsManager failed for {v_id}: {e}")
-
-		try:
-			VehicleStateManager.recalculate_vehicle_state(v_id)
-		except Exception as e:
-			logger.warning(f"VehicleStateManager failed for {v_id}: {e}")
-
-		logger.info(f"Submitted Fuel Entry {self.name} for Assignment {self.assignment} | Vehicle {v_id}")
+		logger.info(f"Submitted Fuel Entry {self.name} for Vehicle {v_id}")
 
 	def on_cancel(self):
-		"""
-		Post-cancellation business logic:
-		Recalculate vehicle statistics to reverse this entry's contribution.
-		"""
-		v_id = self.vehicle
-		if not v_id:
-			return
-
-		try:
-			from fleet_management.services.fleet_statistics_manager import FleetStatisticsManager
-			FleetStatisticsManager.recalculate_vehicle_statistics(v_id)
-		except Exception as e:
-			logger.warning(f"FleetStatisticsManager cancel reversal failed for {v_id}: {e}")
-
-		try:
-			VehicleStateManager.recalculate_vehicle_state(v_id)
-		except Exception as e:
-			logger.warning(f"VehicleStateManager cancel recalc failed for {v_id}: {e}")
-
 		logger.info(f"Cancelled Fuel Entry {self.name}")
 
 	# ------------------------------------------------------------------
-	# Private Helpers
+	# Calculation Helpers
 	# ------------------------------------------------------------------
 
-	def _auto_resolve_assignment(self):
+	def _calculate_three_way_fuel(self):
 		"""
-		Backwards-compat: if assignment is missing but we have a vehicle hint,
-		try to find the active assignment for that vehicle.
+		Calculates the 3rd missing value given any 2 of: Rate (fuel_price), Qty (fuel_qty), Total (total_cost).
+		Handles division by zero gracefully and rounds values properly.
 		"""
-		if self.assignment:
-			return
-		vehicle_hint = getattr(self, "_vehicle_hint", None)
-		if vehicle_hint and hasattr(frappe, "db") and frappe.db:
-			asn = frappe.db.get_value(
-				"Vehicle Assignment",
-				{"vehicle": vehicle_hint, "docstatus": 1},
-				"name"
-			) or frappe.db.get_value(
-				"Vehicle Assignment",
-				{"vehicle": vehicle_hint},
-				"name"
-			)
-			if asn:
-				self.assignment = asn
+		rate = float(self.fuel_price) if self.fuel_price is not None and float(self.fuel_price or 0) > 0 else 0.0
+		qty = float(self.fuel_qty) if self.fuel_qty is not None and float(self.fuel_qty or 0) > 0 else 0.0
+		total = float(self.total_cost) if self.total_cost is not None and float(self.total_cost or 0) > 0 else 0.0
 
-	def _calculate_total_cost(self):
-		"""Calculates total_cost = fuel_qty × fuel_price. Defaults to 0.0 when inputs are zero."""
-		qty = float(self.fuel_qty or 0.0)
-		price = float(self.fuel_price or 0.0)
-		if qty > 0 and price > 0:
-			self.total_cost = round(qty * price, 2)
-		elif qty > 0 and float(self.total_cost or 0.0) > 0:
-			# Derive price from total if price missing
-			self.fuel_price = round(float(self.total_cost) / qty, 4)
-		else:
-			# Ensure total_cost is never None
-			if self.total_cost is None:
-				self.total_cost = 0.0
-
-	def _populate_intelligence(self):
-		"""
-		Calculates and populates all Fuel Intelligence fields:
-		previous_odometer, previous_fuel_date, days_since_last_fuel,
-		distance_travelled, fuel_average, cost_per_km, fuel_efficiency_rating,
-		is_first_entry.
-		"""
-		v_id = self.vehicle
-		if not v_id or not hasattr(frappe, "db") or not frappe.db:
-			return
-
-		odo = float(self.odometer or 0.0)
-		qty = float(self.fuel_qty or 0.0)
-		price = float(self.fuel_price or 0.0)
-
-		if odo <= 0 or qty <= 0:
-			return
-
-		intel = FuelIntelligenceEngine.calculate_intelligence(
-			vehicle_id=v_id,
-			current_odometer=odo,
-			fuel_qty=qty,
-			fuel_price=price,
-			fuel_date=self.fuel_date,
-			exclude_entry=self.name if getattr(self, "name", None) else None,
-		)
-
-		self.is_first_entry = intel.get("is_first_entry", 0)
-		self.previous_odometer = intel.get("previous_odometer", 0.0)
-		self.previous_fuel_date = intel.get("previous_fuel_date")
-		self.days_since_last_fuel = intel.get("days_since_last_fuel", 0)
-		self.distance_travelled = intel.get("distance_travelled", 0.0)
-		self.fuel_average = intel.get("fuel_average", 0.0)
-		self.cost_per_km = intel.get("cost_per_km", 0.0)
-		self.fuel_efficiency_rating = intel.get("fuel_efficiency_rating", "—")
-		self.total_cost = intel.get("total_cost", self.total_cost)
+		if rate > 0 and qty > 0:
+			# Case 1: Rate + Quantity -> Calculate Total Cost
+			self.total_cost = round(rate * qty, 2)
+		elif rate > 0 and total > 0:
+			# Case 2: Rate + Total Cost -> Calculate Quantity
+			self.fuel_qty = round(total / rate, 4)
+		elif qty > 0 and total > 0:
+			# Case 3: Quantity + Total Cost -> Calculate Rate
+			self.fuel_price = round(total / qty, 4)
 
 	def _validate_odometer_sequence(self, vehicle_id: str, current_odo: float):
 		"""
-		Ensures the odometer never decreases (FUEL-004 advancement rule).
-		Checks the previous submitted Fuel Entry.
+		Ensures odometer sequence is non-decreasing.
 		"""
-		prev = FuelIntelligenceEngine.get_previous_fuel_record(
-			vehicle_id,
-			exclude_entry=self.name if getattr(self, "name", None) else None,
+		last_odo = frappe.db.sql(
+			"SELECT MAX(odometer) as max_odo FROM `tabFuel Entry` WHERE vehicle = %s AND docstatus = 1 AND name != %s",
+			(vehicle_id, self.name or ""),
+			as_dict=True
 		)
-		if prev:
-			prev_odo = float(prev.get("odometer") or 0.0)
-			if current_odo < prev_odo:
-				raise FleetValidationError(
-					f"Odometer reading ({current_odo:,.1f} KM) is below the previous recorded fuel entry odometer "
-					f"({prev_odo:,.1f} KM), so the document will not submit. Please correct the odometer reading."
-				)
+		prev_odo = 0.0
+		if last_odo and last_odo[0].get("max_odo"):
+			prev_odo = float(last_odo[0].get("max_odo"))
+		else:
+			prev_odo = float(frappe.db.get_value("Vehicle", vehicle_id, "initial_odometer") or 0.0)
 
-	# ------------------------------------------------------------------
-	# Test-compatibility hook (used in unit tests without DB)
-	# ------------------------------------------------------------------
+		if prev_odo > 0 and current_odo < prev_odo:
+			raise FleetValidationError(
+				f"This is not allowed! Entered Odometer ({current_odo:,.1f} KM) is below previous odometer ({prev_odo:,.1f} KM)."
+			)
 
 	def before_validate_hook(self):
 		"""
-		Thin hook for unit tests that cannot invoke the full Frappe lifecycle.
-		Runs pure calculation logic and raises FleetValidationError on invalid inputs.
+		Hook for unit tests without full DB.
 		"""
 		if not getattr(self, "naming_series", None):
 			self.naming_series = "FUEL-.YYYY.-.#####"
-
-		# Validate inputs (negative values are always rejected)
-		qty = float(self.fuel_qty or 0.0)
-		price = float(self.fuel_price or 0.0)
-
-		if qty < 0:
-			raise FleetValidationError("Fuel quantity (litres) cannot be negative.")
-		if price < 0:
-			raise FleetValidationError("Rate per litre cannot be negative.")
-
-		self._calculate_total_cost()
+		self._calculate_three_way_fuel()

@@ -44,32 +44,34 @@ def get_data_and_summary(filters):
 	elif filters.get("to_date"):
 		conditions["fuel_date"] = ["<=", filters.get("to_date")]
 
+	if filters.get("vehicle"):
+		conditions["vehicle"] = filters.get("vehicle")
+
 	entries = frappe.get_all(
 		"Fuel Entry",
 		filters=conditions,
 		fields=[
-			"name", "assignment", "fuel_date", "odometer", "previous_odometer",
+			"name", "vehicle", "fuel_date", "odometer", "previous_odometer",
 			"distance_travelled", "fuel_qty", "fuel_price", "total_cost", "fuel_average",
 			"cost_per_km", "fuel_efficiency_rating", "fuel_type", "fuel_station_name"
 		],
 		order_by="fuel_date desc, creation desc"
 	) if hasattr(frappe, "get_all") else []
 
-	asn_map = {}
-	if entries:
-		asn_names = list(set([e.assignment for e in entries if getattr(e, "assignment", None)]))
-		asns = frappe.get_all(
-			"Vehicle Assignment",
-			filters={"name": ["in", asn_names]},
-			fields=["name", "vehicle", "employee", "company"]
-		) if hasattr(frappe, "get_all") else []
-		asn_map = {a.name: a for a in asns}
+	# Build vehicle map for name and company
+	v_names = list(set([e.vehicle for e in entries if getattr(e, "vehicle", None)]))
+	v_docs = frappe.get_all(
+		"Vehicle",
+		filters={"name": ["in", v_names]},
+		fields=["name", "vehicle_name", "company"]
+	) if v_names else []
+	v_map = {v.name: v for v in v_docs}
 
-	v_map = {}
-	if asn_map:
-		v_names = list(set([a.vehicle for a in asn_map.values() if getattr(a, "vehicle", None)]))
-		vehicles = frappe.get_all("Vehicle", filters={"name": ["in", v_names]}, fields=["name", "vehicle_name"]) if hasattr(frappe, "get_all") else []
-		v_map = {v.name: v.vehicle_name for v in vehicles}
+	# Resolve driver from active assignment per vehicle
+	driver_map = {}
+	for v_id in v_names:
+		asn = frappe.db.get_value("Vehicle Assignment", {"vehicle": v_id, "docstatus": 1}, ["employee"], as_dict=True)
+		driver_map[v_id] = asn.employee if asn else ""
 
 	data = []
 	total_cost = 0.0
@@ -80,15 +82,13 @@ def get_data_and_summary(filters):
 	dates_dict = {}
 
 	for e in entries:
-		asn_doc = asn_map.get(e.assignment) or {}
-		v_id = asn_doc.get("vehicle") or ""
-		v_name = v_map.get(v_id) or ""
-		emp_id = asn_doc.get("employee") or ""
-		comp_id = asn_doc.get("company") or ""
+		v_id = e.get("vehicle") or ""
+		v_doc = v_map.get(v_id) or {}
+		v_name = v_doc.get("vehicle_name") if isinstance(v_doc, dict) else getattr(v_doc, "vehicle_name", "")
+		comp_id = v_doc.get("company") if isinstance(v_doc, dict) else getattr(v_doc, "company", "")
+		emp_id = driver_map.get(v_id, "")
 
 		if filters.get("company") and comp_id != filters.get("company"):
-			continue
-		if filters.get("vehicle") and v_id != filters.get("vehicle"):
 			continue
 		if filters.get("employee") and emp_id != filters.get("employee"):
 			continue
@@ -116,7 +116,7 @@ def get_data_and_summary(filters):
 			"name": e.name,
 			"fuel_date": e.get("fuel_date"),
 			"vehicle": v_id,
-			"vehicle_name": v_name,
+			"vehicle_name": v_name or "",
 			"employee": emp_id,
 			"odometer": float(e.get("odometer") or 0.0),
 			"distance_travelled": dist,
@@ -127,7 +127,7 @@ def get_data_and_summary(filters):
 			"fuel_efficiency_rating": e.get("fuel_efficiency_rating") or "",
 			"fuel_type": e.get("fuel_type") or "",
 			"fuel_station_name": e.get("fuel_station_name") or "",
-			"company": comp_id,
+			"company": comp_id or "",
 			"status": "Submitted"
 		})
 
@@ -153,3 +153,4 @@ def get_data_and_summary(filters):
 	}
 
 	return data, report_summary, chart
+

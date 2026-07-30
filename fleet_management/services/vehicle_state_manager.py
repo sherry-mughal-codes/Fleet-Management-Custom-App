@@ -39,7 +39,7 @@ class VehicleStateManager(BaseService):
 		v_data = frappe.db.get_value(
 			"Vehicle",
 			vehicle_id,
-			["status", "current_odometer", "next_maintenance_due_odometer", "current_employee"],
+			["status"],
 			as_dict=True
 		)
 
@@ -56,11 +56,14 @@ class VehicleStateManager(BaseService):
 		if current_status == "Under Maintenance":
 			return VehicleStatus.UNDER_MAINTENANCE
 
-		# 3. Check Maintenance Due State
-		curr_odo = float(v_data.get("current_odometer") or 0.0)
-		due_odo = float(v_data.get("next_maintenance_due_odometer") or 0.0)
-		if due_odo > 0 and curr_odo >= due_odo:
-			return VehicleStatus.MAINTENANCE_DUE
+		# 3. Check Maintenance Due State (via MaintenanceManager due items)
+		try:
+			from fleet_management.services.maintenance_manager import MaintenanceManager
+			due_items = MaintenanceManager().get_due_maintenance(vehicle_id)
+			if due_items and any(d.get("is_mandatory") for d in due_items):
+				return VehicleStatus.MAINTENANCE_DUE
+		except Exception:
+			pass
 
 		# 4. Check Assigned State (Active submitted assignment)
 		active_assignment = frappe.db.exists(
@@ -69,10 +72,10 @@ class VehicleStateManager(BaseService):
 				"vehicle": vehicle_id,
 				"docstatus": 1,
 				"return_date": ["is", "not set"],
-				"status": ["in", ["Assigned", "In Use", "Approved"]]
+				"status": ["in", ["Assigned", "In Use", "Approved", "Return Overdue"]]
 			}
 		)
-		if active_assignment or v_data.get("current_employee"):
+		if active_assignment:
 			return VehicleStatus.ASSIGNED
 
 		# 5. Default State
@@ -91,12 +94,6 @@ class VehicleStateManager(BaseService):
 
 		if old_status != new_status:
 			frappe.db.set_value("Vehicle", vehicle_id, "status", new_status)
-			frappe.db.set_value(
-				"Vehicle",
-				vehicle_id,
-				"current_assignment_status",
-				"Assigned" if new_status == VehicleStatus.ASSIGNED else "Unassigned"
-			)
 			logger.info(
 				f"Vehicle State Recalculated: {vehicle_id} [{old_status} -> {new_status}]",
 				{"reason": reason or "State Manager Recalculation"}
@@ -114,3 +111,12 @@ class VehicleStateManager(BaseService):
 def recalculate_vehicle_state(vehicle_id: str, reason: Optional[str] = None) -> str:
 	"""Module-level function helper."""
 	return VehicleStateManager.recalculate_vehicle_state(vehicle_id, reason=reason)
+
+
+def sync_all_vehicles():
+	"""Recalculates state for all vehicles in database."""
+	if not hasattr(frappe, "db") or not hasattr(frappe, "get_all"):
+		return
+	vehicles = frappe.get_all("Vehicle", fields=["name"])
+	for v in vehicles:
+		VehicleStateManager.recalculate_vehicle_state(v.get("name"), reason="Batch sync")

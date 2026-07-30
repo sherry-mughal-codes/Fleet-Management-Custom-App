@@ -7,7 +7,7 @@
  "field_order": [
   "basic_fuel_section",
   "naming_series",
-  "assignment",
+  "vehicle",
   "fuel_date",
   "fuel_type",
   "column_break_basic",
@@ -15,16 +15,6 @@
   "fuel_price",
   "fuel_qty",
   "total_cost",
-  "intelligence_section",
-  "is_first_entry",
-  "previous_fuel_date",
-  "previous_odometer",
-  "column_break_intel",
-  "distance_travelled",
-  "days_since_last_fuel",
-  "fuel_average",
-  "cost_per_km",
-  "fuel_efficiency_rating",
   "receipt_section",
   "receipt_number",
   "receipt_attachment",
@@ -46,12 +36,12 @@
    "options": "FUEL-.YYYY.-.#####"
   },
   {
-   "fieldname": "assignment",
+   "fieldname": "vehicle",
    "fieldtype": "Link",
    "in_list_view": 1,
    "in_standard_filter": 1,
-   "label": "Vehicle Assignment",
-   "options": "Vehicle Assignment",
+   "label": "Vehicle",
+   "options": "Vehicle",
    "reqd": 1
   },
   {
@@ -87,83 +77,19 @@
    "fieldname": "fuel_price",
    "fieldtype": "Currency",
    "in_list_view": 1,
-   "label": "Rate Per Litre",
-   "reqd": 1
+   "label": "Rate Per Litre"
   },
   {
    "fieldname": "fuel_qty",
    "fieldtype": "Float",
    "in_list_view": 1,
-   "label": "Fuel Quantity (Litres)",
-   "reqd": 1
+   "label": "Fuel Quantity (Litres)"
   },
   {
    "fieldname": "total_cost",
    "fieldtype": "Currency",
    "in_list_view": 1,
-   "label": "Total Cost",
-   "read_only": 1
-  },
-  {
-   "fieldname": "intelligence_section",
-   "fieldtype": "Section Break",
-   "label": "Fuel Intelligence"
-  },
-  {
-   "default": "0",
-   "fieldname": "is_first_entry",
-   "fieldtype": "Check",
-   "hidden": 1,
-   "label": "Is First Fuel Entry",
-   "read_only": 1
-  },
-  {
-   "fieldname": "previous_fuel_date",
-   "fieldtype": "Date",
-   "label": "Previous Fuel Date",
-   "read_only": 1
-  },
-  {
-   "fieldname": "previous_odometer",
-   "fieldtype": "Float",
-   "label": "Previous Odometer (KM)",
-   "read_only": 1
-  },
-  {
-   "fieldname": "column_break_intel",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "distance_travelled",
-   "fieldtype": "Float",
-   "label": "Distance Travelled (KM)",
-   "read_only": 1
-  },
-  {
-   "fieldname": "days_since_last_fuel",
-   "fieldtype": "Int",
-   "label": "Days Since Last Fuel",
-   "read_only": 1
-  },
-  {
-   "fieldname": "fuel_average",
-   "fieldtype": "Float",
-   "in_list_view": 0,
-   "label": "Fuel Economy (KM/L)",
-   "read_only": 1
-  },
-  {
-   "fieldname": "cost_per_km",
-   "fieldtype": "Currency",
-   "label": "Cost Per KM",
-   "read_only": 1
-  },
-  {
-   "fieldname": "fuel_efficiency_rating",
-   "fieldtype": "Data",
-   "in_list_view": 0,
-   "label": "Fuel Efficiency Rating",
-   "read_only": 1
+   "label": "Total Cost"
   },
   {
    "collapsible": 1,
@@ -263,7 +189,7 @@
    "write": 1
   }
  ],
- "search_fields": "name, assignment, receipt_number",
+ "search_fields": "name, vehicle, receipt_number",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": []

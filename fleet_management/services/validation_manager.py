@@ -55,7 +55,7 @@ class ValidationManager(BaseService):
 			"vehicle": vehicle_id,
 			"docstatus": 1,
 			"return_date": ["is", "not set"],
-			"status": ["in", ["Assigned", "In Use", "Approved"]]
+			"status": ["in", ["Assigned", "In Use", "Approved", "Return Overdue"]]
 		}
 		if exclude_name:
 			filters["name"] = ["!=", exclude_name]

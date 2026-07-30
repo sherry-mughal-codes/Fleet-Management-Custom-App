@@ -54,7 +54,7 @@ class AssignmentManager(BaseService):
 				"vehicle": vehicle_id,
 				"docstatus": 1,
 				"return_date": ["is", "not set"],
-				"status": ["in", [AssignmentStatus.ASSIGNED, AssignmentStatus.IN_USE, AssignmentStatus.APPROVED]],
+				"status": ["in", [AssignmentStatus.ASSIGNED, AssignmentStatus.IN_USE, AssignmentStatus.APPROVED, AssignmentStatus.RETURN_OVERDUE]],
 			}
 		) if hasattr(frappe, "db") else 0
 
@@ -100,8 +100,8 @@ class AssignmentManager(BaseService):
 		# 2. Validate Vehicle Availability
 		self.validate_vehicle_availability(doc.vehicle)
 
-		# 3. Odometer Verification
-		v_odo = float(frappe.db.get_value("Vehicle", doc.vehicle, "current_odometer") or 0.0)
+		# 3. Odometer Verification — use initial_odometer as baseline
+		v_odo = float(frappe.db.get_value("Vehicle", doc.vehicle, "initial_odometer") or 0.0)
 		if opening_odometer is not None:
 			odometer_rule = AssignmentOdometerIntegrityRule({
 				"opening_odometer": opening_odometer,
@@ -123,8 +123,7 @@ class AssignmentManager(BaseService):
 		else:
 			doc.save()
 
-		# 4. Update Vehicle Employee & Recalculate State via VehicleStateManager
-		frappe.db.set_value("Vehicle", doc.vehicle, "current_employee", doc.employee)
+		# 4. Recalculate Vehicle State via VehicleStateManager
 		self.state_manager.update_vehicle_state(doc.vehicle, reason=f"Handover via Assignment {assignment_id}")
 
 		AssignmentEventDispatcher.notify_handover(doc)
@@ -164,10 +163,6 @@ class AssignmentManager(BaseService):
 		doc.status = AssignmentStatus.RETURNED
 		doc.save()
 
-		# Update Vehicle current odometer & clear employee
-		frappe.db.set_value("Vehicle", doc.vehicle, "current_odometer", closing)
-		frappe.db.set_value("Vehicle", doc.vehicle, "current_employee", None)
-
 		# Recalculate Vehicle State
 		self.state_manager.update_vehicle_state(doc.vehicle, reason=f"Vehicle returned via Assignment {assignment_id}")
 
@@ -191,7 +186,6 @@ class AssignmentManager(BaseService):
 			else:
 				doc.save()
 
-		frappe.db.set_value("Vehicle", doc.vehicle, "current_employee", None)
 		self.state_manager.update_vehicle_state(doc.vehicle, reason=reason or f"Assignment {assignment_id} cancelled")
 
 		AssignmentEventDispatcher.notify_cancelled(doc)

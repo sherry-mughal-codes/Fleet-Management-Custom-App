@@ -149,11 +149,10 @@ class VehicleService(BaseService):
 		return counts
 
 	def get_vehicle_summary(self, vehicle_id: str) -> Dict[str, Any]:
-		"""Retrieves aggregated summary for target vehicle."""
+		"""Retrieves summary for target vehicle."""
 		if not frappe.db.exists("Vehicle", vehicle_id):
 			raise FleetNotFoundError(f"Vehicle '{vehicle_id}' not found.")
 
-		sync_vehicle_operational_summary(vehicle_id)
 		doc = frappe.get_doc("Vehicle", vehicle_id)
 		asset_counts = self.get_asset_counts(vehicle_id)
 		return {
@@ -164,16 +163,7 @@ class VehicleService(BaseService):
 			"model": doc.vehicle_model,
 			"company": doc.company,
 			"status": doc.status,
-			"current_employee": doc.current_employee,
-			"current_assignment_status": doc.current_assignment_status,
-			"current_odometer": doc.current_odometer,
-			"next_maintenance_due_odometer": doc.next_maintenance_due_odometer,
-			"last_fuel_date": str(doc.last_fuel_date) if doc.last_fuel_date else None,
-			"last_maintenance_date": str(doc.last_maintenance_date) if doc.last_maintenance_date else None,
-			"average_fuel_economy": doc.average_fuel_economy,
-			"total_fuel_cost": doc.total_fuel_cost,
-			"total_maintenance_cost": doc.total_maintenance_cost,
-			"lifetime_distance": doc.lifetime_distance,
+			"initial_odometer": doc.initial_odometer,
 			"document_count": asset_counts.get("document_count", 0),
 			"image_count": asset_counts.get("image_count", 0),
 			"primary_image": self.get_primary_image(vehicle_id)
@@ -191,8 +181,7 @@ class VehicleService(BaseService):
 			filters=filters or {},
 			fields=[
 				"name", "vehicle_number", "vehicle_name", "vehicle_brand",
-				"vehicle_model", "company", "status", "current_odometer",
-				"current_employee", "next_maintenance_due_odometer"
+				"vehicle_model", "company", "status", "initial_odometer"
 			],
 			start=start,
 			page_length=page_length,
@@ -224,7 +213,7 @@ class VehicleService(BaseService):
 	def prepare_maintenance(self, vehicle_id: str) -> Dict[str, Any]:
 		"""Preparation contract hook for Maintenance module."""
 		doc = frappe.get_doc("Vehicle", vehicle_id)
-		return {"vehicle_id": vehicle_id, "current_odometer": doc.current_odometer}
+		return {"vehicle_id": vehicle_id, "status": doc.status}
 
 	# --- Digital Asset Management Methods ---
 
@@ -295,30 +284,19 @@ def sync_all_vehicles_operational_summary():
 
 def is_vehicle_assigned(vehicle_id: str) -> bool:
 	"""
-	Determines whether a vehicle is currently assigned to an employee or has an active Vehicle Assignment record.
+	Determines whether a vehicle is currently assigned via active Vehicle Assignment.
 	"""
 	if not vehicle_id or not hasattr(frappe, "db") or not frappe.db.exists("Vehicle", vehicle_id):
 		return False
 
-	current_employee = frappe.db.get_value("Vehicle", vehicle_id, "current_employee")
-	if current_employee:
-		return True
-
-	current_assignment_status = frappe.db.get_value("Vehicle", vehicle_id, "current_assignment_status")
-	if current_assignment_status == "Assigned":
-		return True
-
-	active_assignment = frappe.db.exists(
+	return bool(frappe.db.exists(
 		"Vehicle Assignment",
 		{
 			"vehicle": vehicle_id,
-			"status": ["in", ["Assigned", "In Use", "Approved"]],
-		},
-	)
-	if active_assignment:
-		return True
-
-	return False
+			"docstatus": 1,
+			"return_date": ["is", "not set"]
+		}
+	))
 
 
 def update_vehicle_status_on_maintenance_change(doc, method=None):

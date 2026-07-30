@@ -12,23 +12,14 @@
   "maintenance_section",
   "fuel_entry_lock_when_maintenance_due",
   "max_fuel_capacity_validation",
-  "entry_controls_section",
-  "allow_backdated_entries",
-  "allow_odometer_rollback",
   "system_controls_section",
   "enable_email_notifications",
   "enable_system_notifications",
-  "enable_audit_logging",
-  "enable_expense_analytics",
   "automation_section",
   "enable_scheduler",
   "enable_notifications",
   "fuel_anomaly_threshold",
-  "escalation_recipient",
-  "fuel_efficiency_section",
-  "excellent_fuel_economy_kmpl",
-  "good_fuel_economy_kmpl",
-  "average_fuel_economy_kmpl"
+  "escalation_recipient"
  ],
  "fields": [
   {
@@ -43,7 +34,7 @@
    "options": "Company"
   },
   {
-   "default": "USD",
+   "default": "PKR",
    "fieldname": "default_currency",
    "fieldtype": "Link",
    "label": "Default Currency",
@@ -81,26 +72,9 @@
    "label": "Maximum Allowed Fuel Capacity Limit"
   },
   {
-   "fieldname": "entry_controls_section",
-   "fieldtype": "Section Break",
-   "label": "Data Entry Controls"
-  },
-  {
-   "default": "1",
-   "fieldname": "allow_backdated_entries",
-   "fieldtype": "Check",
-   "label": "Allow Backdated Entries"
-  },
-  {
-   "default": "0",
-   "fieldname": "allow_odometer_rollback",
-   "fieldtype": "Check",
-   "label": "Allow Odometer Rollback"
-  },
-  {
    "fieldname": "system_controls_section",
    "fieldtype": "Section Break",
-   "label": "System & Analytics Features"
+   "label": "System & Notification Features"
   },
   {
    "default": "1",
@@ -113,18 +87,6 @@
    "fieldname": "enable_system_notifications",
    "fieldtype": "Check",
    "label": "Enable System Notifications"
-  },
-  {
-   "default": "1",
-   "fieldname": "enable_audit_logging",
-   "fieldtype": "Check",
-   "label": "Enable Audit Logging"
-  },
-  {
-   "default": "1",
-   "fieldname": "enable_expense_analytics",
-   "fieldtype": "Check",
-   "label": "Enable Expense Analytics"
   },
   {
    "fieldname": "automation_section",
@@ -153,37 +115,11 @@
    "fieldname": "escalation_recipient",
    "fieldtype": "Data",
    "label": "Escalation Recipient Email"
-  },
-  {
-   "fieldname": "fuel_efficiency_section",
-   "fieldtype": "Section Break",
-   "label": "Fuel Efficiency Rating Thresholds (KM/L)"
-  },
-  {
-   "default": "15",
-   "description": "Fuel economy at or above this value (KM/L) is rated Excellent",
-   "fieldname": "excellent_fuel_economy_kmpl",
-   "fieldtype": "Float",
-   "label": "Excellent Threshold (KM/L)"
-  },
-  {
-   "default": "10",
-   "description": "Fuel economy at or above this value (KM/L) is rated Good",
-   "fieldname": "good_fuel_economy_kmpl",
-   "fieldtype": "Float",
-   "label": "Good Threshold (KM/L)"
-  },
-  {
-   "default": "7",
-   "description": "Fuel economy at or above this value (KM/L) is rated Average; below is Poor",
-   "fieldname": "average_fuel_economy_kmpl",
-   "fieldtype": "Float",
-   "label": "Average Threshold (KM/L)"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2026-07-27 20:00:19.482963",
+ "modified": "2026-07-30 13:00:00.000000",
  "modified_by": "Administrator",
  "module": "Fleet Management",
  "name": "Fleet Settings",

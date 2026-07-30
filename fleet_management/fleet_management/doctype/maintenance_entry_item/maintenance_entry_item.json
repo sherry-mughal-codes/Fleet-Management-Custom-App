@@ -9,7 +9,6 @@
   "is_mandatory",
   "column_break_1",
   "priority",
-  "grace_distance",
   "is_completed",
   "cost",
   "description",
@@ -49,11 +48,6 @@
    "options": "Low\nMedium\nHigh\nCritical"
   },
   {
-   "fieldname": "grace_distance",
-   "fieldtype": "Float",
-   "label": "Grace Distance (KM)"
-  },
-  {
    "default": "0",
    "fieldname": "is_completed",
    "fieldtype": "Check",
@@ -80,7 +74,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-07-27 13:00:00.000000",
+ "modified": "2026-07-30 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Fleet Management",
  "name": "Maintenance Entry Item",

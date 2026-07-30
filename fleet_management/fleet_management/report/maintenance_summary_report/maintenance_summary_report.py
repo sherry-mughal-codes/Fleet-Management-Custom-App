@@ -16,82 +16,96 @@ def execute(filters=None):
 def get_columns():
 	return [
 		{"label": "Entry ID", "fieldname": "name", "fieldtype": "Link", "options": "Maintenance Entry", "width": 140},
-		{"label": "Assignment", "fieldname": "assignment", "fieldtype": "Link", "options": "Vehicle Assignment", "width": 140},
 		{"label": "Vehicle", "fieldname": "vehicle", "fieldtype": "Link", "options": "Vehicle", "width": 140},
-		{"label": "Employee", "fieldname": "employee", "fieldtype": "Link", "options": "User", "width": 130},
-		{"label": "Maintenance Type", "fieldname": "maintenance_type", "fieldtype": "Data", "width": 140},
+		{"label": "Maintenance Type", "fieldname": "maintenance_type", "fieldtype": "Data", "width": 160},
 		{"label": "Date", "fieldname": "maintenance_date", "fieldtype": "Date", "width": 110},
-		{"label": "Odometer (KM)", "fieldname": "current_odometer", "fieldtype": "Float", "width": 120},
+		{"label": "Odometer (KM)", "fieldname": "current_odometer", "fieldtype": "Float", "width": 130},
 		{"label": "Total Cost", "fieldname": "total_cost", "fieldtype": "Currency", "width": 130},
 		{"label": "Vendor", "fieldname": "vendor", "fieldtype": "Link", "options": "Maintenance Vendor", "width": 140},
-		{"label": "DocStatus", "fieldname": "docstatus_label", "fieldtype": "Data", "width": 110},
+		{"label": "Status", "fieldname": "docstatus_label", "fieldtype": "Data", "width": 110},
 		{"label": "Company", "fieldname": "company", "fieldtype": "Link", "options": "Company", "width": 140}
 	]
 
 
 def get_data_and_summary(filters):
-	conditions = {}
-	if filters.get("from_date") and filters.get("to_date"):
-		conditions["maintenance_date"] = ["between", [filters.get("from_date"), filters.get("to_date")]]
-	elif filters.get("from_date"):
-		conditions["maintenance_date"] = [">=", filters.get("from_date")]
-	elif filters.get("to_date"):
-		conditions["maintenance_date"] = ["<=", filters.get("to_date")]
+	conditions = "1=1"
+	values = {}
 
-	# Fetch Maintenance Entry records
-	entries = frappe.get_all(
-		"Maintenance Entry",
-		filters=conditions,
-		fields=["name", "assignment", "maintenance_date", "current_odometer", "total_cost", "vendor", "docstatus"],
-		order_by="maintenance_date desc, creation desc"
-	) if (hasattr(frappe, "get_all") and frappe.db.exists("DocType", "Maintenance Entry")) else []
+	if filters.get("from_date") and filters.get("to_date"):
+		conditions += " AND me.maintenance_date BETWEEN %(from_date)s AND %(to_date)s"
+		values["from_date"] = filters["from_date"]
+		values["to_date"] = filters["to_date"]
+	elif filters.get("from_date"):
+		conditions += " AND me.maintenance_date >= %(from_date)s"
+		values["from_date"] = filters["from_date"]
+	elif filters.get("to_date"):
+		conditions += " AND me.maintenance_date <= %(to_date)s"
+		values["to_date"] = filters["to_date"]
+
+	if filters.get("vehicle"):
+		conditions += " AND me.vehicle = %(vehicle)s"
+		values["vehicle"] = filters["vehicle"]
+
+	if filters.get("company"):
+		conditions += " AND v.company = %(company)s"
+		values["company"] = filters["company"]
+
+	# Direct SQL query — no per-row get_doc needed
+	entries = frappe.db.sql(f"""
+		SELECT
+			me.name,
+			me.vehicle,
+			me.maintenance_date,
+			me.current_odometer,
+			me.total_cost,
+			me.vendor,
+			me.docstatus,
+			v.company
+		FROM `tabMaintenance Entry` me
+		LEFT JOIN `tabVehicle` v ON v.name = me.vehicle
+		WHERE {conditions}
+		ORDER BY me.maintenance_date DESC, me.creation DESC
+	""", values, as_dict=True) if frappe.db.table_exists("Maintenance Entry") else []
 
 	data = []
 	total_maint_cost = 0.0
 	submitted_cnt = 0
 	draft_cnt = 0
 	type_costs = {}
-
 	docstatus_map = {0: "Draft", 1: "Submitted", 2: "Cancelled"}
 
 	for e in entries:
-		doc = frappe.get_doc("Maintenance Entry", e.name)
-		v_id = doc.vehicle
-		emp_id = doc.employee
-		comp_id = doc.company
-
-		if filters.get("vehicle") and v_id != filters.get("vehicle"):
-			continue
-		if filters.get("company") and comp_id != filters.get("company"):
-			continue
-
-		docstatus = int(doc.docstatus or 0)
+		docstatus = int(e.get("docstatus") or 0)
 		status_str = docstatus_map.get(docstatus, "Draft")
+
+		# Resolve maintenance type from items child table
+		maint_type = frappe.db.get_value(
+			"Maintenance Entry Item",
+			{"parent": e.name, "is_completed": 1},
+			"item_name"
+		) or "General Servicing"
 
 		if docstatus == 1:
 			submitted_cnt += 1
 		elif docstatus == 0:
 			draft_cnt += 1
 
-		maint_type = doc.maintenance_type
-		total = float(doc.total_cost or 0.0)
+		total = float(e.get("total_cost") or 0.0)
 
 		if docstatus != 2:
 			total_maint_cost += total
 			type_costs[maint_type] = type_costs.get(maint_type, 0.0) + total
 
 		data.append({
-			"name": doc.name,
-			"assignment": doc.assignment or "",
-			"vehicle": v_id or "",
-			"employee": emp_id or "",
+			"name": e.name,
+			"vehicle": e.get("vehicle") or "",
 			"maintenance_type": maint_type,
-			"maintenance_date": doc.maintenance_date,
-			"current_odometer": float(doc.current_odometer or 0.0),
+			"maintenance_date": e.get("maintenance_date"),
+			"current_odometer": float(e.get("current_odometer") or 0.0),
 			"total_cost": total,
-			"vendor": doc.vendor or "",
+			"vendor": e.get("vendor") or "",
 			"docstatus_label": status_str,
-			"company": comp_id or ""
+			"company": e.get("company") or ""
 		})
 
 	avg_entry_cost = round(total_maint_cost / len(data), 2) if data else 0.0
@@ -114,3 +128,4 @@ def get_data_and_summary(filters):
 	}
 
 	return data, report_summary, chart
+

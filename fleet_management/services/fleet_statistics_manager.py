@@ -76,26 +76,9 @@ class FleetStatisticsManager:
 		# 3. Overall Vehicle Odometer & Cost Per KM
 		v_doc = frappe.get_doc("Vehicle", vehicle_id)
 		init_odo = float(v_doc.initial_odometer or 0.0)
-		curr_odo = max(float(v_doc.current_odometer or 0.0), last_fuel_odo, last_maint_odo)
+		curr_odo = max(init_odo, last_fuel_odo, last_maint_odo)
 		total_distance_driven = max(curr_odo - init_odo, 0.0)
 		total_operational_cost = total_fuel_cost + total_maint_cost
-
-		# Calculate next_maintenance_due_odometer from active template interval
-		next_due_odo = float(v_doc.next_maintenance_due_odometer or 0.0)
-		if last_maint_odo > 0:
-			try:
-				from fleet_management.services.maintenance_manager import MaintenanceManager
-				mgr = MaintenanceManager()
-				template_id = mgr.get_active_template(vehicle_id)
-				if template_id:
-					lines = mgr.get_template_lines(template_id)
-					intervals = [float(l.interval_km or 5000) for l in lines if getattr(l, "interval_km", None)]
-					min_interval = min(intervals) if intervals else 5000.0
-					next_due_odo = last_maint_odo + min_interval
-				else:
-					next_due_odo = last_maint_odo + 5000.0
-			except Exception:
-				next_due_odo = last_maint_odo + 5000.0
 
 		cost_per_km = 0.0
 		if total_distance_driven > 0:
@@ -104,33 +87,13 @@ class FleetStatisticsManager:
 		# 4. Active Assignment & Current Employee Sync
 		active_asn = frappe.db.get_value(
 			"Vehicle Assignment",
-			{"vehicle": vehicle_id, "docstatus": 1, "status": ["in", ["Assigned", "In Use"]]},
+			{"vehicle": vehicle_id, "docstatus": 1, "status": ["in", ["Assigned", "In Use", "Return Overdue"]]},
 			["name", "employee"],
 			as_dict=True
 		) if hasattr(frappe, "db") and frappe.db else None
 
-		if active_asn:
-			current_assignment_status = "Assigned"
-			current_employee = active_asn.get("employee")
-		else:
-			current_assignment_status = "Unassigned"
-			current_employee = None
+		current_assignment_status = "Assigned" if active_asn else "Unassigned"
 
-		# Update Vehicle Record
-		update_fields = {
-			"current_odometer": curr_odo,
-			"average_fuel_economy": fuel_average,
-			"last_fuel_date": last_fuel_date,
-			"last_maintenance_date": last_maint_date,
-			"last_maintenance_odometer": last_maint_odo,
-			"next_maintenance_due_odometer": next_due_odo,
-			"total_fuel_cost": total_fuel_cost,
-			"total_maintenance_cost": total_maint_cost,
-			"lifetime_distance": total_distance_driven,
-			"current_assignment_status": current_assignment_status,
-			"current_employee": current_employee,
-		}
-		frappe.db.set_value("Vehicle", vehicle_id, update_fields)
 		logger.info(f"Recalculated statistics for Vehicle {vehicle_id}: Avg={fuel_average} KM/L, Cost/KM={cost_per_km}, AssignmentStatus={current_assignment_status}")
 
 		return {

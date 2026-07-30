@@ -96,15 +96,16 @@ class AssignmentService(BaseService):
 		avail_rule.raise_if_violated()
 
 		# 2. Set Opening Odometer & Handover Notes
+		baseline_odo = float(v_doc.initial_odometer or 0.0)
 		if opening_odometer is not None:
 			odometer_rule = AssignmentOdometerIntegrityRule({
 				"opening_odometer": opening_odometer,
-				"current_vehicle_odometer": v_doc.current_odometer or 0.0
+				"current_vehicle_odometer": baseline_odo
 			})
 			odometer_rule.raise_if_violated()
 			doc.opening_odometer = float(opening_odometer)
 		elif not doc.opening_odometer:
-			doc.opening_odometer = float(v_doc.current_odometer or 0.0)
+			doc.opening_odometer = baseline_odo
 
 		if handover_notes:
 			doc.handover_notes = handover_notes
@@ -112,10 +113,8 @@ class AssignmentService(BaseService):
 		doc.status = AssignmentStatus.ASSIGNED
 		doc.save()
 
-		# 3. Request Vehicle status change and assigned employee update via VehicleService
+		# 3. Request Vehicle status change via VehicleService
 		self.vehicle_service.change_status(doc.vehicle, VehicleStatus.ASSIGNED, reason=f"Handover via Assignment {assignment_id}")
-		frappe.db.set_value("Vehicle", doc.vehicle, "current_employee", doc.employee)
-		frappe.db.set_value("Vehicle", doc.vehicle, "current_assignment_status", "Assigned")
 
 		AssignmentEventDispatcher.notify_handover(doc)
 		logger.info(f"Vehicle Handover completed for assignment: {assignment_id}")
@@ -125,13 +124,14 @@ class AssignmentService(BaseService):
 		self,
 		assignment_id: str,
 		closing_odometer: float,
+		return_date: str | None = None,
 		return_notes: str | None = None,
 		return_condition: str | None = None
 	) -> bool:
 		"""
 		Vehicle Return Workflow.
 		Validates closing odometer >= opening odometer (ASSIGN-005), calculates distance travelled,
-		updates Vehicle.current_odometer, resets current_employee, and requests VehicleStatus.AVAILABLE via VehicleService.
+		and requests VehicleStatus.AVAILABLE via VehicleService.
 		"""
 		if not frappe.db.exists("Vehicle Assignment", assignment_id):
 			raise FleetNotFoundError(f"Assignment '{assignment_id}' not found.")
@@ -146,7 +146,7 @@ class AssignmentService(BaseService):
 
 		doc.db_set("closing_odometer", closing)
 		doc.db_set("distance_travelled", closing - opening)
-		r_date = frappe.utils.nowdate() if hasattr(frappe, "utils") else None
+		r_date = return_date or (frappe.utils.nowdate() if hasattr(frappe, "utils") else None)
 		if r_date:
 			doc.db_set("return_date", r_date)
 		if return_notes:
@@ -154,12 +154,8 @@ class AssignmentService(BaseService):
 		if return_condition:
 			doc.db_set("return_condition", return_condition)
 
-		doc.db_set("status", AssignmentStatus.RETURNED)
-
-		# 2. Update Vehicle Current Odometer & reset assigned employee
-		frappe.db.set_value("Vehicle", doc.vehicle, "current_odometer", closing)
-		frappe.db.set_value("Vehicle", doc.vehicle, "current_employee", None)
-		frappe.db.set_value("Vehicle", doc.vehicle, "current_assignment_status", "Unassigned")
+		# 2. Update Assignment Status to Returned
+		doc.db_set("status", "Returned")
 
 		# 3. Request Vehicle status transition to Available via VehicleService
 		self.vehicle_service.change_status(doc.vehicle, VehicleStatus.AVAILABLE, reason=f"Returned via Assignment {assignment_id}")
@@ -194,8 +190,6 @@ class AssignmentService(BaseService):
 			doc.db_set("status", AssignmentStatus.CANCELLED)
 
 		if old_status in (AssignmentStatus.ASSIGNED, AssignmentStatus.APPROVED, AssignmentStatus.IN_USE) or doc.docstatus == 1:
-			frappe.db.set_value("Vehicle", doc.vehicle, "current_employee", None)
-			frappe.db.set_value("Vehicle", doc.vehicle, "current_assignment_status", "Unassigned")
 			self.vehicle_service.change_status(doc.vehicle, VehicleStatus.AVAILABLE, reason=reason or f"Cancelled via {assignment_id}")
 
 		AssignmentEventDispatcher.notify_cancelled(doc)
@@ -204,7 +198,7 @@ class AssignmentService(BaseService):
 
 	def validate_vehicle_availability(self, vehicle_id: str) -> bool:
 		"""Checks for active duplicate assignments (ASSIGN-001)."""
-		active_statuses = [AssignmentStatus.ASSIGNED, AssignmentStatus.IN_USE, AssignmentStatus.APPROVED]
+		active_statuses = [AssignmentStatus.ASSIGNED, AssignmentStatus.IN_USE, AssignmentStatus.APPROVED, AssignmentStatus.RETURN_OVERDUE]
 		active_count = frappe.db.count("Vehicle Assignment", filters={
 			"vehicle": vehicle_id,
 			"status": ["in", active_statuses]
@@ -219,7 +213,7 @@ class AssignmentService(BaseService):
 
 	def get_active_assignments_count(self, company: str | None = None) -> int:
 		"""Returns total active assignments count for a company."""
-		filters = {"status": ["in", [AssignmentStatus.ASSIGNED, AssignmentStatus.IN_USE]]}
+		filters = {"status": ["in", [AssignmentStatus.ASSIGNED, AssignmentStatus.IN_USE, AssignmentStatus.RETURN_OVERDUE]]}
 		if company:
 			filters["company"] = company
 		return frappe.db.count("Vehicle Assignment", filters=filters) if hasattr(frappe, "db") else 0
@@ -235,7 +229,7 @@ class AssignmentService(BaseService):
 			"assignment_id": assignment_id,
 			"start_date": str(start) if start else None,
 			"end_date": str(end) if end else None,
-			"is_active": doc.status in (AssignmentStatus.ASSIGNED, AssignmentStatus.IN_USE)
+			"is_active": doc.status in (AssignmentStatus.ASSIGNED, AssignmentStatus.IN_USE, AssignmentStatus.RETURN_OVERDUE)
 		}
 
 	def get_vehicle_utilization_stats(self, vehicle_id: str) -> Dict[str, Any]:

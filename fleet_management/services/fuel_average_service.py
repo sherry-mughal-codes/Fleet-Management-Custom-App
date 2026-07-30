@@ -37,8 +37,7 @@ class FuelAverageService:
 				result = frappe.db.sql("""
 					SELECT fe.odometer
 					FROM `tabFuel Entry` fe
-					INNER JOIN `tabVehicle Assignment` va ON va.name = fe.assignment
-					WHERE va.vehicle = %s
+					WHERE fe.vehicle = %s
 					  AND fe.docstatus = 1
 					ORDER BY fe.fuel_date DESC, fe.creation DESC
 					LIMIT 1
@@ -51,7 +50,7 @@ class FuelAverageService:
 		# Fallback: vehicle initial_odometer
 		if not previous_odometer and hasattr(frappe, "db") and frappe.db:
 			v_doc = frappe.db.get_value(
-				"Vehicle", vehicle_id, ["current_odometer", "initial_odometer"], as_dict=True
+				"Vehicle", vehicle_id, ["initial_odometer"], as_dict=True
 			)
 			if v_doc:
 				previous_odometer = float(v_doc.get("initial_odometer") or 0.0)
@@ -75,8 +74,7 @@ class FuelAverageService:
 			result = frappe.db.sql("""
 				SELECT fe.distance_travelled, fe.fuel_qty
 				FROM `tabFuel Entry` fe
-				INNER JOIN `tabVehicle Assignment` va ON va.name = fe.assignment
-				WHERE va.vehicle = %s
+				WHERE fe.vehicle = %s
 				  AND fe.docstatus = 1
 			""", (vehicle_id,), as_dict=True)
 		except Exception as e:

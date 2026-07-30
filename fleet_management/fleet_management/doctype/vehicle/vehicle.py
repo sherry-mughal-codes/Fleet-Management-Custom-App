@@ -26,14 +26,9 @@ class Vehicle(BaseFleetDocument):
 	"""
 	doctype = "Vehicle"
 
-
 	def before_validate_hook(self):
 		if not self.status:
 			self.status = VehicleStatus.AVAILABLE
-		if not self.current_assignment_status:
-			self.current_assignment_status = "Unassigned"
-		if self.current_odometer is None:
-			self.current_odometer = float(self.initial_odometer or 0.0)
 
 		# 1. Run VehicleValidator contract checks (VEH-001..VEH-010)
 		VehicleValidator(self.as_dict()).raise_if_invalid()
@@ -45,15 +40,25 @@ class Vehicle(BaseFleetDocument):
 		if hasattr(self, "images") and self.images:
 			enforce_single_primary_image(self.images)
 
-		# 4. Auto-fetch Fleet Settings defaults
+		# 4. Auto-fetch defaults
 		if not self.distance_unit:
 			self.distance_unit = SettingsService.get_value("default_distance_unit", "KM")
 		if not self.fuel_unit:
 			self.fuel_unit = SettingsService.get_value("default_fuel_unit", "Liters")
-		if not self.company and hasattr(frappe, "defaults"):
-			self.company = frappe.defaults.get_user_default("Company")
+		if not self.company:
+			self.company = SettingsService.resolve_default_company()
 
-		# 5. Auto-fetch Model defaults if blank
+		# 5. Set default Vehicle Fuel Thresholds if missing
+		if not self.excellent_fuel_threshold:
+			self.excellent_fuel_threshold = 15.0
+		if not self.good_fuel_threshold:
+			self.good_fuel_threshold = 10.0
+		if not self.average_fuel_threshold:
+			self.average_fuel_threshold = 7.0
+		if not self.poor_fuel_threshold:
+			self.poor_fuel_threshold = 5.0
+
+		# 6. Auto-fetch Model defaults if blank
 		if self.vehicle_model:
 			model_doc = get_doc_or_none("Vehicle Model", self.vehicle_model)
 			if model_doc:
@@ -66,21 +71,11 @@ class Vehicle(BaseFleetDocument):
 				if not self.transmission and model_doc.transmission:
 					self.transmission = model_doc.transmission
 
-		# 6. Auto-fetch Fuel Type unit if blank
+		# 7. Auto-fetch Fuel Type unit if blank
 		if self.fuel_type and not self.fuel_unit:
 			fuel_type_doc = get_doc_or_none("Fuel Type", self.fuel_type)
 			if fuel_type_doc and fuel_type_doc.unit:
 				self.fuel_unit = fuel_type_doc.unit
-
-		# 7. Auto-fetch Category maintenance interval if blank
-		if self.vehicle_category and not self.maintenance_interval_km:
-			cat_doc = get_doc_or_none("Vehicle Category", self.vehicle_category)
-			if cat_doc and cat_doc.default_maintenance_interval:
-				self.maintenance_interval_km = cat_doc.default_maintenance_interval
-
-		# Fallback to Settings maintenance interval
-		if not self.maintenance_interval_km:
-			self.maintenance_interval_km = SettingsService.get_maintenance_interval()
 
 		# 8. Auto-generate Vehicle Name if empty
 		if not self.vehicle_name:
@@ -90,126 +85,10 @@ class Vehicle(BaseFleetDocument):
 				model_name = model_name.split("-")[-1].strip()
 			self.vehicle_name = f"{brand_name} {model_name} ({self.vehicle_number})".strip()
 
-		# 9. Initial & Current Odometer alignment
-		if (not self.current_odometer or self.current_odometer == 0) and self.initial_odometer:
-			self.current_odometer = float(self.initial_odometer)
-
-		# 10. Calculate Next Maintenance Due Odometer placeholder
-		if not self.next_maintenance_due_odometer and self.maintenance_interval_km:
-			self.next_maintenance_due_odometer = (self.current_odometer or 0) + self.maintenance_interval_km
-
-		# 11. Date & Year Validations
+		# 9. Date & Year Validations
 		if self.warranty_start and self.warranty_end:
 			validate_date_range(self.warranty_start, self.warranty_end, "Warranty Start", "Warranty End")
 
 		if self.manufacturing_year:
 			next_year = datetime.date.today().year + 1
 			validate_range(self.manufacturing_year, 1900, next_year, "Manufacturing Year")
-
-		# 12. Recalculate & Sync Operational Summary from Fuel, Maintenance, and Assignment entries
-		if not self.is_new() and self.name:
-			self.sync_operational_summary()
-
-	def sync_operational_summary(self):
-		"""Recalculates operational summary directly on self before saving using direct SQL aggregation."""
-		if not self.name or not hasattr(frappe, "db"):
-			return
-
-		initial_odo = float(self.initial_odometer or 0.0)
-		current_odo = float(self.current_odometer or initial_odo)
-		interval_km = float(self.maintenance_interval_km or 5000.0)
-
-		target_ids = list(set(filter(None, [
-			self.name,
-			getattr(self, "vehicle_number", None),
-			getattr(self, "registration_number", None),
-			getattr(self, "license_plate", None)
-		])))
-
-		if not target_ids:
-			return
-
-		placeholders = ", ".join(["%s"] * len(target_ids))
-
-		# 1. Fuel Entries Aggregation (via Assignment, Direct SQL)
-		asn_ids_fuel = [a.get("name") for a in (frappe.db.sql(f"""
-			SELECT name FROM `tabVehicle Assignment` WHERE vehicle IN ({placeholders})
-		""", tuple(target_ids), as_dict=True) if hasattr(frappe.db, "sql") else [])]
-
-		if asn_ids_fuel:
-			asn_ph_fuel = ", ".join(["%s"] * len(asn_ids_fuel))
-			fuel_entries = frappe.db.sql(f"""
-				SELECT total_cost, fuel_date, odometer, fuel_average, docstatus
-				FROM `tabFuel Entry`
-				WHERE docstatus = 1
-				  AND assignment IN ({asn_ph_fuel})
-				ORDER BY fuel_date DESC, creation DESC
-			""", tuple(asn_ids_fuel), as_dict=True)
-		else:
-			fuel_entries = []
-
-		self.total_fuel_cost = round(sum(float(f.get("total_cost") or 0.0) for f in fuel_entries), 2)
-		if fuel_entries:
-			self.last_fuel_date = fuel_entries[0].get("fuel_date")
-
-		latest_avg = None
-		highest_fuel_odo = initial_odo
-		for f in fuel_entries:
-			f_odo = float(f.get("odometer") or 0.0)
-			if f_odo > highest_fuel_odo:
-				highest_fuel_odo = f_odo
-			if latest_avg is None and f.get("fuel_average") and float(f.get("fuel_average")) > 0:
-				latest_avg = float(f.get("fuel_average"))
-
-		if latest_avg is not None:
-			self.average_fuel_economy = latest_avg
-
-		# 2. Maintenance Entries Aggregation (Direct SQL via Assignments)
-		asn_records = frappe.db.sql(f"""
-			SELECT name FROM `tabVehicle Assignment` WHERE vehicle IN ({placeholders})
-		""", tuple(target_ids), as_dict=True) if hasattr(frappe.db, "sql") else []
-		asn_ids = [a.get("name") for a in asn_records]
-
-		if asn_ids:
-			asn_placeholders = ", ".join(["%s"] * len(asn_ids))
-			maint_entries = frappe.db.sql(f"""
-				SELECT total_cost, maintenance_date, current_odometer, docstatus
-				FROM `tabMaintenance Entry`
-				WHERE docstatus = 1
-				  AND assignment IN ({asn_placeholders})
-				ORDER BY maintenance_date DESC
-			""", tuple(asn_ids), as_dict=True)
-		else:
-			maint_entries = []
-
-		self.total_maintenance_cost = round(sum(float(m.get("total_cost") or 0.0) for m in maint_entries), 2)
-		if maint_entries:
-			self.last_maintenance_date = maint_entries[0].get("maintenance_date")
-			if hasattr(self, "last_maintenance_odometer"):
-				self.last_maintenance_odometer = float(maint_entries[0].get("current_odometer") or 0.0)
-
-		# 3. Vehicle Assignments Aggregation (Direct SQL)
-		assignments = frappe.db.sql(f"""
-			SELECT opening_odometer, closing_odometer
-			FROM `tabVehicle Assignment`
-			WHERE status != 'Cancelled'
-			  AND vehicle IN ({placeholders})
-		""", tuple(target_ids), as_dict=True) if hasattr(frappe.db, "sql") else []
-
-		highest_assign_odo = initial_odo
-		for a in assignments:
-			a_open = float(a.get("opening_odometer") or 0.0)
-			a_close = float(a.get("closing_odometer") or 0.0)
-			if a_open > highest_assign_odo:
-				highest_assign_odo = a_open
-			if a_close > highest_assign_odo:
-				highest_assign_odo = a_close
-
-		# 4. Final Aggregated Metrics & Auto-Updates
-		highest_maint_odo = float(maint_entries[0].get("current_odometer") or 0.0) if maint_entries else initial_odo
-		self.current_odometer = max(initial_odo, current_odo, highest_fuel_odo, highest_maint_odo, highest_assign_odo)
-		self.lifetime_distance = round(max(0.0, self.current_odometer - initial_odo), 2)
-
-		last_maint_odo = float(getattr(self, "last_maintenance_odometer", 0.0) or 0.0)
-		base_due_odo = last_maint_odo if last_maint_odo > 0 else self.current_odometer
-		self.next_maintenance_due_odometer = round(base_due_odo + interval_km, 2)

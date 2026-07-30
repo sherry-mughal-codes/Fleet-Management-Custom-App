@@ -11,6 +11,8 @@
   "vehicle_brand",
   "vehicle_model",
   "vehicle_category",
+  "maintenance_template",
+  "status",
   "column_break_basic",
   "registration_number",
   "vin",
@@ -24,12 +26,17 @@
   "fuel_unit",
   "distance_unit",
   "engine_capacity",
+  "initial_odometer",
   "column_break_tech",
   "transmission",
   "seating_capacity",
   "fuel_tank_capacity",
   "expected_fuel_average",
-  "maintenance_interval_km",
+  "fuel_thresholds_section",
+  "excellent_fuel_threshold",
+  "good_fuel_threshold",
+  "average_fuel_threshold",
+  "poor_fuel_threshold",
   "ownership_section",
   "acquisition_type",
   "purchase_date",
@@ -39,21 +46,6 @@
   "warranty_start",
   "warranty_end",
   "warranty_notes",
-  "operational_summary_section",
-  "status",
-  "current_employee",
-  "current_assignment_status",
-  "initial_odometer",
-  "current_odometer",
-  "column_break_summary",
-  "next_maintenance_due_odometer",
-  "last_maintenance_date",
-  "last_maintenance_odometer",
-  "last_fuel_date",
-  "average_fuel_economy",
-  "total_fuel_cost",
-  "total_maintenance_cost",
-  "lifetime_distance",
   "documents_section",
   "documents",
   "images_section",
@@ -107,6 +99,14 @@
    "label": "Vehicle Category",
    "options": "Vehicle Category",
    "reqd": 1
+  },
+  {
+   "fieldname": "maintenance_template",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Maintenance Template",
+   "options": "Maintenance Template"
   },
   {
    "fieldname": "column_break_basic",
@@ -210,9 +210,34 @@
    "label": "Expected Fuel Average"
   },
   {
-   "fieldname": "maintenance_interval_km",
-   "fieldtype": "Int",
-   "label": "Maintenance Interval (KM)"
+   "collapsible": 1,
+   "fieldname": "fuel_thresholds_section",
+   "fieldtype": "Section Break",
+   "label": "Fuel Economy Rating Thresholds (KM/L)"
+  },
+  {
+   "default": "15.0",
+   "fieldname": "excellent_fuel_threshold",
+   "fieldtype": "Float",
+   "label": "Excellent Threshold (KM/L)"
+  },
+  {
+   "default": "10.0",
+   "fieldname": "good_fuel_threshold",
+   "fieldtype": "Float",
+   "label": "Good Threshold (KM/L)"
+  },
+  {
+   "default": "7.0",
+   "fieldname": "average_fuel_threshold",
+   "fieldtype": "Float",
+   "label": "Average Threshold (KM/L)"
+  },
+  {
+   "default": "5.0",
+   "fieldname": "poor_fuel_threshold",
+   "fieldtype": "Float",
+   "label": "Poor Threshold (KM/L)"
   },
   {
    "collapsible": 1,
@@ -262,103 +287,20 @@
    "label": "Warranty Notes"
   },
   {
-   "collapsible": 1,
-   "fieldname": "operational_summary_section",
-   "fieldtype": "Section Break",
-   "label": "Operational Summary (System Managed)"
-  },
-  {
-   "default": "Available",
-   "fieldname": "status",
-   "fieldtype": "Select",
-   "in_list_view": 1,
-   "in_standard_filter": 1,
-   "label": "Status",
-   "options": "Draft\nAvailable\nReserved\nAssigned\nMaintenance Due\nUnder Maintenance\nInspection\nOut of Service\nInactive\nSold\nScrapped\nArchived",
-   "read_only": 1
-  },
-  {
-   "fieldname": "current_employee",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "in_standard_filter": 1,
-   "label": "Current Assigned Employee",
-   "options": "User",
-   "read_only": 1
-  },
-  {
-   "default": "Unassigned",
-   "fieldname": "current_assignment_status",
-   "fieldtype": "Select",
-   "label": "Current Assignment Status",
-   "options": "Unassigned\nAssigned\nIn Transit",
-   "read_only": 1
-  },
-  {
    "default": "0.0",
    "fieldname": "initial_odometer",
    "fieldtype": "Float",
    "label": "Initial Odometer (KM)"
   },
   {
-   "default": "0.0",
-   "fieldname": "current_odometer",
-   "fieldtype": "Float",
+   "default": "Available",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "hidden": 1,
    "in_list_view": 1,
-   "label": "Current Odometer (KM)",
-   "read_only": 1
-  },
-  {
-   "fieldname": "column_break_summary",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "next_maintenance_due_odometer",
-   "fieldtype": "Float",
-   "in_list_view": 1,
-   "label": "Next Maintenance Due (KM)",
-   "read_only": 1
-  },
-  {
-   "fieldname": "last_maintenance_date",
-   "fieldtype": "Date",
-   "label": "Last Maintenance Date",
-   "read_only": 1
-  },
-  {
-   "fieldname": "last_maintenance_odometer",
-   "fieldtype": "Float",
-   "label": "Last Maintenance Odometer (KM)",
-   "read_only": 1
-  },
-  {
-   "fieldname": "last_fuel_date",
-   "fieldtype": "Date",
-   "label": "Last Fuel Date",
-   "read_only": 1
-  },
-  {
-   "fieldname": "average_fuel_economy",
-   "fieldtype": "Float",
-   "label": "Average Fuel Economy",
-   "read_only": 1
-  },
-  {
-   "fieldname": "total_fuel_cost",
-   "fieldtype": "Currency",
-   "label": "Total Fuel Cost",
-   "read_only": 1
-  },
-  {
-   "fieldname": "total_maintenance_cost",
-   "fieldtype": "Currency",
-   "label": "Total Maintenance Cost",
-   "read_only": 1
-  },
-  {
-   "fieldname": "lifetime_distance",
-   "fieldtype": "Float",
-   "label": "Lifetime Distance (KM)",
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Draft\nAvailable\nReserved\nAssigned\nMaintenance Due\nUnder Maintenance\nInspection\nOut of Service\nInactive\nSold\nScrapped\nArchived",
    "read_only": 1
   },
   {

@@ -83,13 +83,11 @@ class FleetAutomationService(BaseService):
 			return {"upcoming_count": 0, "overdue_count": 0, "reminders_sent": 0}
 
 		try:
-			v_fields = ["name", "current_odometer", "maintenance_interval_km"]
+			v_fields = ["name"]
 			if hasattr(frappe, "get_meta"):
 				meta = frappe.get_meta("Vehicle")
 				if meta.has_field("registration_number"):
 					v_fields.append("registration_number")
-				if meta.has_field("last_maintenance_odometer"):
-					v_fields.append("last_maintenance_odometer")
 
 			vehicles = frappe.db.get_all(
 				"Vehicle",
@@ -116,7 +114,7 @@ class FleetAutomationService(BaseService):
 					reminders_sent += 1
 				else:
 					next_due = MaintenanceDueEngine.calculate_next_due_odometer(v_id)
-					curr_odo = float(v.current_odometer or 0.0)
+					curr_odo = float(frappe.db.get_value("Vehicle", v_id, "initial_odometer") or 0.0)
 					if (next_due - curr_odo) <= reminder_dist:
 						upcoming_count += 1
 						recipients = FleetNotificationService.get_authorized_recipients("Fleet Manager")
@@ -249,6 +247,7 @@ class FleetAutomationService(BaseService):
 						notifications_sent += 1
 					elif days_until < 0:
 						inactive_count += 1
+						frappe.db.set_value("Vehicle Assignment", a.name, "status", "Return Overdue")
 						recipients = FleetNotificationService.get_authorized_recipients("Fleet Manager")
 						FleetNotificationService.dispatch(
 							notification_type=NotificationType.ASSIGNMENT_EXPIRED,

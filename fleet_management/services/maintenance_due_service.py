@@ -14,11 +14,10 @@ logger = get_logger("fleet_management.services.maintenance_due")
 
 class MaintenanceDueEngine:
 	"""
-	Central Maintenance Due Calculation Engine implementing 4-tier policy hierarchy:
-	1. Vehicle-specific interval (Vehicle.maintenance_interval_km)
-	2. Maintenance Completion Override interval
-	3. Maintenance Plan interval
-	4. Fleet Settings default interval (5000 KM)
+	Central Maintenance Due Calculation Engine implementing policy hierarchy:
+	1. Maintenance Completion Override interval
+	2. Maintenance Template interval
+	3. Fleet Settings default interval (5000 KM)
 	"""
 
 	@staticmethod
@@ -27,19 +26,36 @@ class MaintenanceDueEngine:
 		if override_interval and float(override_interval) > 0:
 			return float(override_interval)
 
-		if hasattr(frappe, "db") and frappe.db.exists("Vehicle", vehicle_id):
-			v_interval = frappe.db.get_value("Vehicle", vehicle_id, "maintenance_interval_km")
-			if v_interval and float(v_interval) > 0:
-				return float(v_interval)
-
 		return 5000.0
+
+	@staticmethod
+	def get_vehicle_current_odometer(vehicle_id: str) -> float:
+		"""
+		Derives the current odometer for a vehicle from its most recent fuel entry.
+		Falls back to initial_odometer if no fuel entries exist.
+		"""
+		if not hasattr(frappe, "db") or not frappe.db.exists("Vehicle", vehicle_id):
+			return 0.0
+
+		# Derive from highest fuel entry odometer
+		max_fuel_odo = frappe.db.get_value(
+			"Fuel Entry",
+			filters={"vehicle": vehicle_id, "docstatus": 1},
+			fieldname="MAX(odometer)"
+		) or 0.0
+
+		if float(max_fuel_odo) > 0:
+			return float(max_fuel_odo)
+
+		# Fallback to initial_odometer
+		return float(frappe.db.get_value("Vehicle", vehicle_id, "initial_odometer") or 0.0)
 
 	@staticmethod
 	def calculate_next_due_odometer(vehicle_id: str, completion_odometer: float | None = None, override_interval: float | None = None) -> float:
 		"""Calculates next target due odometer reading."""
 		base_odometer = float(completion_odometer or 0.0)
-		if not base_odometer and hasattr(frappe, "db") and frappe.db.exists("Vehicle", vehicle_id):
-			base_odometer = float(frappe.db.get_value("Vehicle", vehicle_id, "current_odometer") or 0.0)
+		if not base_odometer:
+			base_odometer = MaintenanceDueEngine.get_vehicle_current_odometer(vehicle_id)
 
 		interval = MaintenanceDueEngine.get_effective_maintenance_interval(vehicle_id, override_interval)
 		return round(base_odometer + interval, 2)
@@ -56,21 +72,23 @@ class MaintenanceDueEngine:
 
 	@staticmethod
 	def is_maintenance_overdue(vehicle_id: str, current_odometer: float | None = None) -> bool:
-		"""Determines if vehicle maintenance is overdue."""
+		"""Determines if vehicle maintenance is overdue based on last maintenance entry."""
 		if not hasattr(frappe, "db") or not frappe.db.exists("Vehicle", vehicle_id):
 			return False
 
-		v_fields = ["current_odometer", "maintenance_interval_km"]
-		if hasattr(frappe, "get_meta") and frappe.get_meta("Vehicle").has_field("last_maintenance_odometer"):
-			v_fields.append("last_maintenance_odometer")
+		odometer = float(current_odometer or 0.0)
+		if not odometer:
+			odometer = MaintenanceDueEngine.get_vehicle_current_odometer(vehicle_id)
 
-		v = frappe.db.get_value("Vehicle", vehicle_id, v_fields, as_dict=True)
-		if not v:
-			return False
+		# Get last maintenance entry odometer for this vehicle
+		last_maint_odo = frappe.db.get_value(
+			"Maintenance Entry",
+			filters={"vehicle": vehicle_id, "docstatus": 1},
+			fieldname="MAX(odometer)"
+		) or 0.0
 
-		odometer = float(current_odometer or v.get("current_odometer") or 0.0)
-		last_maint = float(v.get("last_maintenance_odometer") or 0.0)
-		interval = float(v.get("maintenance_interval_km") or 5000.0)
+		last_maint = float(last_maint_odo)
+		interval = 5000.0
 
 		return odometer >= (last_maint + interval)
 

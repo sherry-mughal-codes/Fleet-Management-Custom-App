@@ -98,6 +98,7 @@ def assign_vehicle_api(
 def return_vehicle_api(
 	assignment_id: str,
 	closing_odometer: float,
+	return_date: str | None = None,
 	return_notes: str | None = None,
 	return_condition: str | None = None
 ) -> Dict[str, Any]:
@@ -105,6 +106,7 @@ def return_vehicle_api(
 	res = assignment_service.return_vehicle(
 		assignment_id,
 		closing_odometer=closing_odometer,
+		return_date=return_date,
 		return_notes=return_notes,
 		return_condition=return_condition
 	)
@@ -137,3 +139,23 @@ def get_assignment_timeline_api(assignment_id: str) -> Dict[str, Any]:
 		order_by="creation desc"
 	)
 	return success_response(data=timeline, message="Assignment timeline retrieved successfully.")
+
+
+@api_endpoint(allow_guest=False)
+def get_vehicle_opening_odometer_api(vehicle: str) -> Dict[str, Any]:
+	"""Whitelisted API endpoint retrieving latest fuel entry odometer or initial odometer for vehicle."""
+	if not frappe.db.exists("Vehicle", vehicle):
+		return success_response(data={"opening_odometer": 0.0, "company": None})
+
+	company = frappe.db.get_value("Vehicle", vehicle, "company")
+	latest_fuel_odo = frappe.db.get_value(
+		"Fuel Entry",
+		filters={"vehicle": vehicle, "docstatus": 1},
+		fieldname="MAX(odometer)"
+	) or 0.0
+
+	odo = float(latest_fuel_odo)
+	if not odo:
+		odo = float(frappe.db.get_value("Vehicle", vehicle, "initial_odometer") or 0.0)
+
+	return success_response(data={"opening_odometer": odo, "company": company})

@@ -62,39 +62,35 @@ def get_data_and_summary(filters):
 		initial_odo = float(v.get("initial_odometer") or 0.0)
 		dist = max(0.0, current_odo - initial_odo)
 
-		# Resolve all assignments for this vehicle
-		asns = frappe.get_all("Vehicle Assignment", filters={"vehicle": v.name}, fields=["name"]) if hasattr(frappe, "get_all") else []
-		asn_names = [a.name for a in asns]
-
 		v_fuel_cost = 0.0
 		v_fuel_qty = 0.0
 		v_maint_cost = 0.0
 
-		if asn_names:
-			# Fuel entries for vehicle
-			fuel_cond = {"assignment": ["in", asn_names], "docstatus": 1}
-			if filters.get("from_date") and filters.get("to_date"):
-				fuel_cond["fuel_date"] = ["between", [filters.get("from_date"), filters.get("to_date")]]
-			elif filters.get("from_date"):
-				fuel_cond["fuel_date"] = [">=", filters.get("from_date")]
-			elif filters.get("to_date"):
-				fuel_cond["fuel_date"] = ["<=", filters.get("to_date")]
+		# Fuel entries for vehicle — direct vehicle link
+		fuel_cond = {"vehicle": v.name, "docstatus": 1}
+		if filters.get("from_date") and filters.get("to_date"):
+			fuel_cond["fuel_date"] = ["between", [filters.get("from_date"), filters.get("to_date")]]
+		elif filters.get("from_date"):
+			fuel_cond["fuel_date"] = [">=", filters.get("from_date")]
+		elif filters.get("to_date"):
+			fuel_cond["fuel_date"] = ["<=", filters.get("to_date")]
 
-			fuel_entries = frappe.get_all("Fuel Entry", filters=fuel_cond, fields=["total_cost", "fuel_qty"]) if hasattr(frappe, "get_all") else []
-			v_fuel_cost = sum(float(f.get("total_cost") or 0.0) for f in fuel_entries)
-			v_fuel_qty = sum(float(f.get("fuel_qty") or 0.0) for f in fuel_entries)
+		fuel_entries = frappe.get_all("Fuel Entry", filters=fuel_cond, fields=["total_cost", "fuel_qty"]) if hasattr(frappe, "get_all") else []
+		v_fuel_cost = sum(float(f.get("total_cost") or 0.0) for f in fuel_entries)
+		v_fuel_qty = sum(float(f.get("fuel_qty") or 0.0) for f in fuel_entries)
 
-			# Maintenance entries for vehicle
-			maint_cond = {"assignment": ["in", asn_names], "docstatus": 1}
-			if filters.get("from_date") and filters.get("to_date"):
-				maint_cond["maintenance_date"] = ["between", [filters.get("from_date"), filters.get("to_date")]]
-			elif filters.get("from_date"):
-				maint_cond["maintenance_date"] = [">=", filters.get("from_date")]
-			elif filters.get("to_date"):
-				maint_cond["maintenance_date"] = ["<=", filters.get("to_date")]
+		# Maintenance entries for vehicle — direct vehicle link
+		maint_cond = {"vehicle": v.name, "docstatus": 1}
+		if filters.get("from_date") and filters.get("to_date"):
+			maint_cond["maintenance_date"] = ["between", [filters.get("from_date"), filters.get("to_date")]]
+		elif filters.get("from_date"):
+			maint_cond["maintenance_date"] = [">=", filters.get("from_date")]
+		elif filters.get("to_date"):
+			maint_cond["maintenance_date"] = ["<=", filters.get("to_date")]
 
-			maint_entries = frappe.get_all("Maintenance Entry", filters=maint_cond, fields=["total_cost"]) if hasattr(frappe, "get_all") else []
-			v_maint_cost = sum(float(m.get("total_cost") or 0.0) for m in maint_entries)
+		maint_entries = frappe.get_all("Maintenance Entry", filters=maint_cond, fields=["total_cost"]) if hasattr(frappe, "get_all") else []
+		v_maint_cost = sum(float(m.get("total_cost") or 0.0) for m in maint_entries)
+
 
 		total_op = round(v_fuel_cost + v_maint_cost, 2)
 		cpkm = round(total_op / dist, 2) if dist > 0 else 0.0
