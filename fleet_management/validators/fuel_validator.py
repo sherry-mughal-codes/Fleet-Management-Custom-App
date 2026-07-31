@@ -33,6 +33,11 @@ class FuelValidator(BaseValidator):
 			except FleetValidationError as e:
 				self.add_error(f"FUEL-002: {e.message}")
 
+			from fleet_management.services.settings_service import SettingsService
+			max_cap = SettingsService.get_max_fuel_capacity()
+			if max_cap > 0 and float(fuel_qty or 0.0) > max_cap:
+				self.add_error(f"FUEL-009: Fuel quantity ({float(fuel_qty):,.1f} Litres) exceeds maximum allowed limit ({max_cap:,.1f} Litres) in Fleet Settings.")
+
 		# FUEL-003: Total cost must be greater than zero
 		total_cost = self.data.get("total_cost")
 		if total_cost is not None:

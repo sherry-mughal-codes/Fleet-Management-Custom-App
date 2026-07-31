@@ -17,10 +17,10 @@ def get_columns():
 	return [
 		{"label": "Entry ID", "fieldname": "name", "fieldtype": "Link", "options": "Maintenance Entry", "width": 140},
 		{"label": "Vehicle", "fieldname": "vehicle", "fieldtype": "Link", "options": "Vehicle", "width": 140},
-		{"label": "Maintenance Type", "fieldname": "maintenance_type", "fieldtype": "Data", "width": 160},
+		{"label": "Maintenance Activity / Item", "fieldname": "maintenance_type", "fieldtype": "Data", "width": 180},
 		{"label": "Date", "fieldname": "maintenance_date", "fieldtype": "Date", "width": 110},
 		{"label": "Odometer (KM)", "fieldname": "current_odometer", "fieldtype": "Float", "width": 130},
-		{"label": "Total Cost", "fieldname": "total_cost", "fieldtype": "Currency", "width": 130},
+		{"label": "Cost", "fieldname": "cost", "fieldtype": "Currency", "width": 130},
 		{"label": "Vendor", "fieldname": "vendor", "fieldtype": "Link", "options": "Maintenance Vendor", "width": 140},
 		{"label": "Status", "fieldname": "docstatus_label", "fieldtype": "Data", "width": 110},
 		{"label": "Company", "fieldname": "company", "fieldtype": "Link", "options": "Company", "width": 140}
@@ -50,26 +50,29 @@ def get_data_and_summary(filters):
 		conditions += " AND v.company = %(company)s"
 		values["company"] = filters["company"]
 
-	# Direct SQL query — no per-row get_doc needed
+	# Query Maintenance Entry joined with individual item lines (Maintenance Entry Item)
 	entries = frappe.db.sql(f"""
 		SELECT
 			me.name,
 			me.vehicle,
 			me.maintenance_date,
 			me.current_odometer,
-			me.total_cost,
 			me.vendor,
 			me.docstatus,
-			v.company
+			me.total_cost as entry_total_cost,
+			v.company,
+			mei.item_name,
+			mei.cost as item_cost
 		FROM `tabMaintenance Entry` me
+		LEFT JOIN `tabMaintenance Entry Item` mei ON mei.parent = me.name
 		LEFT JOIN `tabVehicle` v ON v.name = me.vehicle
 		WHERE {conditions}
-		ORDER BY me.maintenance_date DESC, me.creation DESC
+		ORDER BY me.maintenance_date DESC, me.name DESC, mei.idx ASC
 	""", values, as_dict=True) if frappe.db.table_exists("Maintenance Entry") else []
 
 	data = []
 	total_maint_cost = 0.0
-	submitted_cnt = 0
+	submitted_entries_set = set()
 	draft_cnt = 0
 	type_costs = {}
 	docstatus_map = {0: "Draft", 1: "Submitted", 2: "Cancelled"}
@@ -78,54 +81,53 @@ def get_data_and_summary(filters):
 		docstatus = int(e.get("docstatus") or 0)
 		status_str = docstatus_map.get(docstatus, "Draft")
 
-		# Resolve maintenance type from items child table
-		maint_type = frappe.db.get_value(
-			"Maintenance Entry Item",
-			{"parent": e.name, "is_completed": 1},
-			"item_name"
-		) or "General Servicing"
+		maint_item = e.get("item_name") or "General Servicing"
+		item_cost = float(e.get("item_cost") or 0.0)
+
+		# Fallback to entry total cost if item cost is zero and item_name is missing
+		if item_cost == 0.0 and not e.get("item_name"):
+			item_cost = float(e.get("entry_total_cost") or 0.0)
 
 		if docstatus == 1:
-			submitted_cnt += 1
+			submitted_entries_set.add(e.name)
+			total_maint_cost += item_cost
+			type_costs[maint_item] = type_costs.get(maint_item, 0.0) + item_cost
 		elif docstatus == 0:
 			draft_cnt += 1
-
-		total = float(e.get("total_cost") or 0.0)
-
-		if docstatus != 2:
-			total_maint_cost += total
-			type_costs[maint_type] = type_costs.get(maint_type, 0.0) + total
 
 		data.append({
 			"name": e.name,
 			"vehicle": e.get("vehicle") or "",
-			"maintenance_type": maint_type,
+			"maintenance_type": maint_item,
 			"maintenance_date": e.get("maintenance_date"),
 			"current_odometer": float(e.get("current_odometer") or 0.0),
-			"total_cost": total,
+			"cost": round(item_cost, 2),
 			"vendor": e.get("vendor") or "",
 			"docstatus_label": status_str,
 			"company": e.get("company") or ""
 		})
 
-	avg_entry_cost = round(total_maint_cost / len(data), 2) if data else 0.0
+	submitted_cnt = len(submitted_entries_set)
+	avg_item_cost = round(total_maint_cost / len(data), 2) if data else 0.0
 
 	report_summary = [
-		{"value": len(data), "indicator": "Blue", "label": "Total Maintenance Entries", "datatype": "Int"},
+		{"value": len(data), "indicator": "Blue", "label": "Total Maintenance Activities", "datatype": "Int"},
 		{"value": submitted_cnt, "indicator": "Green", "label": "Submitted Entries", "datatype": "Int"},
 		{"value": draft_cnt, "indicator": "Orange", "label": "Draft Entries", "datatype": "Int"},
-		{"value": total_maint_cost, "indicator": "Purple", "label": "Total Spend", "datatype": "Currency"},
-		{"value": avg_entry_cost, "indicator": "Cyan", "label": "Avg Spend / Servicing", "datatype": "Currency"}
+		{"value": round(total_maint_cost, 2), "indicator": "Purple", "label": "Total Spend", "datatype": "Currency"},
+		{"value": avg_item_cost, "indicator": "Cyan", "label": "Avg Spend / Activity", "datatype": "Currency"}
 	]
+
+	# Sort top maintenance activity spends for chart
+	sorted_type_costs = dict(sorted(type_costs.items(), key=lambda x: x[1], reverse=True)[:10])
 
 	chart = {
 		"data": {
-			"labels": list(type_costs.keys()) if type_costs else ["General Servicing"],
-			"datasets": [{"name": "Spend by Type", "values": list(type_costs.values()) if type_costs else [0]}]
+			"labels": list(sorted_type_costs.keys()) if sorted_type_costs else ["General Servicing"],
+			"datasets": [{"name": "Spend by Activity", "values": list(sorted_type_costs.values()) if sorted_type_costs else [0]}]
 		},
 		"type": "bar",
-		"colors": ["#e83e8c"]
+		"colors": ["#8854d0"]
 	}
 
 	return data, report_summary, chart
-

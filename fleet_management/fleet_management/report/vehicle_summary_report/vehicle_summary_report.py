@@ -4,9 +4,6 @@ Fleet Management System
 """
 
 import frappe
-from fleet_management.services.fleet_cost_service import FleetCostService
-
-cost_service = FleetCostService()
 
 
 def execute(filters=None):
@@ -33,8 +30,7 @@ def get_columns():
 		{"label": "Total Fuel Cost", "fieldname": "total_fuel_cost", "fieldtype": "Currency", "width": 140},
 		{"label": "Total Maintenance Cost", "fieldname": "total_maintenance_cost", "fieldtype": "Currency", "width": 160},
 		{"label": "Total Operating Cost", "fieldname": "total_operating_cost", "fieldtype": "Currency", "width": 160},
-		{"label": "Cost per KM", "fieldname": "cost_per_km", "fieldtype": "Currency", "width": 120},
-		{"label": "Next Service Due (KM)", "fieldname": "next_maintenance_due_odometer", "fieldtype": "Float", "width": 160}
+		{"label": "Cost per KM", "fieldname": "cost_per_km", "fieldtype": "Currency", "width": 120}
 	]
 
 
@@ -56,53 +52,80 @@ def get_data_and_summary(filters):
 		filters=conditions,
 		fields=[
 			"name", "vehicle_number", "vehicle_name", "vehicle_brand", "vehicle_model",
-			"vehicle_category", "company", "status", "current_employee", "current_odometer",
-			"initial_odometer", "average_fuel_economy", "total_fuel_cost", "total_maintenance_cost",
-			"next_maintenance_due_odometer"
+			"vehicle_category", "company", "status", "initial_odometer"
 		],
 		order_by="vehicle_number asc"
 	) if hasattr(frappe, "get_all") else []
 
 	data = []
-	total_vehicles = len(vehicles)
-	available_cnt = 0
-	maintenance_cnt = 0
-	maint_due_cnt = 0
-	assigned_cnt = 0
+	status_counts = {}
 	grand_total_operating = 0.0
 
-	status_counts = {}
+	# Status color mapping for aligned Chart & KPI visualization
+	status_color_map = {
+		"Available": "#28a745",        # Green
+		"Assigned": "#007bff",         # Blue
+		"Maintenance Due": "#dc3545",  # Red
+		"Under Maintenance": "#ffc107",# Orange
+		"Return Overdue": "#bd2130",   # Dark Red
+		"Reserved": "#17a2b8",         # Teal
+		"Inspection": "#6c757d"        # Gray
+	}
 
 	for v in vehicles:
+		v_id = v.name
 		status = v.get("status") or "Available"
 		status_counts[status] = status_counts.get(status, 0) + 1
 
-		curr_odo = float(v.get("current_odometer") or 0.0)
-		next_due_odo = float(v.get("next_maintenance_due_odometer") or 0.0)
+		# 1. Fetch dynamic current odometer from max fuel entry or initial_odometer
+		max_fuel_odo = frappe.db.get_value("Fuel Entry", {"vehicle": v_id, "docstatus": 1}, "MAX(odometer)") or 0.0
+		initial_odo = float(v.get("initial_odometer") or 0.0)
+		curr_odo = max(float(max_fuel_odo), initial_odo)
 
-		is_due = (status in ["Maintenance Due", "Under Maintenance"]) or (next_due_odo > 0 and curr_odo >= next_due_odo)
+		# 2. Fetch fuel totals & calculate fuel average
+		fuel_stats = frappe.db.sql("""
+			SELECT SUM(total_cost) as fuel_cost, SUM(fuel_qty) as total_qty,
+			       MIN(odometer) as min_odo, MAX(odometer) as max_odo
+			FROM `tabFuel Entry`
+			WHERE vehicle = %s AND docstatus = 1
+		""", (v_id,), as_dict=True)
 
-		if status in ["Available"]:
-			available_cnt += 1
-		elif status in ["Under Maintenance"]:
-			maintenance_cnt += 1
-		elif status in ["Assigned", "In Use"]:
-			assigned_cnt += 1
+		total_fuel_cost = 0.0
+		total_fuel_qty = 0.0
+		min_odo = 0.0
+		max_odo = 0.0
+		fuel_economy = 0.0
 
-		if is_due:
-			maint_due_cnt += 1
+		if fuel_stats and fuel_stats[0].get("fuel_cost") is not None:
+			total_fuel_cost = float(fuel_stats[0].get("fuel_cost") or 0.0)
+			total_fuel_qty = float(fuel_stats[0].get("total_qty") or 0.0)
+			min_odo = float(fuel_stats[0].get("min_odo") or 0.0)
+			max_odo = float(fuel_stats[0].get("max_odo") or 0.0)
+			if total_fuel_qty > 0 and max_odo > min_odo:
+				fuel_economy = round((max_odo - min_odo) / total_fuel_qty, 2)
 
-		# Dynamic calculations via FleetCostService or DB aggregation
-		v_cost = cost_service.calculate_vehicle_cost(v.name) if hasattr(cost_service, "calculate_vehicle_cost") else {}
-		fuel_cost = v_cost.get("total_fuel_cost", float(v.get("total_fuel_cost") or 0.0))
-		maint_cost = v_cost.get("total_maintenance_cost", float(v.get("total_maintenance_cost") or 0.0))
-		total_operating = v_cost.get("total_operating_cost", fuel_cost + maint_cost)
-		cost_km = v_cost.get("cost_per_km", 0.0)
+		# 3. Fetch maintenance totals
+		maint_cost = float(frappe.db.get_value("Maintenance Entry", {"vehicle": v_id, "docstatus": 1}, "SUM(total_cost)") or 0.0)
 
+		# 4. Total operating cost & cost per km
+		total_operating = round(total_fuel_cost + maint_cost, 2)
 		grand_total_operating += total_operating
 
+		distance_driven = max(curr_odo - initial_odo, 0.0)
+		cost_km = round(total_operating / distance_driven, 2) if distance_driven > 0 else 0.0
+
+		# 5. Fetch assigned employee from active assignment
+		current_employee = frappe.db.get_value(
+			"Vehicle Assignment",
+			{"vehicle": v_id, "docstatus": 1, "return_date": ["is", "not set"]},
+			"employee"
+		) or ""
+
+		# 6. Maintenance due flag check
+		is_due = (status in ["Maintenance Due", "Under Maintenance"])
+
 		data.append({
-			"name": v.name,
+			"name": v_id,
 			"vehicle_number": v.get("vehicle_number") or "",
 			"vehicle_name": v.get("vehicle_name") or "",
 			"vehicle_brand": v.get("vehicle_brand") or "",
@@ -111,31 +134,41 @@ def get_data_and_summary(filters):
 			"company": v.get("company") or "",
 			"status": status,
 			"is_maintenance_due": "Yes (Overdue)" if is_due else "No",
-			"current_employee": v.get("current_employee") or "",
+			"current_employee": current_employee,
 			"current_odometer": curr_odo,
-			"average_fuel_economy": float(v.get("average_fuel_economy") or 0.0),
-			"total_fuel_cost": fuel_cost,
-			"total_maintenance_cost": maint_cost,
+			"average_fuel_economy": fuel_economy,
+			"total_fuel_cost": round(total_fuel_cost, 2),
+			"total_maintenance_cost": round(maint_cost, 2),
 			"total_operating_cost": total_operating,
-			"cost_per_km": cost_km,
-			"next_maintenance_due_odometer": next_due_odo
+			"cost_per_km": cost_km
 		})
+
+	# Build KPI Summary cards matching exact status counts
+	total_vehicles = len(vehicles)
+	available_cnt = status_counts.get("Available", 0)
+	assigned_cnt = status_counts.get("Assigned", 0)
+	maint_due_cnt = status_counts.get("Maintenance Due", 0)
 
 	report_summary = [
 		{"value": total_vehicles, "indicator": "Blue", "label": "Total Vehicles", "datatype": "Int"},
-		{"value": assigned_cnt, "indicator": "Green", "label": "Assigned", "datatype": "Int"},
-		{"value": available_cnt, "indicator": "Cyan", "label": "Available", "datatype": "Int"},
+		{"value": available_cnt, "indicator": "Green", "label": "Available", "datatype": "Int"},
+		{"value": assigned_cnt, "indicator": "Blue", "label": "Assigned", "datatype": "Int"},
 		{"value": maint_due_cnt, "indicator": "Red", "label": "Maintenance Due", "datatype": "Int"},
 		{"value": grand_total_operating, "indicator": "Purple", "label": "Total Fleet Operating Cost", "datatype": "Currency"}
 	]
 
+	# Build chart with exact matching colors
+	chart_labels = list(status_counts.keys()) if status_counts else ["Available"]
+	chart_values = list(status_counts.values()) if status_counts else [0]
+	chart_colors = [status_color_map.get(lbl, "#6c757d") for lbl in chart_labels]
+
 	chart = {
 		"data": {
-			"labels": list(status_counts.keys()) if status_counts else ["Available"],
-			"datasets": [{"name": "Status Count", "values": list(status_counts.values()) if status_counts else [0]}]
+			"labels": chart_labels,
+			"datasets": [{"name": "Status Count", "values": chart_values}]
 		},
 		"type": "donut",
-		"colors": ["#28a745", "#007bff", "#ffc107", "#dc3545", "#6c757d", "#17a2b8"]
+		"colors": chart_colors
 	}
 
 	return data, report_summary, chart

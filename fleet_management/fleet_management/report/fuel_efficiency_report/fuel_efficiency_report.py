@@ -47,23 +47,27 @@ def get_data_and_summary(filters):
 	if filters.get("vehicle"):
 		conditions["vehicle"] = filters.get("vehicle")
 
+	# Fetch all submitted fuel entries ordered chronologically by odometer / date
 	entries = frappe.get_all(
 		"Fuel Entry",
 		filters=conditions,
 		fields=[
-			"name", "vehicle", "fuel_date", "odometer", "previous_odometer",
-			"distance_travelled", "fuel_qty", "fuel_price", "total_cost", "fuel_average",
-			"cost_per_km", "fuel_efficiency_rating", "fuel_type", "fuel_station_name"
+			"name", "vehicle", "fuel_date", "odometer", "fuel_qty",
+			"fuel_price", "total_cost", "fuel_type", "fuel_station_name"
 		],
-		order_by="fuel_date desc, creation desc"
+		order_by="odometer asc, fuel_date asc, creation asc"
 	) if hasattr(frappe, "get_all") else []
 
-	# Build vehicle map for name and company
+	# Build vehicle map with threshold ratings
 	v_names = list(set([e.vehicle for e in entries if getattr(e, "vehicle", None)]))
 	v_docs = frappe.get_all(
 		"Vehicle",
 		filters={"name": ["in", v_names]},
-		fields=["name", "vehicle_name", "company"]
+		fields=[
+			"name", "vehicle_name", "company", "initial_odometer",
+			"excellent_fuel_threshold", "good_fuel_threshold",
+			"average_fuel_threshold", "poor_fuel_threshold"
+		]
 	) if v_names else []
 	v_map = {v.name: v for v in v_docs}
 
@@ -73,13 +77,9 @@ def get_data_and_summary(filters):
 		asn = frappe.db.get_value("Vehicle Assignment", {"vehicle": v_id, "docstatus": 1}, ["employee"], as_dict=True)
 		driver_map[v_id] = asn.employee if asn else ""
 
-	data = []
-	total_cost = 0.0
-	total_qty = 0.0
-	total_distance = 0.0
-	eval_qty = 0.0
-	valid_avg_list = []
-	dates_dict = {}
+	# Calculate distance travelled and fuel average chronologically per vehicle
+	vehicle_last_odo = {}
+	raw_rows = []
 
 	for e in entries:
 		v_id = e.get("vehicle") or ""
@@ -93,52 +93,87 @@ def get_data_and_summary(filters):
 		if filters.get("employee") and emp_id != filters.get("employee"):
 			continue
 
-		cost = float(e.get("total_cost") or 0.0)
+		curr_odo = float(e.get("odometer") or 0.0)
+
+		# Determine previous odometer
+		if v_id in vehicle_last_odo:
+			prev_odo = vehicle_last_odo[v_id]
+		else:
+			initial_odo = float(v_doc.get("initial_odometer") or 0.0) if isinstance(v_doc, dict) else float(getattr(v_doc, "initial_odometer", 0.0) or 0.0)
+			prev_odo = initial_odo
+
+		# Update last seen odometer for this vehicle
+		vehicle_last_odo[v_id] = curr_odo
+
+		dist = max(round(curr_odo - prev_odo, 2), 0.0) if prev_odo > 0 else 0.0
 		qty = float(e.get("fuel_qty") or 0.0)
-		dist = float(e.get("distance_travelled") or 0.0)
-		avg = float(e.get("fuel_average") or 0.0)
-		cpkm = float(e.get("cost_per_km") or 0.0)
+		cost = float(e.get("total_cost") or 0.0)
 
-		total_cost += cost
-		total_qty += qty
-		if dist > 0:
-			total_distance += dist
-			eval_qty += qty
+		avg = round(dist / qty, 2) if (dist > 0 and qty > 0) else 0.0
+		cpkm = round(cost / dist, 2) if (dist > 0 and cost > 0) else 0.0
 
-		if avg > 0:
-			valid_avg_list.append(avg)
+		# Evaluate Efficiency Rating based on Vehicle DocType thresholds
+		rating = "N/A"
+		if avg > 0 and isinstance(v_doc, dict):
+			t_exc = float(v_doc.get("excellent_fuel_threshold") or 15.0)
+			t_good = float(v_doc.get("good_fuel_threshold") or 10.0)
+			t_avg = float(v_doc.get("average_fuel_threshold") or 7.0)
+			t_poor = float(v_doc.get("poor_fuel_threshold") or 5.0)
 
-		f_date = str(e.get("fuel_date") or "")
-		if f_date and avg > 0:
-			dates_dict[f_date] = avg
+			if avg >= t_exc:
+				rating = "Excellent"
+			elif avg >= t_good:
+				rating = "Good"
+			elif avg >= t_avg:
+				rating = "Average"
+			elif avg >= t_poor:
+				rating = "Poor"
+			else:
+				rating = "Critical"
 
-		data.append({
+		raw_rows.append({
 			"name": e.name,
 			"fuel_date": e.get("fuel_date"),
 			"vehicle": v_id,
 			"vehicle_name": v_name or "",
 			"employee": emp_id,
-			"odometer": float(e.get("odometer") or 0.0),
+			"odometer": curr_odo,
 			"distance_travelled": dist,
 			"fuel_qty": qty,
 			"total_cost": cost,
 			"fuel_average": avg,
 			"cost_per_km": cpkm,
-			"fuel_efficiency_rating": e.get("fuel_efficiency_rating") or "",
+			"fuel_efficiency_rating": rating,
 			"fuel_type": e.get("fuel_type") or "",
 			"fuel_station_name": e.get("fuel_station_name") or "",
 			"company": comp_id or "",
 			"status": "Submitted"
 		})
 
-	fleet_overall_avg = round(total_distance / eval_qty, 2) if eval_qty > 0 else (round(sum(valid_avg_list) / len(valid_avg_list), 2) if valid_avg_list else 0.0)
+	# Sort final data by date descending for report view display
+	data = sorted(raw_rows, key=lambda x: (str(x.get("fuel_date") or ""), x.get("name")), reverse=True)
+
+	# Aggregate Summary KPIs & Chart
+	total_cost = sum(r["total_cost"] for r in data)
+	total_qty = sum(r["fuel_qty"] for r in data)
+	total_dist = sum(r["distance_travelled"] for r in data)
+
+	valid_averages = [r["fuel_average"] for r in data if r["fuel_average"] > 0]
+	overall_avg = round(total_dist / total_qty, 2) if (total_dist > 0 and total_qty > 0) else (round(sum(valid_averages) / len(valid_averages), 2) if valid_averages else 0.0)
 
 	report_summary = [
 		{"value": len(data), "indicator": "Blue", "label": "Total Fuel Entries", "datatype": "Int"},
 		{"value": total_cost, "indicator": "Purple", "label": "Total Fuel Spend", "datatype": "Currency"},
 		{"value": total_qty, "indicator": "Cyan", "label": "Total Fuel Liters", "datatype": "Float"},
-		{"value": fleet_overall_avg, "indicator": "Green", "label": "Overall Fuel Average (KM/L)", "datatype": "Float"}
+		{"value": overall_avg, "indicator": "Green", "label": "Overall Fuel Average (KM/L)", "datatype": "Float"}
 	]
+
+	# Build line chart of trend over fuel dates
+	dates_dict = {}
+	for r in sorted(raw_rows, key=lambda x: str(x.get("fuel_date") or "")):
+		f_date = str(r.get("fuel_date") or "")
+		if f_date and r["fuel_average"] > 0:
+			dates_dict[f_date] = r["fuel_average"]
 
 	sorted_dates = sorted(dates_dict.keys())[-15:] if dates_dict else []
 	date_values = [dates_dict[d] for d in sorted_dates] if sorted_dates else [0]
@@ -153,4 +188,3 @@ def get_data_and_summary(filters):
 	}
 
 	return data, report_summary, chart
-

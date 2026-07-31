@@ -121,6 +121,14 @@ class FuelEntry(Document):
 		if total <= 0:
 			raise FleetValidationError("FUEL-004: Total cost must be greater than zero.")
 
+		# Validate Maximum Allowed Fuel Capacity from Fleet Settings
+		from fleet_management.services.settings_service import SettingsService
+		max_capacity = SettingsService.get_max_fuel_capacity()
+		if max_capacity > 0 and qty > max_capacity:
+			raise FleetValidationError(
+				f"FUEL-009: Fuel quantity ({qty:,.1f} Litres) exceeds maximum allowed capacity limit ({max_capacity:,.1f} Litres) configured in Fleet Settings."
+			)
+
 		# 4. Odometer validation
 		odo = float(self.odometer or 0.0)
 		if odo <= 0:
