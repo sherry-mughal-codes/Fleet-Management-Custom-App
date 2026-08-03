@@ -9,8 +9,8 @@
   "template_name",
   "is_active",
   "description",
-  "categories_section",
-  "categories",
+  "vehicles_section",
+  "vehicles",
   "lines_section",
   "lines"
  ],
@@ -42,16 +42,16 @@
    "label": "Description"
   },
   {
-   "fieldname": "categories_section",
+   "fieldname": "vehicles_section",
    "fieldtype": "Section Break",
-   "label": "Applicable Vehicle Categories"
+   "label": "Applicable Vehicles"
   },
   {
-   "fieldname": "categories",
+   "fieldname": "vehicles",
    "fieldtype": "Table",
-   "label": "Vehicle Categories",
-   "options": "Maintenance Template Category",
-   "reqd": 1
+   "label": "Vehicles",
+   "options": "Maintenance Template Vehicle",
+   "reqd": 0
   },
   {
    "fieldname": "lines_section",
@@ -68,7 +68,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-07-27 12:00:00.000000",
+ "modified": "2026-08-03 00:00:00.000000",
  "modified_by": "Administrator",
  "module": "Fleet Management",
  "name": "Maintenance Template",
