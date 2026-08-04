@@ -392,6 +392,28 @@
    "role": "Fleet User",
    "share": 0,
    "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "role": "Fleet Driver",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "role": "Guest",
+   "share": 0,
+   "write": 0
   }
  ],
  "search_fields": "vehicle_number, vehicle_name, registration_number, vin, vehicle_brand, vehicle_model, company, status",

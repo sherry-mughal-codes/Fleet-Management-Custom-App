@@ -108,6 +108,9 @@ class FuelEventType(str, Enum):
 	CANCELLED = "Fuel Entry Cancelled"
 
 
+FuelTransactionType = FuelEventType
+
+
 class MaintenanceStatus(str, Enum):
 	DRAFT = "Draft"
 	OPEN = "Open"

@@ -98,6 +98,11 @@ class MaintenanceLockService:
 			# Enforce lock if Fleet Settings enables it
 			if MaintenanceLockService._is_lock_enabled():
 				logger.warning(f"FUEL-008: Fuel lock enforced for vehicle '{vehicle_id}'")
+				# Update vehicle status to Maintenance Due immediately so status reflects in system
+				if frappe.db.get_value("Vehicle", vehicle_id, "status") != VehicleStatus.MAINTENANCE_DUE:
+					frappe.db.set_value("Vehicle", vehicle_id, "status", VehicleStatus.MAINTENANCE_DUE)
+					frappe.clear_document_cache("Vehicle", vehicle_id)
+					frappe.db.commit()
 				raise FleetValidationError(msg)
 			else:
 				logger.info(f"FUEL-008: Lock disabled in Fleet Settings; showing advisory warning for '{vehicle_id}'")
@@ -107,6 +112,10 @@ class MaintenanceLockService:
 		if next_due and float(next_due) > 0 and odo >= float(next_due):
 			msg = f"FUEL-008: Vehicle has reached maintenance threshold ({int(float(next_due)):,} KM). Complete maintenance before recording fuel."
 			if MaintenanceLockService._is_lock_enabled():
+				if frappe.db.get_value("Vehicle", vehicle_id, "status") != VehicleStatus.MAINTENANCE_DUE:
+					frappe.db.set_value("Vehicle", vehicle_id, "status", VehicleStatus.MAINTENANCE_DUE)
+					frappe.clear_document_cache("Vehicle", vehicle_id)
+					frappe.db.commit()
 				raise FleetValidationError(msg)
 			else:
 				frappe.msgprint(msg, indicator="orange", alert=True)

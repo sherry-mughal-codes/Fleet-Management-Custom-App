@@ -10,7 +10,6 @@
   "country",
   "website",
   "is_active",
-  "display_order",
   "logo",
   "description"
  ],
@@ -55,12 +54,6 @@
    "label": "Is Active"
   },
   {
-   "default": "0",
-   "fieldname": "display_order",
-   "fieldtype": "Int",
-   "label": "Display Order"
-  },
-  {
    "fieldname": "logo",
    "fieldtype": "Attach Image",
    "label": "Brand Logo"
@@ -73,7 +66,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-07-24 15:00:00.000000",
+ "modified": "2026-08-03 00:00:00.000000",
  "modified_by": "Administrator",
  "module": "Fleet Management",
  "name": "Vehicle Brand",
@@ -114,7 +107,7 @@
   }
  ],
  "search_fields": "brand_name, brand_code, country",
- "sort_field": "display_order",
+ "sort_field": "brand_name",
  "sort_order": "ASC",
  "states": []
 }
