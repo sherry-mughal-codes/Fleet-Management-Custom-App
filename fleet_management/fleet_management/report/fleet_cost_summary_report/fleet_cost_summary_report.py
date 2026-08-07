@@ -18,11 +18,11 @@ def execute(filters=None):
 
 def get_columns():
 	return [
-		{"label": "Vehicle ID", "fieldname": "vehicle", "fieldtype": "Link", "options": "Vehicle", "width": 140},
+		{"label": "Vehicle ID", "fieldname": "vehicle", "fieldtype": "Link", "options": "Fleet Vehicle", "width": 140},
 		{"label": "Vehicle Name", "fieldname": "vehicle_name", "fieldtype": "Data", "width": 140},
 		{"label": "Brand", "fieldname": "brand", "fieldtype": "Link", "options": "Vehicle Brand", "width": 120},
 		{"label": "Category", "fieldname": "vehicle_category", "fieldtype": "Link", "options": "Vehicle Category", "width": 130},
-		{"label": "Company", "fieldname": "company", "fieldtype": "Link", "options": "Company", "width": 140},
+		{"label": "Fleet Company", "fieldname": "company", "fieldtype": "Link", "options": "Fleet Company", "width": 140},
 		{"label": "Distance Travelled (KM)", "fieldname": "distance_travelled", "fieldtype": "Float", "width": 160},
 		{"label": "Fuel Liters (L)", "fieldname": "total_fuel_liters", "fieldtype": "Float", "width": 130},
 		{"label": "Total Fuel Cost", "fieldname": "total_fuel_cost", "fieldtype": "Currency", "width": 150},
@@ -44,7 +44,7 @@ def get_data_and_summary(filters):
 		v_conditions["vehicle_category"] = filters.get("vehicle_category")
 
 	vehicles = frappe.get_all(
-		"Vehicle",
+		"Fleet Vehicle",
 		filters=v_conditions,
 		fields=["name", "vehicle_name", "vehicle_brand", "vehicle_category", "company", "current_odometer", "initial_odometer"],
 		order_by="name asc"
@@ -58,8 +58,9 @@ def get_data_and_summary(filters):
 	grand_distance = 0.0
 
 	for v in vehicles:
-		current_odo = float(v.get("current_odometer") or 0.0)
+		max_fuel_odo = frappe.db.get_value("Fuel Entry", {"vehicle": v.name, "docstatus": 1}, "MAX(odometer)") or 0.0
 		initial_odo = float(v.get("initial_odometer") or 0.0)
+		current_odo = max(float(max_fuel_odo), initial_odo)
 		dist = max(0.0, current_odo - initial_odo)
 
 		v_fuel_cost = 0.0

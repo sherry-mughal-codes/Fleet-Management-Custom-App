@@ -4,7 +4,7 @@ frappe.ui.form.on('Maintenance Entry', {
 		frm.set_query('vehicle', function() {
 			return {
 				filters: [
-					['Vehicle', 'status', 'in', ['Assigned', 'Maintenance Due']]
+					['Fleet Vehicle', 'status', 'in', ['Assigned', 'Maintenance Due']]
 				]
 			};
 		});

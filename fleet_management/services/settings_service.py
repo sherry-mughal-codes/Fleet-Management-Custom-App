@@ -62,7 +62,7 @@ class SettingsService(BaseService):
 		if not comp and hasattr(frappe, "db") and frappe.db:
 			comp = frappe.db.get_value("User", target_user, "company")
 			if not comp:
-				comp = frappe.db.get_value("Company", {"is_group": 0}, "name")
+				comp = frappe.db.get_value("Fleet Company", {"is_group": 0}, "name")
 		return comp or "ABC Logistics (Private) Limited"
 
 	@staticmethod
@@ -73,7 +73,7 @@ class SettingsService(BaseService):
 		comp = company or SettingsService.resolve_default_company()
 		if comp and hasattr(frappe, "db") and frappe.db:
 			try:
-				curr = frappe.db.get_value("Company", comp, "default_currency")
+				curr = frappe.db.get_value("Fleet Company", comp, "default_currency")
 				if curr:
 					return curr
 			except Exception:

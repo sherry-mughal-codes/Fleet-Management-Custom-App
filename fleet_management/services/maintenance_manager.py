@@ -33,11 +33,11 @@ class MaintenanceManager(BaseService):
 		Direct Vehicle Template Resolution:
 		Reads Vehicle.maintenance_template. Fallback: any active Maintenance Template.
 		"""
-		if not frappe.db.exists("Vehicle", vehicle_id):
+		if not frappe.db.exists("Fleet Vehicle", vehicle_id):
 			return None
 
 		# Primary: use per-vehicle template from Vehicle.maintenance_template
-		vehicle_template = frappe.db.get_value("Vehicle", vehicle_id, "maintenance_template")
+		vehicle_template = frappe.db.get_value("Fleet Vehicle", vehicle_id, "maintenance_template")
 		if vehicle_template and frappe.db.exists("Maintenance Template", vehicle_template):
 			if frappe.db.get_value("Maintenance Template", vehicle_template, "is_active"):
 				return vehicle_template
@@ -96,17 +96,17 @@ class MaintenanceManager(BaseService):
 					pass
 
 		# Fallback to initial vehicle odometer if no maintenance has been completed yet
-		initial_odo = float(frappe.db.get_value("Vehicle", vehicle_id, "initial_odometer") or 0.0) if hasattr(frappe, "db") and frappe.db.exists("Vehicle", vehicle_id) else 0.0
+		initial_odo = float(frappe.db.get_value("Fleet Vehicle", vehicle_id, "initial_odometer") or 0.0) if hasattr(frappe, "db") and frappe.db.exists("Fleet Vehicle", vehicle_id) else 0.0
 		return max(highest_odo, initial_odo)
 
 	def _get_current_vehicle_odometer(self, vehicle_id: str) -> float:
 		"""Derives current vehicle odometer reading from max Fuel Entry odometer or initial_odometer."""
-		if not vehicle_id or not hasattr(frappe, "db") or not frappe.db.exists("Vehicle", vehicle_id):
+		if not vehicle_id or not hasattr(frappe, "db") or not frappe.db.exists("Fleet Vehicle", vehicle_id):
 			return 0.0
 		latest_fuel_odo = frappe.db.get_value("Fuel Entry", {"vehicle": vehicle_id, "docstatus": 1}, "MAX(odometer)") or 0.0
 		odo = float(latest_fuel_odo)
 		if not odo:
-			odo = float(frappe.db.get_value("Vehicle", vehicle_id, "initial_odometer") or 0.0)
+			odo = float(frappe.db.get_value("Fleet Vehicle", vehicle_id, "initial_odometer") or 0.0)
 		return odo
 
 	def get_due_maintenance(self, vehicle_id: str) -> List[Dict[str, Any]]:
@@ -288,13 +288,13 @@ class MaintenanceManager(BaseService):
 		if vehicle_id:
 			# Update Vehicle last maintenance odometer & date
 			comp_odo = float(doc.current_odometer or 0.0)
-			frappe.db.set_value("Vehicle", vehicle_id, "last_maintenance_odometer", comp_odo)
-			frappe.db.set_value("Vehicle", vehicle_id, "last_maintenance_date", doc.maintenance_date)
+			frappe.db.set_value("Fleet Vehicle", vehicle_id, "last_maintenance_odometer", comp_odo)
+			frappe.db.set_value("Fleet Vehicle", vehicle_id, "last_maintenance_date", doc.maintenance_date)
 
 			# Calculate new next_maintenance_due_odometer from template lines
 			next_svc = self.get_next_service(vehicle_id)
 			if next_svc and next_svc.get("next_due_odometer"):
-				frappe.db.set_value("Vehicle", vehicle_id, "next_maintenance_due_odometer", next_svc["next_due_odometer"])
+				frappe.db.set_value("Fleet Vehicle", vehicle_id, "next_maintenance_due_odometer", next_svc["next_due_odometer"])
 
 			# Recalculate Vehicle state via VehicleStateManager
 			self.state_manager.update_vehicle_state(vehicle_id, reason=f"Maintenance Entry {entry_id} submitted")

@@ -2,9 +2,9 @@ frappe.query_reports["Vehicle Summary Report"] = {
 	"filters": [
 		{
 			"fieldname": "company",
-			"label": __("Company"),
+			"label": __("Fleet Company"),
 			"fieldtype": "Link",
-			"options": "Company",
+			"options": "Fleet Company",
 			"default": frappe.defaults.get_user_default("Company")
 		},
 		{

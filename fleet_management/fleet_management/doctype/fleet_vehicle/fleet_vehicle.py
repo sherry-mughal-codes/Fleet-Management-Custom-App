@@ -1,5 +1,5 @@
 """
-Vehicle Main Document Controller
+Fleet Vehicle Main Document Controller
 Fleet Management System
 """
 
@@ -19,12 +19,12 @@ from fleet_management.validators.vehicle_asset_validator import (
 from fleet_management.validators.vehicle_validator import VehicleValidator
 
 
-class Vehicle(BaseFleetDocument):
+class FleetVehicle(BaseFleetDocument):
 	"""
-	Vehicle Document Controller.
+	Fleet Vehicle Document Controller.
 	Enforces Rule IDs VEH-001..VEH-010 and ASSET-001..ASSET-008.
 	"""
-	doctype = "Vehicle"
+	doctype = "Fleet Vehicle"
 
 	def before_validate_hook(self):
 		if not self.status:
@@ -92,3 +92,53 @@ class Vehicle(BaseFleetDocument):
 		if self.manufacturing_year:
 			next_year = datetime.date.today().year + 1
 			validate_range(self.manufacturing_year, 1900, next_year, "Manufacturing Year")
+
+	@property
+	def current_odometer(self) -> float:
+		if hasattr(self, "_current_odometer") and self._current_odometer is not None:
+			return float(self._current_odometer)
+		if hasattr(frappe, "db") and getattr(self, "name", None):
+			latest_fuel_odo = frappe.db.get_value("Fuel Entry", {"vehicle": self.name, "docstatus": 1}, "MAX(odometer)") or 0.0
+			odo = float(latest_fuel_odo)
+			if not odo:
+				odo = float(getattr(self, "initial_odometer", 0.0) or 0.0)
+			return odo
+		return float(getattr(self, "initial_odometer", 0.0) or 0.0)
+
+	@current_odometer.setter
+	def current_odometer(self, val: float):
+		self._current_odometer = float(val)
+
+	@property
+	def current_assignment_status(self) -> str:
+		if hasattr(self, "_current_assignment_status") and self._current_assignment_status is not None:
+			return self._current_assignment_status
+		if hasattr(frappe, "db") and getattr(self, "name", None):
+			is_assigned = frappe.db.exists("Vehicle Assignment", {"vehicle": self.name, "docstatus": 1, "status": "Assigned"})
+			return "Assigned" if is_assigned else "Unassigned"
+		return "Unassigned"
+
+	@current_assignment_status.setter
+	def current_assignment_status(self, val: str):
+		self._current_assignment_status = val
+
+	@property
+	def next_maintenance_due_odometer(self) -> float:
+		if hasattr(self, "_next_maintenance_due_odometer") and self._next_maintenance_due_odometer is not None:
+			return float(self._next_maintenance_due_odometer)
+		if hasattr(frappe, "db") and getattr(self, "name", None):
+			next_due = frappe.db.get_value("Fleet Vehicle", self.name, "next_maintenance_due_odometer")
+			if next_due:
+				return float(next_due)
+		return float(getattr(self, "initial_odometer", 0.0) or 0.0) + 5000.0
+
+	@next_maintenance_due_odometer.setter
+	def next_maintenance_due_odometer(self, val: float):
+		self._next_maintenance_due_odometer = float(val)
+
+	def sync_operational_summary(self):
+		"""Syncs operational summary stats."""
+		from fleet_management.services.fleet_statistics_manager import FleetStatisticsManager
+		if getattr(self, "name", None) and hasattr(frappe, "db") and frappe.db:
+			FleetStatisticsManager.recalculate_vehicle_statistics(self.name)
+

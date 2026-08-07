@@ -16,14 +16,14 @@ def execute(filters=None):
 def get_columns():
 	return [
 		{"label": "Entry ID", "fieldname": "name", "fieldtype": "Link", "options": "Maintenance Entry", "width": 140},
-		{"label": "Vehicle", "fieldname": "vehicle", "fieldtype": "Link", "options": "Vehicle", "width": 140},
+		{"label": "Vehicle", "fieldname": "vehicle", "fieldtype": "Link", "options": "Fleet Vehicle", "width": 140},
 		{"label": "Maintenance Activity / Item", "fieldname": "maintenance_type", "fieldtype": "Data", "width": 180},
 		{"label": "Date", "fieldname": "maintenance_date", "fieldtype": "Date", "width": 110},
 		{"label": "Odometer (KM)", "fieldname": "current_odometer", "fieldtype": "Float", "width": 130},
 		{"label": "Cost", "fieldname": "cost", "fieldtype": "Currency", "width": 130},
 		{"label": "Vendor", "fieldname": "vendor", "fieldtype": "Link", "options": "Maintenance Vendor", "width": 140},
 		{"label": "Status", "fieldname": "docstatus_label", "fieldtype": "Data", "width": 110},
-		{"label": "Company", "fieldname": "company", "fieldtype": "Link", "options": "Company", "width": 140}
+		{"label": "Fleet Company", "fieldname": "company", "fieldtype": "Link", "options": "Fleet Company", "width": 140}
 	]
 
 
@@ -65,7 +65,7 @@ def get_data_and_summary(filters):
 			mei.cost as item_cost
 		FROM `tabMaintenance Entry` me
 		LEFT JOIN `tabMaintenance Entry Item` mei ON mei.parent = me.name
-		LEFT JOIN `tabVehicle` v ON v.name = me.vehicle
+		LEFT JOIN `tabFleet Vehicle` v ON v.name = me.vehicle
 		WHERE {conditions}
 		ORDER BY me.maintenance_date DESC, me.name DESC, mei.idx ASC
 	""", values, as_dict=True) if frappe.db.table_exists("Maintenance Entry") else []

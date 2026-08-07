@@ -58,7 +58,7 @@ class FuelValidator(BaseValidator):
 		if assignment and hasattr(frappe, "db") and frappe.db:
 			vehicle_id = frappe.db.get_value("Vehicle Assignment", assignment, "vehicle")
 			if vehicle_id:
-				v_status = frappe.db.get_value("Vehicle", vehicle_id, "status")
+				v_status = frappe.db.get_value("Fleet Vehicle", vehicle_id, "status")
 				if v_status == VehicleStatus.UNDER_MAINTENANCE:
 					self.add_error("FUEL-008: Maintenance is due. Complete maintenance before recording more fuel.")
 

@@ -13,7 +13,7 @@
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Vehicle",
-   "options": "Vehicle",
+   "options": "Fleet Vehicle",
    "reqd": 0
   }
  ],

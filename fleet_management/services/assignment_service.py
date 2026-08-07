@@ -91,7 +91,7 @@ class AssignmentService(BaseService):
 		doc = frappe.get_doc("Vehicle Assignment", assignment_id)
 
 		# 1. Validate active duplicate assignment & vehicle availability (ASSIGN-001)
-		v_doc = frappe.get_doc("Vehicle", doc.vehicle)
+		v_doc = frappe.get_doc("Fleet Vehicle", doc.vehicle)
 		avail_rule = AssignmentVehicleAvailabilityRule({"vehicle_status": v_doc.status})
 		avail_rule.raise_if_violated()
 

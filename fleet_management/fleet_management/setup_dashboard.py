@@ -27,7 +27,7 @@ def setup_fleet_dashboards():
 			"name": "Total Fleet Vehicles",
 			"label": "Total Fleet Vehicles",
 			"type": "Document Type",
-			"document_type": "Vehicle",
+			"document_type": "Fleet Vehicle",
 			"function": "Count",
 			"color": "Blue",
 			"is_public": 1,
@@ -38,9 +38,9 @@ def setup_fleet_dashboards():
 			"name": "Available Vehicles",
 			"label": "Available Vehicles",
 			"type": "Document Type",
-			"document_type": "Vehicle",
+			"document_type": "Fleet Vehicle",
 			"function": "Count",
-			"filters_json": json.dumps([["Vehicle", "status", "=", "Available"]]),
+			"filters_json": json.dumps([["Fleet Vehicle", "status", "=", "Available"]]),
 			"color": "Green",
 			"is_public": 1,
 			"module": "Fleet Management",
@@ -62,9 +62,9 @@ def setup_fleet_dashboards():
 			"name": "Vehicles Under Maintenance",
 			"label": "Vehicles Under Maintenance",
 			"type": "Document Type",
-			"document_type": "Vehicle",
+			"document_type": "Fleet Vehicle",
 			"function": "Count",
-			"filters_json": json.dumps([["Vehicle", "status", "=", "Under Maintenance"]]),
+			"filters_json": json.dumps([["Fleet Vehicle", "status", "=", "Under Maintenance"]]),
 			"color": "Red",
 			"is_public": 1,
 			"module": "Fleet Management",
@@ -74,9 +74,9 @@ def setup_fleet_dashboards():
 			"name": "Maintenance Due Vehicles",
 			"label": "Maintenance Due Vehicles",
 			"type": "Document Type",
-			"document_type": "Vehicle",
+			"document_type": "Fleet Vehicle",
 			"function": "Count",
-			"filters_json": json.dumps([["Vehicle", "status", "=", "Maintenance Due"]]),
+			"filters_json": json.dumps([["Fleet Vehicle", "status", "=", "Maintenance Due"]]),
 			"color": "Yellow",
 			"is_public": 1,
 			"module": "Fleet Management",
@@ -86,9 +86,9 @@ def setup_fleet_dashboards():
 			"name": "Fuel Locked Vehicles",
 			"label": "Fuel Locked Vehicles",
 			"type": "Document Type",
-			"document_type": "Vehicle",
+			"document_type": "Fleet Vehicle",
 			"function": "Count",
-			"filters_json": json.dumps([["Vehicle", "status", "=", "Fuel Locked"]]),
+			"filters_json": json.dumps([["Fleet Vehicle", "status", "=", "Fuel Locked"]]),
 			"color": "Red",
 			"is_public": 1,
 			"module": "Fleet Management",
@@ -141,7 +141,7 @@ def setup_fleet_dashboards():
 			"chart_name": "Fleet Vehicle Status Distribution",
 			"chart_type": "Group By",
 			"type": "Donut",
-			"document_type": "Vehicle",
+			"document_type": "Fleet Vehicle",
 			"group_by_based_on": "status",
 			"group_by_type": "Count",
 			"filters_json": "[]",
@@ -154,7 +154,7 @@ def setup_fleet_dashboards():
 			"chart_name": "Vehicle Category Breakdown",
 			"chart_type": "Group By",
 			"type": "Pie",
-			"document_type": "Vehicle",
+			"document_type": "Fleet Vehicle",
 			"group_by_based_on": "vehicle_category",
 			"group_by_type": "Count",
 			"filters_json": "[]",
@@ -316,12 +316,20 @@ def setup_fleet_dashboards():
 			with open(dash_path, "r", encoding="utf-8") as f:
 				dash_data = json.load(f)
 			if frappe.db.exists("Workspace", "Fleet Dashboard"):
-				frappe.delete_doc("Workspace", "Fleet Dashboard", force=True, ignore_permissions=True)
+				frappe.db.delete("Workspace Link", {"parent": "Fleet Dashboard"})
+				frappe.db.delete("Workspace Shortcut", {"parent": "Fleet Dashboard"})
+				frappe.db.delete("Workspace Number Card", {"parent": "Fleet Dashboard"})
+				frappe.db.delete("Workspace Chart", {"parent": "Fleet Dashboard"})
+				frappe.db.delete("Workspace", {"name": "Fleet Dashboard"})
 			doc = frappe.get_doc(dash_data)
 			doc.insert(ignore_permissions=True)
 		else:
 			if frappe.db.exists("Workspace", "Fleet Dashboard"):
-				frappe.delete_doc("Workspace", "Fleet Dashboard", force=True, ignore_permissions=True)
+				frappe.db.delete("Workspace Link", {"parent": "Fleet Dashboard"})
+				frappe.db.delete("Workspace Shortcut", {"parent": "Fleet Dashboard"})
+				frappe.db.delete("Workspace Number Card", {"parent": "Fleet Dashboard"})
+				frappe.db.delete("Workspace Chart", {"parent": "Fleet Dashboard"})
+				frappe.db.delete("Workspace", {"name": "Fleet Dashboard"})
 			doc = frappe.get_doc(dash_workspace)
 			doc.insert(ignore_permissions=True)
 	except Exception as e:
@@ -337,7 +345,9 @@ def setup_fleet_dashboards():
 				fm_data = json.load(f)
 			
 			if frappe.db.exists("Workspace", "Fleet Management"):
-				frappe.delete_doc("Workspace", "Fleet Management", force=True, ignore_permissions=True)
+				frappe.db.delete("Workspace Link", {"parent": "Fleet Management"})
+				frappe.db.delete("Workspace Shortcut", {"parent": "Fleet Management"})
+				frappe.db.delete("Workspace", {"name": "Fleet Management"})
 			
 			doc = frappe.get_doc(fm_data)
 			doc.insert(ignore_permissions=True)

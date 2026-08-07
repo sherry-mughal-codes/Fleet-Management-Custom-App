@@ -146,8 +146,8 @@
    "fieldtype": "Link",
    "in_list_view": 1,
    "in_standard_filter": 1,
-   "label": "Company",
-   "options": "Company",
+   "label": "Fleet Company",
+   "options": "Fleet Company",
    "reqd": 1
   },
   {
@@ -343,10 +343,10 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-07-24 15:40:00.000000",
+ "modified": "2026-08-07 00:00:00.000000",
  "modified_by": "Administrator",
  "module": "Fleet Management",
- "name": "Vehicle",
+ "name": "Fleet Vehicle",
  "owner": "Administrator",
  "permissions": [
   {

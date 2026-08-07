@@ -31,9 +31,9 @@ def get_columns() -> List[Dict[str, Any]]:
 		},
 		{
 			"fieldname": "vehicle",
-			"label": _("Vehicle"),
+			"label": _("Fleet Vehicle"),
 			"fieldtype": "Link",
-			"options": "Vehicle",
+			"options": "Fleet Vehicle",
 			"width": 150,
 		},
 		{
@@ -123,7 +123,7 @@ def get_data(filters: Dict[str, Any]) -> List[Dict[str, Any]]:
 		try:
 			vehicles = frappe.db.sql(f"""
 				SELECT name, vehicle_number, company, creation, purchase_date, initial_odometer, current_odometer
-				FROM `tabVehicle`
+				FROM `tabFleet Vehicle`
 				{v_where}
 			""", tuple(v_args), as_dict=True)
 
@@ -158,7 +158,7 @@ def get_data(filters: Dict[str, Any]) -> List[Dict[str, Any]]:
 						"distance_travelled": 0.0,
 						"total_cost": 0.0,
 						"details": f"Vehicle Registered with Initial Odometer: {v.initial_odometer or 0} KM",
-						"ref_doctype": "Vehicle",
+						"ref_doctype": "Fleet Vehicle",
 						"ref_docname": v.name
 					})
 		except Exception:
@@ -228,6 +228,14 @@ def get_data(filters: Dict[str, Any]) -> List[Dict[str, Any]]:
 	except Exception:
 		pass
 
+	# Build initial odometer map for all vehicles
+	v_initial_odo = {}
+	try:
+		for v in frappe.get_all("Fleet Vehicle", fields=["name", "initial_odometer"]):
+			v_initial_odo[v.name] = float(v.initial_odometer or 0.0)
+	except Exception:
+		pass
+
 	# 3. Fuel Entries
 	fuel_conditions = ["docstatus = 1"]
 	fuel_args = []
@@ -254,6 +262,8 @@ def get_data(filters: Dict[str, Any]) -> List[Dict[str, Any]]:
 			if f_date and (not from_date or f_date >= str(from_date)) and (not to_date or f_date <= str(to_date)):
 				if not activity_type_filter or activity_type_filter in ("All", "Fuel Entry"):
 					p_odo = float(f.previous_odometer or 0.0)
+					if p_odo <= 0.0 and f.vehicle in v_initial_odo:
+						p_odo = v_initial_odo[f.vehicle]
 					c_odo = float(f.odometer or 0.0)
 					dist = float(f.distance_travelled or max(0.0, c_odo - p_odo))
 					qty = float(f.fuel_qty or 0.0)
@@ -281,7 +291,7 @@ def get_data(filters: Dict[str, Any]) -> List[Dict[str, Any]]:
 		maint_conditions.append("me.vehicle = %s")
 		maint_args.append(vehicle_filter)
 	if company_filter:
-		maint_conditions.append("EXISTS (SELECT 1 FROM `tabVehicle` v WHERE v.name = me.vehicle AND v.company = %s)")
+		maint_conditions.append("EXISTS (SELECT 1 FROM `tabFleet Vehicle` v WHERE v.name = me.vehicle AND v.company = %s)")
 		maint_args.append(company_filter)
 	if employee_filter:
 		# Employee is now resolved via active assignment — filter on subquery
@@ -308,14 +318,20 @@ def get_data(filters: Dict[str, Any]) -> List[Dict[str, Any]]:
 					c_odo = float(m.current_odometer or 0.0)
 					cost = float(m.total_cost or 0.0)
 					m_desc = m.maintenance_type or "General Servicing"
+					# Resolve start odometer from initial_odometer or previous fuel entry
+					prev_fuel_odo = frappe.db.get_value("Fuel Entry", {"vehicle": m.vehicle, "docstatus": 1, "odometer": ["<", c_odo]}, "MAX(odometer)") or 0.0
+					p_odo = float(prev_fuel_odo)
+					if p_odo <= 0.0:
+						p_odo = v_initial_odo.get(m.vehicle, 0.0)
+					m_dist = max(0.0, c_odo - p_odo)
 					events.append({
 						"activity_date": m_date,
 						"vehicle": m.vehicle,
 						"activity_type": "Maintenance Entry",
 						"employee": m.employee,
-						"start_odometer": c_odo,
+						"start_odometer": p_odo,
 						"end_odometer": c_odo,
-						"distance_travelled": 0.0,
+						"distance_travelled": m_dist,
 						"total_cost": cost,
 						"details": f"Serviced: {m_desc} at {c_odo} KM (Cost: PKR {cost})",
 						"ref_doctype": "Maintenance Entry",

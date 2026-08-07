@@ -198,7 +198,7 @@ def get_employee_fuel_history_api(employee: str, limit: int = 20) -> Dict[str, A
 @api_endpoint(allow_guest=False)
 def get_vehicle_previous_odometer_api(vehicle: str, exclude_entry: str | None = None) -> Dict[str, Any]:
 	"""Whitelisted API endpoint returning the previous odometer reading for a vehicle."""
-	if not frappe.db.exists("Vehicle", vehicle):
+	if not frappe.db.exists("Fleet Vehicle", vehicle):
 		return success_response(data={"previous_odometer": 0.0})
 
 	filters = {"vehicle": vehicle, "docstatus": 1}
@@ -208,6 +208,6 @@ def get_vehicle_previous_odometer_api(vehicle: str, exclude_entry: str | None = 
 	latest_fuel_odo = frappe.db.get_value("Fuel Entry", filters=filters, fieldname="MAX(odometer)") or 0.0
 	odo = float(latest_fuel_odo)
 	if not odo:
-		odo = float(frappe.db.get_value("Vehicle", vehicle, "initial_odometer") or 0.0)
+		odo = float(frappe.db.get_value("Fleet Vehicle", vehicle, "initial_odometer") or 0.0)
 
 	return success_response(data={"previous_odometer": odo})

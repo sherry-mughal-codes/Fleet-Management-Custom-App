@@ -27,12 +27,12 @@ def test_is_vehicle_assigned():
 
 		# 3. Assigned via active Vehicle Assignment record
 		mock_get_value.side_effect = lambda dt, name, field: None
-		mock_exists.side_effect = lambda dt, filters: True if dt == "Vehicle" or dt == "Vehicle Assignment" else False
+		mock_exists.side_effect = lambda dt, filters: True if dt == "Fleet Vehicle" or dt == "Vehicle Assignment" else False
 		assert is_vehicle_assigned("VEH-001") is True
 
 		# 4. Unassigned
 		mock_get_value.side_effect = lambda dt, name, field: None
-		mock_exists.side_effect = lambda dt, filters: True if dt == "Vehicle" else False
+		mock_exists.side_effect = lambda dt, filters: True if dt == "Fleet Vehicle" else False
 		assert is_vehicle_assigned("VEH-001") is False
 
 
@@ -65,7 +65,7 @@ def test_maintenance_entry_on_submit_updates_vehicle_state():
 		 patch("frappe.db.get_value", side_effect=lambda dt, name, field=None, **kw: {
 			 ("Vehicle Assignment", "ASN-001", "vehicle"): "VEH-001",
 			 ("Vehicle Assignment", "ASN-001", "company"): "Fleet Corp",
-			 ("Vehicle", "VEH-001", "current_odometer"): 14000.0,
+			 ("Fleet Vehicle", "VEH-001", "current_odometer"): 14000.0,
 		 }.get((dt, name, field), None)), \
 		 patch("frappe.db.set_value") as mock_set:
 		from fleet_management.fleet_management.doctype.maintenance_entry.maintenance_entry import MaintenanceEntry

@@ -36,7 +36,7 @@ def search_vehicles(
 
 	start = (page - 1) * page_length
 	items = vehicle_service.list_vehicles(filters=filters, start=start, page_length=page_length)
-	total_count = frappe.db.count("Vehicle", filters=filters) if hasattr(frappe, "db") else len(items)
+	total_count = frappe.db.count("Fleet Vehicle", filters=filters) if hasattr(frappe, "db") else len(items)
 
 	return paginated_response(items=items, total_count=total_count, page=page, page_length=page_length)
 
@@ -122,9 +122,9 @@ def get_vehicle_documents(vehicle_id: str) -> Dict[str, Any]:
 @api_endpoint(allow_guest=False)
 def get_vehicle_images(vehicle_id: str) -> Dict[str, Any]:
 	"""Whitelisted API endpoint returning vehicle image gallery."""
-	if not frappe.db.exists("Vehicle", vehicle_id):
+	if not frappe.db.exists("Fleet Vehicle", vehicle_id):
 		return success_response(data=[], message="Vehicle not found.")
-	doc = frappe.get_doc("Vehicle", vehicle_id)
+	doc = frappe.get_doc("Fleet Vehicle", vehicle_id)
 	images = [img.as_dict() for img in (getattr(doc, "images", []) or [])]
 	return success_response(data=images, message="Vehicle images retrieved successfully.")
 

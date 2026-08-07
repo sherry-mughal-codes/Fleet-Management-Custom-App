@@ -29,8 +29,8 @@
    "fieldtype": "Link",
    "in_list_view": 1,
    "in_standard_filter": 1,
-   "label": "Company",
-   "options": "Company"
+   "label": "Fleet Company",
+   "options": "Fleet Company"
   },
   {
    "fieldname": "phone",

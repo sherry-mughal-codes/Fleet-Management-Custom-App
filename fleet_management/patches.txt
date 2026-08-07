@@ -1,2 +1,4 @@
 fleet_management.patches.v15_0.migrate_legacy_maintenance
 fleet_management.patches.v15_0.migrate_refactor_v2
+fleet_management.patches.v1_0.rename_vehicle_to_fleet_vehicle
+fleet_management.patches.v1_0.rename_company_to_fleet_company

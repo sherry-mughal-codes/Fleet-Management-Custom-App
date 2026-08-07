@@ -27,7 +27,7 @@ class FuelEntry(BaseFleetDocument):
 		"""
 		self._calculate_three_way_fuel()
 		if not getattr(self, "fuel_type", None) and getattr(self, "vehicle", None) and hasattr(frappe, "db") and frappe.db:
-			v_fuel_type = frappe.db.get_value("Vehicle", self.vehicle, "fuel_type")
+			v_fuel_type = frappe.db.get_value("Fleet Vehicle", self.vehicle, "fuel_type")
 			if v_fuel_type:
 				self.fuel_type = v_fuel_type
 
@@ -40,7 +40,7 @@ class FuelEntry(BaseFleetDocument):
 			raise FleetValidationError("FUEL-001: Vehicle is mandatory for Fuel Entry.")
 
 		# 2. Vehicle must exist
-		if hasattr(frappe, "db") and frappe.db and not frappe.db.exists("Vehicle", self.vehicle):
+		if hasattr(frappe, "db") and frappe.db and not frappe.db.exists("Fleet Vehicle", self.vehicle):
 			raise FleetValidationError(f"FUEL-001: Vehicle '{self.vehicle}' does not exist.")
 
 		# 3. Perform 3-way fuel calculation validation (Rate, Quantity, Total Cost)
@@ -128,7 +128,7 @@ class FuelEntry(BaseFleetDocument):
 		"""
 		prev_odo = frappe.db.get_value("Fuel Entry", {"vehicle": vehicle_id, "docstatus": 1}, "MAX(odometer)")
 		if not prev_odo:
-			prev_odo = frappe.db.get_value("Vehicle", vehicle_id, "initial_odometer")
+			prev_odo = frappe.db.get_value("Fleet Vehicle", vehicle_id, "initial_odometer")
 
 		if prev_odo and float(new_odometer) < float(prev_odo):
 			raise FleetValidationError(

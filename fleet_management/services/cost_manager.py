@@ -20,7 +20,7 @@ class CostManager(BaseService):
 
 	def calculate_vehicle_cost(self, vehicle_id: str) -> Dict[str, float]:
 		"""Calculates total fuel, maintenance, and operating cost for a vehicle."""
-		if not frappe.db.exists("Vehicle", vehicle_id):
+		if not frappe.db.exists("Fleet Vehicle", vehicle_id):
 			raise FleetNotFoundError(f"Vehicle '{vehicle_id}' not found.")
 
 		# Fuel Cost Aggregation (via assignments)

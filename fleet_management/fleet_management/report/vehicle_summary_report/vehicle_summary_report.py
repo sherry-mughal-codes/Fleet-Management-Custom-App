@@ -15,13 +15,13 @@ def execute(filters=None):
 
 def get_columns():
 	return [
-		{"label": "Vehicle ID", "fieldname": "name", "fieldtype": "Link", "options": "Vehicle", "width": 140},
+		{"label": "Vehicle ID", "fieldname": "name", "fieldtype": "Link", "options": "Fleet Vehicle", "width": 140},
 		{"label": "Vehicle Number", "fieldname": "vehicle_number", "fieldtype": "Data", "width": 130},
 		{"label": "Vehicle Name", "fieldname": "vehicle_name", "fieldtype": "Data", "width": 140},
 		{"label": "Brand", "fieldname": "vehicle_brand", "fieldtype": "Link", "options": "Vehicle Brand", "width": 120},
 		{"label": "Model", "fieldname": "vehicle_model", "fieldtype": "Link", "options": "Vehicle Model", "width": 120},
 		{"label": "Category", "fieldname": "vehicle_category", "fieldtype": "Link", "options": "Vehicle Category", "width": 130},
-		{"label": "Company", "fieldname": "company", "fieldtype": "Link", "options": "Company", "width": 140},
+		{"label": "Fleet Company", "fieldname": "company", "fieldtype": "Link", "options": "Fleet Company", "width": 140},
 		{"label": "Status", "fieldname": "status", "fieldtype": "Data", "width": 130},
 		{"label": "Maintenance Due", "fieldname": "is_maintenance_due", "fieldtype": "Data", "width": 140},
 		{"label": "Assigned User", "fieldname": "current_employee", "fieldtype": "Link", "options": "User", "width": 140},
@@ -48,7 +48,7 @@ def get_data_and_summary(filters):
 		conditions["fuel_type"] = filters.get("fuel_type")
 
 	vehicles = frappe.get_all(
-		"Vehicle",
+		"Fleet Vehicle",
 		filters=conditions,
 		fields=[
 			"name", "vehicle_number", "vehicle_name", "vehicle_brand", "vehicle_model",
@@ -99,10 +99,9 @@ def get_data_and_summary(filters):
 		if fuel_stats and fuel_stats[0].get("fuel_cost") is not None:
 			total_fuel_cost = float(fuel_stats[0].get("fuel_cost") or 0.0)
 			total_fuel_qty = float(fuel_stats[0].get("total_qty") or 0.0)
-			min_odo = float(fuel_stats[0].get("min_odo") or 0.0)
-			max_odo = float(fuel_stats[0].get("max_odo") or 0.0)
-			if total_fuel_qty > 0 and max_odo > min_odo:
-				fuel_economy = round((max_odo - min_odo) / total_fuel_qty, 2)
+			distance_driven_fuel = max(curr_odo - initial_odo, 0.0)
+			if total_fuel_qty > 0 and distance_driven_fuel > 0:
+				fuel_economy = round(distance_driven_fuel / total_fuel_qty, 2)
 
 		# 3. Fetch maintenance totals
 		maint_cost = float(frappe.db.get_value("Maintenance Entry", {"vehicle": v_id, "docstatus": 1}, "SUM(total_cost)") or 0.0)

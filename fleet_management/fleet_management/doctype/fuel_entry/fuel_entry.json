@@ -41,7 +41,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Vehicle",
-   "options": "Vehicle",
+   "options": "Fleet Vehicle",
    "reqd": 1
   },
   {

@@ -55,7 +55,7 @@ class MaintenanceEntry(Document):
 	def company(self) -> Optional[str]:
 		"""Resolves company from vehicle."""
 		if getattr(self, "vehicle", None) and hasattr(frappe, "db") and frappe.db:
-			return frappe.db.get_value("Vehicle", self.vehicle, "company")
+			return frappe.db.get_value("Fleet Vehicle", self.vehicle, "company")
 		from fleet_management.services.settings_service import SettingsService
 		return SettingsService.resolve_default_company()
 
@@ -78,7 +78,7 @@ class MaintenanceEntry(Document):
 		if not getattr(self, "vehicle", None):
 			raise FleetValidationError("Vehicle is mandatory for Maintenance Entry.")
 
-		if hasattr(frappe, "db") and frappe.db and not frappe.db.exists("Vehicle", self.vehicle):
+		if hasattr(frappe, "db") and frappe.db and not frappe.db.exists("Fleet Vehicle", self.vehicle):
 			raise FleetValidationError(f"Vehicle '{self.vehicle}' does not exist.")
 
 		v_id = self.vehicle
@@ -88,7 +88,7 @@ class MaintenanceEntry(Document):
 			latest_fuel_odo = frappe.db.get_value("Fuel Entry", {"vehicle": v_id, "docstatus": 1}, "MAX(odometer)") or 0.0
 			last_odo = float(latest_fuel_odo)
 			if last_odo == 0.0:
-				last_odo = float(frappe.db.get_value("Vehicle", v_id, "initial_odometer") or 0.0)
+				last_odo = float(frappe.db.get_value("Fleet Vehicle", v_id, "initial_odometer") or 0.0)
 			curr_odo = float(self.current_odometer or 0.0)
 			if last_odo > 0 and curr_odo > 0 and curr_odo < last_odo:
 				raise FleetValidationError(f"Odometer reading ({curr_odo} KM) cannot be less than vehicle odometer ({last_odo} KM).")
@@ -132,7 +132,7 @@ class MaintenanceEntry(Document):
 		FleetStatisticsManager.recalculate_vehicle_statistics(v_id)
 
 		# Clear Maintenance status after servicing
-		curr_status = frappe.db.get_value("Vehicle", v_id, "status")
+		curr_status = frappe.db.get_value("Fleet Vehicle", v_id, "status")
 		if curr_status in ("Under Maintenance", "Maintenance Due", "Fuel Locked"):
 			active_asn = frappe.db.exists("Vehicle Assignment", {
 				"vehicle": v_id,
@@ -141,7 +141,7 @@ class MaintenanceEntry(Document):
 				"status": ["in", ["Assigned", "In Use", "Approved", "Return Overdue"]]
 			})
 			new_st = "Assigned" if active_asn else "Available"
-			frappe.db.set_value("Vehicle", v_id, "status", new_st)
+			frappe.db.set_value("Fleet Vehicle", v_id, "status", new_st)
 
 		VehicleStateManager.recalculate_vehicle_state(v_id)
 		logger.info(f"Submitted Maintenance Entry {self.name} for Vehicle {v_id}")

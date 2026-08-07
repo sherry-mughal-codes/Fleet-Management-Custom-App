@@ -28,7 +28,7 @@ class VehicleAssignment(BaseFleetDocument):
 
 		# 1. Auto-fetch Company and Opening Odometer from Vehicle / Latest Fuel Entry
 		if self.vehicle:
-			v_doc = get_doc_or_none("Vehicle", self.vehicle)
+			v_doc = get_doc_or_none("Fleet Vehicle", self.vehicle)
 			if v_doc and not self.company:
 				self.company = v_doc.company
 

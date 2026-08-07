@@ -14,7 +14,7 @@
  "name": "Vehicle Summary Report",
  "owner": "Administrator",
  "prepared_report": 0,
- "ref_doctype": "Vehicle",
+ "ref_doctype": "Fleet Vehicle",
  "report_name": "Vehicle Summary Report",
  "report_type": "Script Report",
  "roles": [

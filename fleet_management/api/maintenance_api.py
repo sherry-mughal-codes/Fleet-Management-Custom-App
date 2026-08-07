@@ -120,7 +120,7 @@ def get_due_maintenance_items_api(vehicle: str, current_odometer: float | None =
 	Evaluates template interval schedule lines against current_odometer and
 	last serviced odometer for a vehicle, returning all due or overdue items.
 	"""
-	if not vehicle or not hasattr(frappe, "db") or not frappe.db.exists("Vehicle", vehicle):
+	if not vehicle or not hasattr(frappe, "db") or not frappe.db.exists("Fleet Vehicle", vehicle):
 		return success_response(data=[], message="Vehicle not found.")
 
 	if current_odometer and float(current_odometer) > 0:
@@ -129,7 +129,7 @@ def get_due_maintenance_items_api(vehicle: str, current_odometer: float | None =
 		latest_fuel_odo = frappe.db.get_value("Fuel Entry", {"vehicle": vehicle, "docstatus": 1}, "MAX(odometer)") or 0.0
 		ado = float(latest_fuel_odo)
 		if not ado:
-			ado = float(frappe.db.get_value("Vehicle", vehicle, "initial_odometer") or 0.0)
+			ado = float(frappe.db.get_value("Fleet Vehicle", vehicle, "initial_odometer") or 0.0)
 
 	due_items = maintenance_manager.get_due_maintenance(vehicle)
 	overdue_items = maintenance_manager.get_overdue_maintenance(vehicle, current_odometer=ado)

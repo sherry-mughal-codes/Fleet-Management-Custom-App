@@ -17,7 +17,7 @@ def get_columns():
 	return [
 		{"label": "Fuel Entry ID", "fieldname": "name", "fieldtype": "Link", "options": "Fuel Entry", "width": 140},
 		{"label": "Fuel Date", "fieldname": "fuel_date", "fieldtype": "Date", "width": 110},
-		{"label": "Vehicle", "fieldname": "vehicle", "fieldtype": "Link", "options": "Vehicle", "width": 140},
+		{"label": "Vehicle", "fieldname": "vehicle", "fieldtype": "Link", "options": "Fleet Vehicle", "width": 140},
 		{"label": "Vehicle Name", "fieldname": "vehicle_name", "fieldtype": "Data", "width": 140},
 		{"label": "Employee / Driver", "fieldname": "employee", "fieldtype": "Link", "options": "User", "width": 140},
 		{"label": "Odometer (KM)", "fieldname": "odometer", "fieldtype": "Float", "width": 130},
@@ -29,7 +29,7 @@ def get_columns():
 		{"label": "Efficiency Rating", "fieldname": "fuel_efficiency_rating", "fieldtype": "Data", "width": 140},
 		{"label": "Fuel Type", "fieldname": "fuel_type", "fieldtype": "Link", "options": "Fuel Type", "width": 120},
 		{"label": "Station Name", "fieldname": "fuel_station_name", "fieldtype": "Link", "options": "Fuel Station", "width": 140},
-		{"label": "Company", "fieldname": "company", "fieldtype": "Link", "options": "Company", "width": 140},
+		{"label": "Fleet Company", "fieldname": "company", "fieldtype": "Link", "options": "Fleet Company", "width": 140},
 		{"label": "Status", "fieldname": "status", "fieldtype": "Data", "width": 110}
 	]
 
@@ -61,7 +61,7 @@ def get_data_and_summary(filters):
 	# Build vehicle map with threshold ratings
 	v_names = list(set([e.vehicle for e in entries if getattr(e, "vehicle", None)]))
 	v_docs = frappe.get_all(
-		"Vehicle",
+		"Fleet Vehicle",
 		filters={"name": ["in", v_names]},
 		fields=[
 			"name", "vehicle_name", "company", "initial_odometer",

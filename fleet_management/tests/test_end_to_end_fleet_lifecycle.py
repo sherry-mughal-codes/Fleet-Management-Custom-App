@@ -26,8 +26,8 @@ from fleet_management.utils.exceptions import FleetValidationError
 def ensure_master_data():
 	"""Helper creating dedicated E2E master data records if missing in DB context."""
 	if hasattr(frappe, "db") and frappe.db:
-		if not frappe.db.exists("Company", "E2E Fleets Inc"):
-			frappe.get_doc({"doctype": "Company", "company_name": "E2E Fleets Inc", "default_currency": "USD"}).insert(ignore_permissions=True)
+		if not frappe.db.exists("Fleet Company", "E2E Fleets Inc"):
+			frappe.get_doc({"doctype": "Fleet Company", "company_name": "E2E Fleets Inc", "default_currency": "USD"}).insert(ignore_permissions=True)
 		if not frappe.db.exists("Vehicle Brand", "Toyota-E2E"):
 			frappe.get_doc({"doctype": "Vehicle Brand", "brand_name": "Toyota-E2E", "brand_code": "TOYE2E"}).insert(ignore_permissions=True)
 		if not frappe.db.exists("Vehicle Category", "Sedan-E2E"):
@@ -56,14 +56,14 @@ class TestEndToEndFleetLifecycle:
 			# Clean up any leftover test entries strictly scoped to test company & test vehicle
 			frappe.db.sql("DELETE FROM `tabVehicle Assignment` WHERE company = %s", (self.company,))
 			frappe.db.commit()
-			if frappe.db.exists("Vehicle", {"vehicle_number": self.test_plate}):
-				v_names = frappe.get_all("Vehicle", filters={"vehicle_number": self.test_plate}, fields=["name"])
+			if frappe.db.exists("Fleet Vehicle", {"vehicle_number": self.test_plate}):
+				v_names = frappe.get_all("Fleet Vehicle", filters={"vehicle_number": self.test_plate}, fields=["name"])
 				for vn in v_names:
-					frappe.delete_doc("Vehicle", vn["name"], force=True, ignore_permissions=True)
-			if frappe.db.exists("Vehicle", {"vin": self.test_vin}):
-				v_names = frappe.get_all("Vehicle", filters={"vin": self.test_vin}, fields=["name"])
+					frappe.delete_doc("Fleet Vehicle", vn["name"], force=True, ignore_permissions=True)
+			if frappe.db.exists("Fleet Vehicle", {"vin": self.test_vin}):
+				v_names = frappe.get_all("Fleet Vehicle", filters={"vin": self.test_vin}, fields=["name"])
 				for vn in v_names:
-					frappe.delete_doc("Vehicle", vn["name"], force=True, ignore_permissions=True)
+					frappe.delete_doc("Fleet Vehicle", vn["name"], force=True, ignore_permissions=True)
 
 		self.model_id = ensure_master_data()
 		self.vehicle_service = VehicleService()
@@ -103,7 +103,7 @@ class TestEndToEndFleetLifecycle:
 		assert vehicle_id is not None
 
 		from fleet_management.services.vehicle_state_manager import VehicleStateManager
-		frappe.db.set_value("Vehicle", vehicle_id, "status", "Available")
+		frappe.db.set_value("Fleet Vehicle", vehicle_id, "status", "Available")
 		VehicleStateManager.recalculate_vehicle_state(vehicle_id)
 
 		# -------------------------------------------------------------
@@ -262,8 +262,8 @@ class TestEndToEndFleetLifecycle:
 		# -------------------------------------------------------------
 		# 12. Verify Role Permissions Enforcement
 		# -------------------------------------------------------------
-		user_perm = self.evaluator.evaluate("Fleet User", "Vehicle", "create")
+		user_perm = self.evaluator.evaluate("Fleet User", "Fleet Vehicle", "create")
 		assert user_perm["allowed"] is False
 
-		mgr_perm = self.evaluator.evaluate("Fleet Manager", "Vehicle", "create")
+		mgr_perm = self.evaluator.evaluate("Fleet Manager", "Fleet Vehicle", "create")
 		assert mgr_perm["allowed"] is True

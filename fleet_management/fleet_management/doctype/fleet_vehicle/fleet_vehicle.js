@@ -1,4 +1,4 @@
-frappe.ui.form.on('Vehicle', {
+frappe.ui.form.on('Fleet Vehicle', {
 	setup: function(frm) {
 		// Filter Vehicle Model based on selected Brand
 		frm.set_query('vehicle_model', function() {

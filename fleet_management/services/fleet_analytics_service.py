@@ -39,12 +39,12 @@ class FleetAnalyticsService(BaseService):
 		"""Calculates executive KPI cards for Desk Workspace (<30-second fleet understanding)."""
 		filters = {"company": company} if company else {}
 
-		total_vehicles = frappe.db.count("Vehicle", filters=filters) if hasattr(frappe, "db") else 0
-		active_vehicles = frappe.db.count("Vehicle", filters={**filters, "status": ["in", [VehicleStatus.AVAILABLE, VehicleStatus.ASSIGNED]]}) if hasattr(frappe, "db") else 0
-		assigned_vehicles = frappe.db.count("Vehicle", filters={**filters, "status": VehicleStatus.ASSIGNED}) if hasattr(frappe, "db") else 0
-		available_vehicles = frappe.db.count("Vehicle", filters={**filters, "status": VehicleStatus.AVAILABLE}) if hasattr(frappe, "db") else 0
-		maintenance_vehicles = frappe.db.count("Vehicle", filters={**filters, "status": VehicleStatus.UNDER_MAINTENANCE}) if hasattr(frappe, "db") else 0
-		overdue_maintenance = frappe.db.count("Vehicle", filters={**filters, "status": VehicleStatus.MAINTENANCE_DUE}) if hasattr(frappe, "db") else 0
+		total_vehicles = frappe.db.count("Fleet Vehicle", filters=filters) if hasattr(frappe, "db") else 0
+		active_vehicles = frappe.db.count("Fleet Vehicle", filters={**filters, "status": ["in", [VehicleStatus.AVAILABLE, VehicleStatus.ASSIGNED]]}) if hasattr(frappe, "db") else 0
+		assigned_vehicles = frappe.db.count("Fleet Vehicle", filters={**filters, "status": VehicleStatus.ASSIGNED}) if hasattr(frappe, "db") else 0
+		available_vehicles = frappe.db.count("Fleet Vehicle", filters={**filters, "status": VehicleStatus.AVAILABLE}) if hasattr(frappe, "db") else 0
+		maintenance_vehicles = frappe.db.count("Fleet Vehicle", filters={**filters, "status": VehicleStatus.UNDER_MAINTENANCE}) if hasattr(frappe, "db") else 0
+		overdue_maintenance = frappe.db.count("Fleet Vehicle", filters={**filters, "status": VehicleStatus.MAINTENANCE_DUE}) if hasattr(frappe, "db") else 0
 
 		today = frappe.utils.nowdate() if hasattr(frappe, "utils") else "2026-07-24"
 		today_fuel_entries = frappe.db.count("Fuel Entry", filters={**filters, "fuel_date": today, "status": ["!=", "Cancelled"]}) if hasattr(frappe, "db") else 0
@@ -77,26 +77,26 @@ class FleetAnalyticsService(BaseService):
 			return alerts
 
 		# 1. Critical Alert: Vehicles Under Maintenance or Overdue
-		overdue_vehicles = frappe.get_all("Vehicle", filters={**filters, "status": VehicleStatus.MAINTENANCE_DUE}, fields=["name", "vehicle_number"])
+		overdue_vehicles = frappe.get_all("Fleet Vehicle", filters={**filters, "status": VehicleStatus.MAINTENANCE_DUE}, fields=["name", "vehicle_number"])
 		for v in overdue_vehicles:
 			alerts.append({
 				"severity": "Critical",
 				"category": "Maintenance Overdue",
 				"title": f"Maintenance Overdue: {v.vehicle_number}",
 				"message": f"Vehicle '{v.vehicle_number}' is overdue for scheduled maintenance. Fuel entry is locked.",
-				"reference_doctype": "Vehicle",
+				"reference_doctype": "Fleet Vehicle",
 				"reference_name": v.name
 			})
 
 		# 2. Warning Alert: Fuel Locked Vehicles
-		maint_locked = frappe.get_all("Vehicle", filters={**filters, "status": VehicleStatus.UNDER_MAINTENANCE}, fields=["name", "vehicle_number"])
+		maint_locked = frappe.get_all("Fleet Vehicle", filters={**filters, "status": VehicleStatus.UNDER_MAINTENANCE}, fields=["name", "vehicle_number"])
 		for v in maint_locked:
 			alerts.append({
 				"severity": "Warning",
 				"category": "Fuel Locked",
 				"title": f"Vehicle Fuel Locked: {v.vehicle_number}",
 				"message": f"Vehicle '{v.vehicle_number}' is under maintenance. Complete work order to unlock fueling.",
-				"reference_doctype": "Vehicle",
+				"reference_doctype": "Fleet Vehicle",
 				"reference_name": v.name
 			})
 

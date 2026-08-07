@@ -34,7 +34,7 @@ class VehicleService(BaseService):
 		"""
 		logger.info("Registering new vehicle via VehicleService", {"vehicle_number": payload.get("vehicle_number")})
 		doc = frappe.get_doc({
-			"doctype": "Vehicle",
+			"doctype": "Fleet Vehicle",
 			**payload
 		})
 		doc.insert()
@@ -43,9 +43,9 @@ class VehicleService(BaseService):
 
 	def update_vehicle(self, vehicle_id: str, updates: Dict[str, Any]) -> Dict[str, Any]:
 		"""Updates vehicle parameters through service boundary."""
-		if not frappe.db.exists("Vehicle", vehicle_id):
+		if not frappe.db.exists("Fleet Vehicle", vehicle_id):
 			raise FleetNotFoundError(f"Vehicle '{vehicle_id}' not found.")
-		doc = frappe.get_doc("Vehicle", vehicle_id)
+		doc = frappe.get_doc("Fleet Vehicle", vehicle_id)
 		doc.update(updates)
 		doc.save()
 		VehicleEventDispatcher.notify_vehicle_updated(doc)
@@ -62,10 +62,10 @@ class VehicleService(BaseService):
 		Single Source of Truth method for changing vehicle status.
 		Enforces state machine transitions, event dispatching, and audit logging.
 		"""
-		if not frappe.db.exists("Vehicle", vehicle_id):
+		if not frappe.db.exists("Fleet Vehicle", vehicle_id):
 			raise FleetNotFoundError(f"Vehicle '{vehicle_id}' not found.")
 
-		doc = frappe.get_doc("Vehicle", vehicle_id)
+		doc = frappe.get_doc("Fleet Vehicle", vehicle_id)
 		old_status = doc.status
 
 		if old_status == new_status:
@@ -84,7 +84,7 @@ class VehicleService(BaseService):
 		validator.raise_if_invalid()
 
 		# Perform mutation bypass read-only check safely inside service
-		frappe.db.set_value("Vehicle", vehicle_id, "status", new_status)
+		frappe.db.set_value("Fleet Vehicle", vehicle_id, "status", new_status)
 		doc.status = new_status
 
 		logger.info(
@@ -102,24 +102,24 @@ class VehicleService(BaseService):
 	def activate_vehicle(self, vehicle_id: str) -> bool:
 		"""Activates an inactive or draft vehicle."""
 		res = self.change_status(vehicle_id, VehicleStatus.AVAILABLE, reason="Activated via VehicleService")
-		if res and frappe.db.exists("Vehicle", vehicle_id):
-			doc = frappe.get_doc("Vehicle", vehicle_id)
+		if res and frappe.db.exists("Fleet Vehicle", vehicle_id):
+			doc = frappe.get_doc("Fleet Vehicle", vehicle_id)
 			VehicleEventDispatcher.notify_vehicle_created(doc)
 		return res
 
 	def deactivate_vehicle(self, vehicle_id: str, reason: str | None = None) -> bool:
 		"""Deactivates an active vehicle."""
 		res = self.change_status(vehicle_id, VehicleStatus.INACTIVE, reason=reason or "Deactivated via VehicleService")
-		if res and frappe.db.exists("Vehicle", vehicle_id):
-			doc = frappe.get_doc("Vehicle", vehicle_id)
+		if res and frappe.db.exists("Fleet Vehicle", vehicle_id):
+			doc = frappe.get_doc("Fleet Vehicle", vehicle_id)
 			VehicleEventDispatcher.notify_vehicle_deactivated(doc)
 		return res
 
 	def archive_vehicle(self, vehicle_id: str) -> bool:
 		"""Archives a vehicle."""
 		res = self.change_status(vehicle_id, VehicleStatus.ARCHIVED, reason="Archived via VehicleService")
-		if res and frappe.db.exists("Vehicle", vehicle_id):
-			doc = frappe.get_doc("Vehicle", vehicle_id)
+		if res and frappe.db.exists("Fleet Vehicle", vehicle_id):
+			doc = frappe.get_doc("Fleet Vehicle", vehicle_id)
 			VehicleEventDispatcher.notify_vehicle_archived(doc)
 		return res
 
@@ -136,7 +136,7 @@ class VehicleService(BaseService):
 		if company:
 			filters["company"] = company
 
-		all_vehicles = frappe.get_all("Vehicle", filters=filters, fields=["name", "status"])
+		all_vehicles = frappe.get_all("Fleet Vehicle", filters=filters, fields=["name", "status"])
 
 		counts = {
 			"total_vehicles": len(all_vehicles),
@@ -150,10 +150,10 @@ class VehicleService(BaseService):
 
 	def get_vehicle_summary(self, vehicle_id: str) -> Dict[str, Any]:
 		"""Retrieves summary for target vehicle."""
-		if not frappe.db.exists("Vehicle", vehicle_id):
+		if not frappe.db.exists("Fleet Vehicle", vehicle_id):
 			raise FleetNotFoundError(f"Vehicle '{vehicle_id}' not found.")
 
-		doc = frappe.get_doc("Vehicle", vehicle_id)
+		doc = frappe.get_doc("Fleet Vehicle", vehicle_id)
 		asset_counts = self.get_asset_counts(vehicle_id)
 		return {
 			"vehicle_id": doc.name,
@@ -177,7 +177,7 @@ class VehicleService(BaseService):
 	) -> List[Dict[str, Any]]:
 		"""Returns list of vehicles filtered by query criteria."""
 		return frappe.get_list(
-			"Vehicle",
+			"Fleet Vehicle",
 			filters=filters or {},
 			fields=[
 				"name", "vehicle_number", "vehicle_name", "vehicle_brand",
@@ -192,7 +192,7 @@ class VehicleService(BaseService):
 		"""Retrieves chronological vehicle event history."""
 		return frappe.get_all(
 			"Activity Log",
-			filters={"reference_doctype": "Vehicle", "reference_name": vehicle_id},
+			filters={"reference_doctype": "Fleet Vehicle", "reference_name": vehicle_id},
 			fields=["name", "user", "subject", "creation"],
 			order_by="creation desc",
 			limit=limit
@@ -202,26 +202,26 @@ class VehicleService(BaseService):
 
 	def prepare_assignment(self, vehicle_id: str) -> Dict[str, Any]:
 		"""Preparation contract hook for Vehicle Assignment module."""
-		doc = frappe.get_doc("Vehicle", vehicle_id)
+		doc = frappe.get_doc("Fleet Vehicle", vehicle_id)
 		return {"vehicle_id": vehicle_id, "can_assign": doc.status == VehicleStatus.AVAILABLE}
 
 	def prepare_fuel(self, vehicle_id: str) -> Dict[str, Any]:
 		"""Preparation contract hook for Fuel Entry module."""
-		doc = frappe.get_doc("Vehicle", vehicle_id)
+		doc = frappe.get_doc("Fleet Vehicle", vehicle_id)
 		return {"vehicle_id": vehicle_id, "can_fuel": doc.status != VehicleStatus.UNDER_MAINTENANCE}
 
 	def prepare_maintenance(self, vehicle_id: str) -> Dict[str, Any]:
 		"""Preparation contract hook for Maintenance module."""
-		doc = frappe.get_doc("Vehicle", vehicle_id)
+		doc = frappe.get_doc("Fleet Vehicle", vehicle_id)
 		return {"vehicle_id": vehicle_id, "status": doc.status}
 
 	# --- Digital Asset Management Methods ---
 
 	def get_asset_counts(self, vehicle_id: str) -> Dict[str, int]:
 		"""Returns document and image counts for a vehicle."""
-		if not frappe.db.exists("Vehicle", vehicle_id):
+		if not frappe.db.exists("Fleet Vehicle", vehicle_id):
 			return {"document_count": 0, "image_count": 0}
-		doc = frappe.get_doc("Vehicle", vehicle_id)
+		doc = frappe.get_doc("Fleet Vehicle", vehicle_id)
 		return {
 			"document_count": len(getattr(doc, "documents", []) or []),
 			"image_count": len(getattr(doc, "images", []) or [])
@@ -229,9 +229,9 @@ class VehicleService(BaseService):
 
 	def get_primary_image(self, vehicle_id: str) -> str | None:
 		"""Retrieves primary image URL for vehicle gallery."""
-		if not frappe.db.exists("Vehicle", vehicle_id):
+		if not frappe.db.exists("Fleet Vehicle", vehicle_id):
 			return None
-		doc = frappe.get_doc("Vehicle", vehicle_id)
+		doc = frappe.get_doc("Fleet Vehicle", vehicle_id)
 		for img in (getattr(doc, "images", []) or []):
 			if getattr(img, "is_primary", 0):
 				return getattr(img, "image", None)
@@ -241,9 +241,9 @@ class VehicleService(BaseService):
 
 	def get_document_summary(self, vehicle_id: str) -> List[Dict[str, Any]]:
 		"""Returns structured list of documents for a vehicle."""
-		if not frappe.db.exists("Vehicle", vehicle_id):
+		if not frappe.db.exists("Fleet Vehicle", vehicle_id):
 			return []
-		doc = frappe.get_doc("Vehicle", vehicle_id)
+		doc = frappe.get_doc("Fleet Vehicle", vehicle_id)
 		result = []
 		for d in (getattr(doc, "documents", []) or []):
 			result.append({
@@ -266,7 +266,7 @@ def sync_vehicle_operational_summary(vehicle_id: str):
 	Central Operational Summary Synchronization Engine.
 	Recalculates and saves Operational Summary fields on target Vehicle DB doc via FleetStatisticsManager.
 	"""
-	if not hasattr(frappe, "db") or not vehicle_id or not frappe.db.exists("Vehicle", vehicle_id):
+	if not hasattr(frappe, "db") or not vehicle_id or not frappe.db.exists("Fleet Vehicle", vehicle_id):
 		return
 
 	from fleet_management.services.fleet_statistics_manager import FleetStatisticsManager
@@ -277,7 +277,7 @@ def sync_all_vehicles_operational_summary():
 	"""One-time or batch sync method across all vehicles in system."""
 	if not hasattr(frappe, "get_all"):
 		return
-	vehicles = frappe.get_all("Vehicle", fields=["name"])
+	vehicles = frappe.get_all("Fleet Vehicle", fields=["name"])
 	for v in vehicles:
 		sync_vehicle_operational_summary(v.name)
 
@@ -286,7 +286,7 @@ def is_vehicle_assigned(vehicle_id: str) -> bool:
 	"""
 	Determines whether a vehicle is currently assigned via active Vehicle Assignment.
 	"""
-	if not vehicle_id or not hasattr(frappe, "db") or not frappe.db.exists("Vehicle", vehicle_id):
+	if not vehicle_id or not hasattr(frappe, "db") or not frappe.db.exists("Fleet Vehicle", vehicle_id):
 		return False
 
 	return bool(frappe.db.exists(
@@ -309,11 +309,11 @@ def update_vehicle_status_on_maintenance_change(doc, method=None):
 	- When Work Order is cancelled while vehicle is 'Under Maintenance':
 	  - Restores status to 'Assigned' (if assigned) or 'Available' (if unassigned).
 	"""
-	if not getattr(doc, "vehicle", None) or not hasattr(frappe, "db") or not frappe.db.exists("Vehicle", doc.vehicle):
+	if not getattr(doc, "vehicle", None) or not hasattr(frappe, "db") or not frappe.db.exists("Fleet Vehicle", doc.vehicle):
 		return
 
 	vehicle_id = doc.vehicle
-	current_v_status = frappe.db.get_value("Vehicle", vehicle_id, "status")
+	current_v_status = frappe.db.get_value("Fleet Vehicle", vehicle_id, "status")
 	wo_status = getattr(doc, "status", None)
 # Document Event Handlers called by Frappe Hooks
 def on_fuel_entry_change(doc, method=None):

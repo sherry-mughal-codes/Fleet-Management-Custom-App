@@ -80,7 +80,7 @@ class FleetHealthService(BaseService):
 
 		try:
 			vehicles = frappe.db.get_all(
-				"Vehicle",
+				"Fleet Vehicle",
 				fields=["name", "vehicle_number", "current_odometer", "initial_odometer"]
 			)
 			for v in vehicles:
@@ -90,7 +90,7 @@ class FleetHealthService(BaseService):
 					issues.append({
 						"category": "Odometer Consistency",
 						"severity": "Critical",
-						"reference_doctype": "Vehicle",
+						"reference_doctype": "Fleet Vehicle",
 						"reference_name": v.name,
 						"description": f"Vehicle {v.name} current odometer ({current}) is less than initial odometer ({initial})."
 					})
@@ -135,7 +135,7 @@ class FleetHealthService(BaseService):
 			# Verify Assignments
 			assignments = frappe.db.get_all("Vehicle Assignment", fields=["name", "vehicle", "employee", "company"])
 			for a in assignments:
-				if a.vehicle and not frappe.db.exists("Vehicle", a.vehicle):
+				if a.vehicle and not frappe.db.exists("Fleet Vehicle", a.vehicle):
 					issues.append({
 						"category": "Broken Reference",
 						"severity": "Critical",
@@ -147,7 +147,7 @@ class FleetHealthService(BaseService):
 			# Verify Fuel Entries
 			fuel_entries = frappe.db.get_all("Fuel Entry", fields=["name", "vehicle", "assignment"])
 			for fe in fuel_entries:
-				if fe.vehicle and not frappe.db.exists("Vehicle", fe.vehicle):
+				if fe.vehicle and not frappe.db.exists("Fleet Vehicle", fe.vehicle):
 					issues.append({
 						"category": "Broken Reference",
 						"severity": "Critical",
@@ -206,14 +206,14 @@ class FleetHealthService(BaseService):
 					issues.append({
 						"category": "Invalid Assignment",
 						"severity": "Critical",
-						"reference_doctype": "Vehicle",
+						"reference_doctype": "Fleet Vehicle",
 						"reference_name": v,
 						"description": f"Vehicle {v} has multiple active assignments simultaneously: {', '.join(assign_ids)}."
 					})
 
 				# Check vehicle status
-				if frappe.db.exists("Vehicle", v):
-					v_status = frappe.db.get_value("Vehicle", v, "status")
+				if frappe.db.exists("Fleet Vehicle", v):
+					v_status = frappe.db.get_value("Fleet Vehicle", v, "status")
 					if v_status in [VehicleStatus.IN_MAINTENANCE, VehicleStatus.DECOMMISSIONED]:
 						issues.append({
 							"category": "Invalid Assignment",

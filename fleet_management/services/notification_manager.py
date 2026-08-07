@@ -57,6 +57,6 @@ class NotificationManager(BaseService):
 			recipients=["administrator@fleetmanagement.local"],
 			subject=subject,
 			message=message,
-			reference_doctype="Vehicle",
+			reference_doctype="Fleet Vehicle",
 			reference_name=vehicle_id
 		)

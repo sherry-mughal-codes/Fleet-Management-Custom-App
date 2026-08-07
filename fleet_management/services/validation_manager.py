@@ -24,7 +24,7 @@ class ValidationManager(BaseService):
 		if exclude_name:
 			filters["name"] = ["!=", exclude_name]
 
-		if frappe.db.exists("Vehicle", filters):
+		if frappe.db.exists("Fleet Vehicle", filters):
 			raise FleetValidationError(f"VEH-001: Vehicle Number '{vehicle_number}' already exists.")
 		return True
 
@@ -37,7 +37,7 @@ class ValidationManager(BaseService):
 		if exclude_name:
 			filters["name"] = ["!=", exclude_name]
 
-		if frappe.db.exists("Vehicle", filters):
+		if frappe.db.exists("Fleet Vehicle", filters):
 			raise FleetValidationError(f"VEH-002: Registration Number '{registration_number}' already exists.")
 		return True
 

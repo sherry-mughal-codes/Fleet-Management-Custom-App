@@ -10,7 +10,7 @@ frappe.ui.form.on('Fuel Entry', {
 		frm.set_query('vehicle', function() {
 			return {
 				filters: [
-					['Vehicle', 'status', 'in', ['Assigned', 'Maintenance Due', 'Inspection', 'Reserved', 'Return Overdue']]
+					['Fleet Vehicle', 'status', 'in', ['Assigned', 'Maintenance Due', 'Inspection', 'Reserved', 'Return Overdue']]
 				]
 			};
 		});
@@ -30,7 +30,7 @@ frappe.ui.form.on('Fuel Entry', {
 	vehicle: function(frm) {
 		if (frm.doc.vehicle) {
 			if (!frm.doc.fuel_type) {
-				frappe.db.get_value('Vehicle', frm.doc.vehicle, 'fuel_type', function(r) {
+				frappe.db.get_value('Fleet Vehicle', frm.doc.vehicle, 'fuel_type', function(r) {
 					if (r && r.fuel_type) {
 						frm.set_value('fuel_type', r.fuel_type);
 					}

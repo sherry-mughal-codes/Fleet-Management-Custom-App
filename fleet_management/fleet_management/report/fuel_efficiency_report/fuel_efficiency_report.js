@@ -2,16 +2,16 @@ frappe.query_reports["Fuel Efficiency Report"] = {
 	"filters": [
 		{
 			"fieldname": "company",
-			"label": __("Company"),
+			"label": __("Fleet Company"),
 			"fieldtype": "Link",
-			"options": "Company",
+			"options": "Fleet Company",
 			"default": frappe.defaults.get_user_default("Company")
 		},
 		{
 			"fieldname": "vehicle",
 			"label": __("Vehicle"),
 			"fieldtype": "Link",
-			"options": "Vehicle"
+			"options": "Fleet Vehicle"
 		},
 		{
 			"fieldname": "employee",

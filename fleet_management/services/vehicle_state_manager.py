@@ -33,11 +33,11 @@ class VehicleStateManager(BaseService):
 		4. Assigned: if there is an active/submitted Vehicle Assignment without return_date.
 		5. Available: default state.
 		"""
-		if not frappe.db.exists("Vehicle", vehicle_id):
+		if not frappe.db.exists("Fleet Vehicle", vehicle_id):
 			raise FleetNotFoundError(f"Vehicle '{vehicle_id}' not found.")
 
 		v_data = frappe.db.get_value(
-			"Vehicle",
+			"Fleet Vehicle",
 			vehicle_id,
 			["status"],
 			as_dict=True
@@ -86,14 +86,14 @@ class VehicleStateManager(BaseService):
 		Calculates and persists the updated operational status for a vehicle.
 		Single point of status persistence for Vehicle records.
 		"""
-		if not vehicle_id or not frappe.db.exists("Vehicle", vehicle_id):
+		if not vehicle_id or not frappe.db.exists("Fleet Vehicle", vehicle_id):
 			return VehicleStatus.AVAILABLE
 
 		new_status = self.calculate_vehicle_state(vehicle_id)
-		old_status = frappe.db.get_value("Vehicle", vehicle_id, "status")
+		old_status = frappe.db.get_value("Fleet Vehicle", vehicle_id, "status")
 
 		if old_status != new_status:
-			frappe.db.set_value("Vehicle", vehicle_id, "status", new_status)
+			frappe.db.set_value("Fleet Vehicle", vehicle_id, "status", new_status)
 			logger.info(
 				f"Vehicle State Recalculated: {vehicle_id} [{old_status} -> {new_status}]",
 				{"reason": reason or "State Manager Recalculation"}
@@ -117,6 +117,6 @@ def sync_all_vehicles():
 	"""Recalculates state for all vehicles in database."""
 	if not hasattr(frappe, "db") or not hasattr(frappe, "get_all"):
 		return
-	vehicles = frappe.get_all("Vehicle", fields=["name"])
+	vehicles = frappe.get_all("Fleet Vehicle", fields=["name"])
 	for v in vehicles:
 		VehicleStateManager.recalculate_vehicle_state(v.get("name"), reason="Batch sync")

@@ -18,11 +18,11 @@ frappe.ui.form.on('Maintenance Template', {
 			});
 
 			let filters = [
-				['Vehicle', 'maintenance_template', 'in', ['', null, current_template]]
+				['Fleet Vehicle', 'maintenance_template', 'in', ['', null, current_template]]
 			];
 
 			if (selected_in_form.length > 0) {
-				filters.push(['Vehicle', 'name', 'not in', selected_in_form]);
+				filters.push(['Fleet Vehicle', 'name', 'not in', selected_in_form]);
 			}
 
 			return { filters: filters };

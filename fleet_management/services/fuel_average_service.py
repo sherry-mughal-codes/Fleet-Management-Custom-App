@@ -50,7 +50,7 @@ class FuelAverageService:
 		# Fallback: vehicle initial_odometer
 		if not previous_odometer and hasattr(frappe, "db") and frappe.db:
 			v_doc = frappe.db.get_value(
-				"Vehicle", vehicle_id, ["initial_odometer"], as_dict=True
+				"Fleet Vehicle", vehicle_id, ["initial_odometer"], as_dict=True
 			)
 			if v_doc:
 				previous_odometer = float(v_doc.get("initial_odometer") or 0.0)

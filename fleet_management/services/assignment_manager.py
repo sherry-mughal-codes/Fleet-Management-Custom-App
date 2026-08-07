@@ -39,10 +39,10 @@ class AssignmentManager(BaseService):
 		Checks that a vehicle is currently available for assignment.
 		Enforces ASSIGN-001 rule.
 		"""
-		if not frappe.db.exists("Vehicle", vehicle_id):
+		if not frappe.db.exists("Fleet Vehicle", vehicle_id):
 			raise FleetNotFoundError(f"Vehicle '{vehicle_id}' not found.")
 
-		v_status = frappe.db.get_value("Vehicle", vehicle_id, "status")
+		v_status = frappe.db.get_value("Fleet Vehicle", vehicle_id, "status")
 		if v_status != VehicleStatus.AVAILABLE:
 			rule = AssignmentVehicleAvailabilityRule({"vehicle_status": v_status})
 			rule.raise_if_violated()
@@ -95,13 +95,13 @@ class AssignmentManager(BaseService):
 		doc = frappe.get_doc("Vehicle Assignment", assignment_id)
 
 		# 1. Acquire DB Concurrency Lock on Vehicle
-		frappe.db.sql("SELECT name FROM `tabVehicle` WHERE name=%s FOR UPDATE", (doc.vehicle,))
+		frappe.db.sql("SELECT name FROM `tabFleet Vehicle` WHERE name=%s FOR UPDATE", (doc.vehicle,))
 
 		# 2. Validate Vehicle Availability
 		self.validate_vehicle_availability(doc.vehicle)
 
 		# 3. Odometer Verification — use initial_odometer as baseline
-		v_odo = float(frappe.db.get_value("Vehicle", doc.vehicle, "initial_odometer") or 0.0)
+		v_odo = float(frappe.db.get_value("Fleet Vehicle", doc.vehicle, "initial_odometer") or 0.0)
 		if opening_odometer is not None:
 			odometer_rule = AssignmentOdometerIntegrityRule({
 				"opening_odometer": opening_odometer,

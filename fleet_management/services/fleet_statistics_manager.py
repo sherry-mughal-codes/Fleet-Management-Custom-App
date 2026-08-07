@@ -20,7 +20,7 @@ class FleetStatisticsManager:
 	@classmethod
 	def recalculate_vehicle_statistics(cls, vehicle_id: str) -> Dict[str, Any]:
 		"""Recalculates lifetime fuel average, maintenance costs, and Cost Per KM for a vehicle."""
-		if not hasattr(frappe, "db") or not frappe.db or not frappe.db.exists("Vehicle", vehicle_id):
+		if not hasattr(frappe, "db") or not frappe.db or not frappe.db.exists("Fleet Vehicle", vehicle_id):
 			return {}
 
 		# Fetch all assignments for this vehicle
@@ -74,7 +74,7 @@ class FleetStatisticsManager:
 		last_maint_odo = float(maint_entries[-1].get("current_odometer") or 0.0) if maint_entries else 0.0
 
 		# 3. Overall Vehicle Odometer & Cost Per KM
-		v_doc = frappe.get_doc("Vehicle", vehicle_id)
+		v_doc = frappe.get_doc("Fleet Vehicle", vehicle_id)
 		init_odo = float(v_doc.initial_odometer or 0.0)
 		curr_odo = max(init_odo, last_fuel_odo, last_maint_odo)
 		total_distance_driven = max(curr_odo - init_odo, 0.0)
@@ -130,7 +130,7 @@ class FleetStatisticsManager:
 		if not hasattr(frappe, "db") or not frappe.db:
 			return {}
 
-		vehicles = frappe.get_all("Vehicle", filters={"company": company} if company else {}, fields=["name"]) if hasattr(frappe, "get_all") else []
+		vehicles = frappe.get_all("Fleet Vehicle", filters={"company": company} if company else {}, fields=["name"]) if hasattr(frappe, "get_all") else []
 		for v in vehicles:
 			cls.recalculate_vehicle_statistics(v["name"])
 
@@ -144,12 +144,12 @@ class FleetStatisticsManager:
 
 		filters = {"company": company} if company else {}
 
-		total_vehicles = frappe.db.count("Vehicle", filters=filters)
-		available_vehicles = frappe.db.count("Vehicle", filters={**filters, "status": "Available"})
+		total_vehicles = frappe.db.count("Fleet Vehicle", filters=filters)
+		available_vehicles = frappe.db.count("Fleet Vehicle", filters={**filters, "status": "Available"})
 		assigned_vehicles = frappe.db.count("Vehicle Assignment", filters={**filters, "docstatus": 1, "status": "Assigned"})
-		maintenance_due = frappe.db.count("Vehicle", filters={**filters, "status": "Maintenance Due"})
-		under_maintenance = frappe.db.count("Vehicle", filters={**filters, "status": "Under Maintenance"})
-		fuel_locked = frappe.db.count("Vehicle", filters={**filters, "status": "Fuel Locked"})
+		maintenance_due = frappe.db.count("Fleet Vehicle", filters={**filters, "status": "Maintenance Due"})
+		under_maintenance = frappe.db.count("Fleet Vehicle", filters={**filters, "status": "Under Maintenance"})
+		fuel_locked = frappe.db.count("Fleet Vehicle", filters={**filters, "status": "Fuel Locked"})
 
 		# Fuel and Maintenance Spends
 		fuel_entries = frappe.get_all("Fuel Entry", filters={"docstatus": 1}, fields=["total_cost"]) if hasattr(frappe, "get_all") else []

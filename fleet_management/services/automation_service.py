@@ -85,12 +85,12 @@ class FleetAutomationService(BaseService):
 		try:
 			v_fields = ["name"]
 			if hasattr(frappe, "get_meta"):
-				meta = frappe.get_meta("Vehicle")
+				meta = frappe.get_meta("Fleet Vehicle")
 				if meta.has_field("registration_number"):
 					v_fields.append("registration_number")
 
 			vehicles = frappe.db.get_all(
-				"Vehicle",
+				"Fleet Vehicle",
 				filters={"status": ["!=", VehicleStatus.DECOMMISSIONED]},
 				fields=v_fields
 			)
@@ -107,14 +107,14 @@ class FleetAutomationService(BaseService):
 						recipients=recipients,
 						subject=f"OVERDUE: Maintenance Required for {v_id}",
 						message=f"Vehicle {v_id} ({getattr(v, 'registration_number', v_id)}) has exceeded its maintenance threshold.",
-						reference_doctype="Vehicle",
+						reference_doctype="Fleet Vehicle",
 						reference_name=v_id,
 						enqueue_background=False
 					)
 					reminders_sent += 1
 				else:
 					next_due = MaintenanceDueEngine.calculate_next_due_odometer(v_id)
-					curr_odo = float(frappe.db.get_value("Vehicle", v_id, "initial_odometer") or 0.0)
+					curr_odo = float(frappe.db.get_value("Fleet Vehicle", v_id, "initial_odometer") or 0.0)
 					if (next_due - curr_odo) <= reminder_dist:
 						upcoming_count += 1
 						recipients = FleetNotificationService.get_authorized_recipients("Fleet Manager")
@@ -123,7 +123,7 @@ class FleetAutomationService(BaseService):
 							recipients=recipients,
 							subject=f"UPCOMING: Maintenance Scheduled for {v_id}",
 							message=f"Vehicle {v_id} is within {int(next_due - curr_odo)} KM of required maintenance.",
-							reference_doctype="Vehicle",
+							reference_doctype="Fleet Vehicle",
 							reference_name=v_id,
 							enqueue_background=False
 						)
@@ -153,7 +153,7 @@ class FleetAutomationService(BaseService):
 		try:
 			threshold_pct = SettingsService.get_fuel_anomaly_threshold()
 			v_fields = ["name"]
-			meta = frappe.get_meta("Vehicle")
+			meta = frappe.get_meta("Fleet Vehicle")
 			if meta.has_field("registration_number"):
 				v_fields.append("registration_number")
 			if meta.has_field("last_fuel_average"):
@@ -162,7 +162,7 @@ class FleetAutomationService(BaseService):
 				v_fields.append("last_fuel_date")
 
 			vehicles = frappe.db.get_all(
-				"Vehicle",
+				"Fleet Vehicle",
 				filters={"status": VehicleStatus.ASSIGNED},
 				fields=v_fields
 			)
@@ -184,7 +184,7 @@ class FleetAutomationService(BaseService):
 							recipients=recipients,
 							subject=f"ALERT: Abnormal Fuel Usage for {v_id}",
 							message=f"Vehicle {v_id} reported a fuel efficiency drop of {round(drop_pct, 1)}% below lifetime baseline.",
-							reference_doctype="Vehicle",
+							reference_doctype="Fleet Vehicle",
 							reference_name=v_id,
 							enqueue_background=False
 						)

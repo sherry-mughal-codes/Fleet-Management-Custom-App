@@ -44,7 +44,7 @@ class MaintenanceService(BaseService):
 		if "maintenance_date" not in payload or not payload["maintenance_date"]:
 			payload["maintenance_date"] = frappe.utils.nowdate() if hasattr(frappe, "utils") else "2026-07-29"
 		if ("current_odometer" not in payload or not payload["current_odometer"]) and payload.get("vehicle"):
-			v_odo = float(frappe.db.get_value("Vehicle", payload["vehicle"], "current_odometer") or 10000.0) if hasattr(frappe, "db") else 10000.0
+			v_odo = float(frappe.db.get_value("Fleet Vehicle", payload["vehicle"], "current_odometer") or 10000.0) if hasattr(frappe, "db") else 10000.0
 			payload["current_odometer"] = v_odo
 		return self.create_maintenance_entry(payload)
 
@@ -54,7 +54,7 @@ class MaintenanceService(BaseService):
 		if "maintenance_date" not in payload or not payload["maintenance_date"]:
 			payload["maintenance_date"] = frappe.utils.nowdate() if hasattr(frappe, "utils") else "2026-07-29"
 		if ("current_odometer" not in payload or not payload["current_odometer"]) and payload.get("vehicle"):
-			v_odo = float(frappe.db.get_value("Vehicle", payload["vehicle"], "current_odometer") or 10000.0) if hasattr(frappe, "db") else 10000.0
+			v_odo = float(frappe.db.get_value("Fleet Vehicle", payload["vehicle"], "current_odometer") or 10000.0) if hasattr(frappe, "db") else 10000.0
 			payload["current_odometer"] = v_odo
 		return self.create_maintenance_entry(payload)
 
@@ -121,7 +121,7 @@ class MaintenanceService(BaseService):
 	def get_vehicle_reliability_rankings(self, company: str | None = None, limit: int = 10) -> List[Dict[str, Any]]:
 		"""Returns top vehicles ranked by fewest maintenance requests."""
 		return frappe.get_all(
-			"Vehicle",
+			"Fleet Vehicle",
 			filters={"company": company} if company else {},
 			fields=["name", "vehicle_number", "vehicle_brand", "vehicle_model", "current_odometer", "status"],
 			order_by="creation desc",
@@ -143,7 +143,7 @@ class MaintenanceService(BaseService):
 
 	def get_summary(self, vehicle_id: str) -> Dict[str, Any]:
 		"""Retrieves summary maintenance statistics for a vehicle."""
-		if not frappe.db.exists("Vehicle", vehicle_id):
+		if not frappe.db.exists("Fleet Vehicle", vehicle_id):
 			raise FleetNotFoundError(f"Vehicle '{vehicle_id}' not found.")
 
 		asn_names = [a.name for a in frappe.get_all("Vehicle Assignment", filters={"vehicle": vehicle_id}, fields=["name"])] if hasattr(frappe, "get_all") else []

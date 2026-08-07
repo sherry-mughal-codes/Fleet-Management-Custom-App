@@ -10,7 +10,7 @@ from fleet_management.business_rules.vehicle_rules import (
 	VehicleScrapAssignmentRule,
 )
 from fleet_management.enums import VehicleStatus
-from fleet_management.fleet_management.doctype.vehicle.vehicle import Vehicle
+from fleet_management.fleet_management.doctype.fleet_vehicle.fleet_vehicle import FleetVehicle as Vehicle
 from fleet_management.fleet_management.doctype.vehicle_image_detail.vehicle_image_detail import (
 	VehicleImageDetail,
 )

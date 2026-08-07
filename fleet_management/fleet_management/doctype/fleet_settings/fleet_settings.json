@@ -30,8 +30,8 @@
   {
    "fieldname": "company",
    "fieldtype": "Link",
-   "label": "Default Company",
-   "options": "Company"
+   "label": "Default Fleet Company",
+   "options": "Fleet Company"
   },
   {
    "default": "PKR",

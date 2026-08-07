@@ -17,7 +17,7 @@ class TestOperationalSummarySync:
 
 	def test_operational_summary_recalculation(self):
 		"""Verifies that operational summary fields update cleanly from database records."""
-		vehicles = frappe.get_all("Vehicle", fields=["name", "vehicle_number"])
+		vehicles = frappe.get_all("Fleet Vehicle", fields=["name", "vehicle_number"])
 		if not vehicles:
 			pytest.skip("No vehicles available in DB for testing.")
 
@@ -26,14 +26,14 @@ class TestOperationalSummarySync:
 
 		target_v = None
 		for v in vehicles:
-			if frappe.db.exists("Vehicle", v["name"]):
+			if frappe.db.exists("Fleet Vehicle", v["name"]):
 				target_v = v["name"]
 				break
 
 		if not target_v:
 			pytest.skip("No valid vehicle document exists in DB.")
 
-		v_doc = frappe.get_doc("Vehicle", target_v)
+		v_doc = frappe.get_doc("Fleet Vehicle", target_v)
 
 		# Explicitly trigger sync_operational_summary method
 		v_doc.sync_operational_summary()

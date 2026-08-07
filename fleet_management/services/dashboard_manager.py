@@ -23,7 +23,7 @@ class DashboardManager(BaseService):
 		if company:
 			filters["company"] = company
 
-		all_vehicles = frappe.get_all("Vehicle", filters=filters, fields=["name", "status"]) if hasattr(frappe, "get_all") else []
+		all_vehicles = frappe.get_all("Fleet Vehicle", filters=filters, fields=["name", "status"]) if hasattr(frappe, "get_all") else []
 
 		counts = {
 			"total_vehicles": len(all_vehicles),

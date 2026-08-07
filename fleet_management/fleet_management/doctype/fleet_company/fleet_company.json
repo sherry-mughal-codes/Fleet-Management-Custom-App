@@ -19,7 +19,7 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "in_standard_filter": 1,
-   "label": "Company Name",
+   "label": "Fleet Company Name",
    "reqd": 1,
    "unique": 1
   },
@@ -62,10 +62,10 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-07-31 07:10:00.000000",
+ "modified": "2026-08-07 11:50:00.000000",
  "modified_by": "Administrator",
  "module": "Fleet Management",
- "name": "Company",
+ "name": "Fleet Company",
  "owner": "Administrator",
  "permissions": [
   {

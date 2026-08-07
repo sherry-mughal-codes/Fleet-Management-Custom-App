@@ -68,7 +68,7 @@ class FuelIntelligenceEngine:
 				logger.warning(f"Smart odometer step 1 failed: {e}")
 
 			# Step 2 — Vehicle current_odometer
-			curr = frappe.db.get_value("Vehicle", vehicle_id, "current_odometer")
+			curr = frappe.db.get_value("Fleet Vehicle", vehicle_id, "current_odometer")
 			if curr and float(curr) > 0:
 				return float(curr)
 

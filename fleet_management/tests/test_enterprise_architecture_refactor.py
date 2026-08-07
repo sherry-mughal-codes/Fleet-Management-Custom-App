@@ -29,7 +29,7 @@ from fleet_management.utils.exceptions import FleetBusinessLogicError, FleetMana
 def test_vehicle_state_manager_calculation_available():
 	"""Verify VehicleStateManager calculates Available status when no assignments or maintenance exist."""
 	with patch("frappe.db.exists") as mock_exists, patch("frappe.db.get_value") as mock_get_val:
-		mock_exists.side_effect = lambda dt, filters: dt == "Vehicle"
+		mock_exists.side_effect = lambda dt, filters: dt == "Fleet Vehicle"
 		mock_get_val.return_value = {
 			"status": "Available",
 			"current_odometer": 1000.0,
@@ -44,7 +44,7 @@ def test_vehicle_state_manager_calculation_available():
 def test_vehicle_state_manager_calculation_assigned():
 	"""Verify VehicleStateManager calculates Assigned status when vehicle has active assignment."""
 	with patch("frappe.db.exists") as mock_exists, patch("frappe.db.get_value") as mock_get_val:
-		mock_exists.side_effect = lambda dt, filters: dt in ("Vehicle", "Vehicle Assignment")
+		mock_exists.side_effect = lambda dt, filters: dt in ("Fleet Vehicle", "Vehicle Assignment")
 		mock_get_val.return_value = {
 			"status": "Assigned",
 			"current_odometer": 1000.0,
@@ -59,7 +59,7 @@ def test_vehicle_state_manager_calculation_assigned():
 def test_vehicle_state_manager_calculation_maintenance_due():
 	"""Verify VehicleStateManager calculates Maintenance Due when current_odometer >= next_due."""
 	with patch("frappe.db.exists") as mock_exists, patch("frappe.db.get_value") as mock_get_val:
-		mock_exists.side_effect = lambda dt, filters: dt == "Vehicle"
+		mock_exists.side_effect = lambda dt, filters: dt == "Fleet Vehicle"
 		mock_get_val.return_value = {
 			"status": "Available",
 			"current_odometer": 5500.0,

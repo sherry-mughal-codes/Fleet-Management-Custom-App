@@ -34,7 +34,7 @@ class MaintenanceDueEngine:
 		Derives the current odometer for a vehicle from its most recent fuel entry.
 		Falls back to initial_odometer if no fuel entries exist.
 		"""
-		if not hasattr(frappe, "db") or not frappe.db.exists("Vehicle", vehicle_id):
+		if not hasattr(frappe, "db") or not frappe.db.exists("Fleet Vehicle", vehicle_id):
 			return 0.0
 
 		# Derive from highest fuel entry odometer
@@ -48,7 +48,7 @@ class MaintenanceDueEngine:
 			return float(max_fuel_odo)
 
 		# Fallback to initial_odometer
-		return float(frappe.db.get_value("Vehicle", vehicle_id, "initial_odometer") or 0.0)
+		return float(frappe.db.get_value("Fleet Vehicle", vehicle_id, "initial_odometer") or 0.0)
 
 	@staticmethod
 	def calculate_next_due_odometer(vehicle_id: str, completion_odometer: float | None = None, override_interval: float | None = None) -> float:
@@ -73,7 +73,7 @@ class MaintenanceDueEngine:
 	@staticmethod
 	def is_maintenance_overdue(vehicle_id: str, current_odometer: float | None = None) -> bool:
 		"""Determines if vehicle maintenance is overdue based on last maintenance entry."""
-		if not hasattr(frappe, "db") or not frappe.db.exists("Vehicle", vehicle_id):
+		if not hasattr(frappe, "db") or not frappe.db.exists("Fleet Vehicle", vehicle_id):
 			return False
 
 		odometer = float(current_odometer or 0.0)

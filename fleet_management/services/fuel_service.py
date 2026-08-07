@@ -75,7 +75,7 @@ class FuelService(BaseService):
 		if not hasattr(frappe, "db"):
 			return
 
-		v_doc = frappe.get_doc("Vehicle", vehicle_id)
+		v_doc = frappe.get_doc("Fleet Vehicle", vehicle_id)
 
 		update_fields = {}
 		if hasattr(v_doc, "average_fuel_economy"):
@@ -88,7 +88,7 @@ class FuelService(BaseService):
 			update_fields["last_fuel_entry_date"] = fuel_doc.fuel_date
 
 		if update_fields:
-			frappe.db.set_value("Vehicle", vehicle_id, update_fields)
+			frappe.db.set_value("Fleet Vehicle", vehicle_id, update_fields)
 		logger.info(f"Updated Vehicle '{vehicle_id}' stats from Fuel Entry {fuel_doc.name}")
 
 	def update_assignment_statistics(self, assignment_id: str, fuel_doc: Any):
@@ -165,7 +165,7 @@ class FuelService(BaseService):
 	def get_efficiency_rankings(self, company: str | None = None, limit: int = 10) -> List[Dict[str, Any]]:
 		"""Returns top efficient vehicles ranked by fuel average."""
 		return frappe.get_all(
-			"Vehicle",
+			"Fleet Vehicle",
 			filters={"company": company} if company else {},
 			fields=["name", "vehicle_number", "vehicle_brand", "vehicle_model", "average_fuel_economy"],
 			order_by="average_fuel_economy desc",
@@ -174,7 +174,7 @@ class FuelService(BaseService):
 
 	def get_fuel_summary(self, vehicle_id: str) -> Dict[str, Any]:
 		"""Retrieves aggregated fuel summary stats for a vehicle."""
-		if not frappe.db.exists("Vehicle", vehicle_id):
+		if not frappe.db.exists("Fleet Vehicle", vehicle_id):
 			raise FleetNotFoundError(f"Vehicle '{vehicle_id}' not found.")
 
 		asn_names = [a.name for a in frappe.get_all("Vehicle Assignment", filters={"vehicle": vehicle_id}, fields=["name"])]
@@ -238,6 +238,6 @@ class FuelService(BaseService):
 
 	def validate_odometer(self, vehicle_id: str, odometer_reading: float) -> bool:
 		if hasattr(frappe, "db"):
-			v_odometer = frappe.db.get_value("Vehicle", vehicle_id, "current_odometer") or 0.0
+			v_odometer = frappe.db.get_value("Fleet Vehicle", vehicle_id, "current_odometer") or 0.0
 			return float(odometer_reading) >= float(v_odometer)
 		return True

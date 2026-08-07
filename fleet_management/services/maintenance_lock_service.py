@@ -33,10 +33,10 @@ class MaintenanceLockService:
 	@staticmethod
 	def is_maintenance_locked(vehicle_id: str, current_odometer: float | None = None) -> bool:
 		"""Checks if target vehicle is currently maintenance locked."""
-		if not vehicle_id or not hasattr(frappe, "db") or not frappe.db.exists("Vehicle", vehicle_id):
+		if not vehicle_id or not hasattr(frappe, "db") or not frappe.db.exists("Fleet Vehicle", vehicle_id):
 			return False
 
-		v = frappe.db.get_value("Vehicle", vehicle_id, ["status", "current_odometer"], as_dict=True)
+		v = frappe.db.get_value("Fleet Vehicle", vehicle_id, ["status", "current_odometer"], as_dict=True)
 		if not v:
 			return False
 
@@ -56,7 +56,7 @@ class MaintenanceLockService:
 			return True
 
 		# 3. Check legacy next_maintenance_due_odometer fallback
-		next_due = frappe.db.get_value("Vehicle", vehicle_id, "next_maintenance_due_odometer")
+		next_due = frappe.db.get_value("Fleet Vehicle", vehicle_id, "next_maintenance_due_odometer")
 		if next_due and float(next_due) > 0 and odo >= float(next_due):
 			return True
 
@@ -71,16 +71,16 @@ class MaintenanceLockService:
 		if "LOCKED" in str(vehicle_id).upper() or "MAINT" in str(vehicle_id).upper():
 			raise FleetValidationError("FUEL-008: Vehicle is Under Maintenance. Complete maintenance before recording additional fuel.")
 
-		if not hasattr(frappe, "db") or not frappe.db.exists("Vehicle", vehicle_id):
+		if not hasattr(frappe, "db") or not frappe.db.exists("Fleet Vehicle", vehicle_id):
 			return
 
-		v_status = frappe.db.get_value("Vehicle", vehicle_id, "status")
+		v_status = frappe.db.get_value("Fleet Vehicle", vehicle_id, "status")
 		if v_status == VehicleStatus.UNDER_MAINTENANCE:
 			raise FleetValidationError("FUEL-008: Vehicle is Under Maintenance. Complete maintenance before recording additional fuel.")
 
 		from fleet_management.services.maintenance_manager import MaintenanceManager
 		mgr = MaintenanceManager()
-		odo = float(current_odometer or frappe.db.get_value("Vehicle", vehicle_id, "current_odometer") or 0.0)
+		odo = float(current_odometer or frappe.db.get_value("Fleet Vehicle", vehicle_id, "current_odometer") or 0.0)
 		overdue_items = mgr.get_overdue_maintenance(vehicle_id, current_odometer=odo)
 
 		if overdue_items:
@@ -99,22 +99,22 @@ class MaintenanceLockService:
 			if MaintenanceLockService._is_lock_enabled():
 				logger.warning(f"FUEL-008: Fuel lock enforced for vehicle '{vehicle_id}'")
 				# Update vehicle status to Maintenance Due immediately so status reflects in system
-				if frappe.db.get_value("Vehicle", vehicle_id, "status") != VehicleStatus.MAINTENANCE_DUE:
-					frappe.db.set_value("Vehicle", vehicle_id, "status", VehicleStatus.MAINTENANCE_DUE)
-					frappe.clear_document_cache("Vehicle", vehicle_id)
+				if frappe.db.get_value("Fleet Vehicle", vehicle_id, "status") != VehicleStatus.MAINTENANCE_DUE:
+					frappe.db.set_value("Fleet Vehicle", vehicle_id, "status", VehicleStatus.MAINTENANCE_DUE)
+					frappe.clear_document_cache("Fleet Vehicle", vehicle_id)
 					frappe.db.commit()
 				raise FleetValidationError(msg)
 			else:
 				logger.info(f"FUEL-008: Lock disabled in Fleet Settings; showing advisory warning for '{vehicle_id}'")
 				frappe.msgprint(msg, indicator="orange", alert=True)
 
-		next_due = frappe.db.get_value("Vehicle", vehicle_id, "next_maintenance_due_odometer")
+		next_due = frappe.db.get_value("Fleet Vehicle", vehicle_id, "next_maintenance_due_odometer")
 		if next_due and float(next_due) > 0 and odo >= float(next_due):
 			msg = f"FUEL-008: Vehicle has reached maintenance threshold ({int(float(next_due)):,} KM). Complete maintenance before recording fuel."
 			if MaintenanceLockService._is_lock_enabled():
-				if frappe.db.get_value("Vehicle", vehicle_id, "status") != VehicleStatus.MAINTENANCE_DUE:
-					frappe.db.set_value("Vehicle", vehicle_id, "status", VehicleStatus.MAINTENANCE_DUE)
-					frappe.clear_document_cache("Vehicle", vehicle_id)
+				if frappe.db.get_value("Fleet Vehicle", vehicle_id, "status") != VehicleStatus.MAINTENANCE_DUE:
+					frappe.db.set_value("Fleet Vehicle", vehicle_id, "status", VehicleStatus.MAINTENANCE_DUE)
+					frappe.clear_document_cache("Fleet Vehicle", vehicle_id)
 					frappe.db.commit()
 				raise FleetValidationError(msg)
 			else:

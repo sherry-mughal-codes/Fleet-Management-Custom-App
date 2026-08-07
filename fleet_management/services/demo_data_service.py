@@ -44,7 +44,7 @@ class DemoDataService(BaseService):
 		"""Checks if the ABC Logistics demo dataset is currently present."""
 		if not hasattr(frappe, "db"):
 			return False
-		return bool(frappe.db.exists("Vehicle", {"company": DEMO_COMPANY_NAME}))
+		return bool(frappe.db.exists("Fleet Vehicle", {"company": DEMO_COMPANY_NAME}))
 
 	def get_demo_status(self) -> Dict[str, Any]:
 		"""Returns current status of demo dataset in database."""
@@ -52,7 +52,7 @@ class DemoDataService(BaseService):
 			return {"loaded": False, "company": DEMO_COMPANY_NAME, "vehicles_count": 0}
 
 		loaded = self.is_demo_data_loaded()
-		vehicles_count = frappe.db.count("Vehicle", filters={"company": DEMO_COMPANY_NAME}) if loaded else 0
+		vehicles_count = frappe.db.count("Fleet Vehicle", filters={"company": DEMO_COMPANY_NAME}) if loaded else 0
 		fuel_entries_count = frappe.db.count("Fuel Entry") if loaded else 0
 		m_entry_count = frappe.db.count("Maintenance Entry") if loaded else 0
 		maintenance_count = m_entry_count
@@ -138,7 +138,7 @@ class DemoDataService(BaseService):
 
 		if hasattr(frappe, "db") and frappe.db:
 			# Get vehicle names for company
-			v_records = frappe.get_all("Vehicle", filters=[["company", "=", DEMO_COMPANY_NAME]], fields=["name"])
+			v_records = frappe.get_all("Fleet Vehicle", filters=[["company", "=", DEMO_COMPANY_NAME]], fields=["name"])
 			v_names = [r["name"] for r in v_records]
 
 			# 1. Purge Fuel Entries
@@ -170,12 +170,12 @@ class DemoDataService(BaseService):
 
 			# 4. Purge Vehicles
 			for vn in v_names:
-				if frappe.db.exists("Vehicle", vn):
+				if frappe.db.exists("Fleet Vehicle", vn):
 					try:
-						frappe.delete_doc("Vehicle", vn, force=True, ignore_permissions=True)
+						frappe.delete_doc("Fleet Vehicle", vn, force=True, ignore_permissions=True)
 					except Exception:
 						pass
-			deleted_summary["Vehicle"] = len(v_names)
+			deleted_summary["Fleet Vehicle"] = len(v_names)
 
 			# 5. Purge Demo Drivers / Employees
 			demo_users = frappe.get_all("User", filters=[["email", "like", "%demo%@abc-logistics.com"]], fields=["name"])
@@ -186,21 +186,21 @@ class DemoDataService(BaseService):
 					pass
 
 			# 6. Delete Company
-			if frappe.db.exists("Company", DEMO_COMPANY_NAME):
+			if frappe.db.exists("Fleet Company", DEMO_COMPANY_NAME):
 				try:
-					frappe.delete_doc("Company", DEMO_COMPANY_NAME, force=True, ignore_permissions=True)
+					frappe.delete_doc("Fleet Company", DEMO_COMPANY_NAME, force=True, ignore_permissions=True)
 				except Exception:
 					pass
-				deleted_summary["Company"] = 1
+				deleted_summary["Fleet Company"] = 1
 
 			# Direct SQL cleanup safety net
-			for table in ["Fuel Entry", "Maintenance Entry", "Vehicle Assignment", "Vehicle"]:
+			for table in ["Fuel Entry", "Maintenance Entry", "Vehicle Assignment", "Fleet Vehicle"]:
 				try:
 					frappe.db.sql(f"DELETE FROM `tab{table}`")
 				except Exception:
 					pass
 			try:
-				frappe.db.sql("DELETE FROM `tabCompany` WHERE name LIKE %s OR name = %s OR company_name LIKE %s", ("%ABC Logistics%", DEMO_COMPANY_NAME, "%ABC Logistics%"))
+				frappe.db.sql("DELETE FROM `tabFleet Company` WHERE name LIKE %s OR name = %s OR company_name LIKE %s", ("%ABC Logistics%", DEMO_COMPANY_NAME, "%ABC Logistics%"))
 			except Exception:
 				pass
 
@@ -232,9 +232,9 @@ class DemoDataService(BaseService):
 
 	def _create_demo_company(self) -> Any:
 		"""Creates ABC Logistics (Private) Limited Company record."""
-		if not frappe.db.exists("Company", DEMO_COMPANY_NAME):
+		if not frappe.db.exists("Fleet Company", DEMO_COMPANY_NAME):
 			c = frappe.get_doc({
-				"doctype": "Company",
+				"doctype": "Fleet Company",
 				"company_name": DEMO_COMPANY_NAME,
 				"abbr": "ABC-PK",
 				"default_currency": "PKR",
@@ -242,7 +242,7 @@ class DemoDataService(BaseService):
 				"tax_id": "NTN-9988776-5",
 			}).insert(ignore_permissions=True)
 			return c
-		return frappe.get_doc("Company", DEMO_COMPANY_NAME)
+		return frappe.get_doc("Fleet Company", DEMO_COMPANY_NAME)
 
 	def _ensure_master_brands_and_categories(self) -> Dict[str, Dict[str, str]]:
 		"""Ensures required Vehicle Brands, Categories, Models, Fuel Types, Colours, Maintenance Types & Templates exist."""

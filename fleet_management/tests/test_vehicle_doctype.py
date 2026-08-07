@@ -5,7 +5,7 @@ Fleet Management System
 
 import pytest
 
-from fleet_management.fleet_management.doctype.vehicle.vehicle import Vehicle
+from fleet_management.fleet_management.doctype.fleet_vehicle.fleet_vehicle import FleetVehicle as Vehicle
 from fleet_management.fleet_management.doctype.vehicle_document_detail.vehicle_document_detail import (
 	VehicleDocumentDetail,
 )

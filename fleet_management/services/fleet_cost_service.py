@@ -70,10 +70,10 @@ class FleetCostService(BaseService):
 		"""Calculates cost per kilometer using validated odometer data (COST-006)."""
 		total_cost = self.calculate_total_operating_cost(vehicle_id)
 
-		if not hasattr(frappe, "db") or not frappe.db.exists("Vehicle", vehicle_id):
+		if not hasattr(frappe, "db") or not frappe.db.exists("Fleet Vehicle", vehicle_id):
 			return 0.0
 
-		v_doc = frappe.db.get_value("Vehicle", vehicle_id, ["initial_odometer"], as_dict=True)
+		v_doc = frappe.db.get_value("Fleet Vehicle", vehicle_id, ["initial_odometer"], as_dict=True)
 		if not v_doc:
 			return 0.0
 
@@ -91,7 +91,7 @@ class FleetCostService(BaseService):
 
 	def calculate_vehicle_cost(self, vehicle_id: str) -> Dict[str, Any]:
 		"""Returns comprehensive vehicle cost summary statistics."""
-		if not hasattr(frappe, "db") or not frappe.db.exists("Vehicle", vehicle_id):
+		if not hasattr(frappe, "db") or not frappe.db.exists("Fleet Vehicle", vehicle_id):
 			raise FleetNotFoundError(f"Vehicle '{vehicle_id}' not found.")
 
 		fuel_cost = self.calculate_fuel_cost(vehicle_id)
