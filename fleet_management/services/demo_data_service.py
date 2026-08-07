@@ -41,10 +41,14 @@ class DemoDataService(BaseService):
 		self.cost_service = FleetCostService()
 
 	def is_demo_data_loaded(self) -> bool:
-		"""Checks if the ABC Logistics demo dataset is currently present."""
-		if not hasattr(frappe, "db"):
+		"""Checks if transactional demo dataset is currently present."""
+		if not hasattr(frappe, "db") or not frappe.db:
 			return False
-		return bool(frappe.db.exists("Fleet Vehicle", {"company": DEMO_COMPANY_NAME}))
+		return bool(
+			frappe.db.count("Fuel Entry") > 0 or
+			frappe.db.count("Maintenance Entry") > 0 or
+			frappe.db.count("Vehicle Assignment") > 0
+		)
 
 	def get_demo_status(self) -> Dict[str, Any]:
 		"""Returns current status of demo dataset in database."""
@@ -80,67 +84,71 @@ class DemoDataService(BaseService):
 		if self.is_demo_data_loaded():
 			self.remove_demo_data()
 
-		created_summary = {}
+		if hasattr(frappe, "flags"):
+			frappe.flags.in_demo_seeding = True
 
-		# 1. Setup Company & Master Data
-		company_doc = self._create_demo_company()
-		created_summary["company"] = company_doc.name
+		try:
+			created_summary = {}
 
-		brands = self._ensure_master_brands_and_categories()
-		created_summary["brands"] = len(brands)
+			# 1. Setup Company & Master Data
+			company_doc = self._create_demo_company()
+			created_summary["company"] = company_doc.name
 
-		# 2. Setup 20 Pakistani Driver/Employee Profiles
-		employees = self._get_demo_employee_profiles()
-		created_summary["employees"] = len(employees)
+			brands = self._ensure_master_brands_and_categories()
+			created_summary["brands"] = len(brands)
 
-		# 3. Setup 10 Vehicles
-		vehicles = self._create_demo_vehicles(brands)
-		created_summary["vehicles"] = len(vehicles)
-		frappe.db.commit()
+			# 2. Setup 20 Pakistani Driver/Employee Profiles
+			employees = self._get_demo_employee_profiles()
+			created_summary["employees"] = len(employees)
 
-		# 4. Setup 8 Assignments (Leave 2 Available)
-		assignments = self._create_demo_assignments(vehicles, employees)
-		created_summary["assignments"] = len(assignments)
-		frappe.db.commit()
-
-		# 5. Setup ~20 Maintenance Records
-		maint_count = self._create_demo_maintenance_records(vehicles, assignments)
-		created_summary["maintenance_records"] = maint_count
-		frappe.db.commit()
-
-		# 6. Setup ~150 Fuel Entries across 6 Months
-		fuel_count = self._create_demo_fuel_entries(vehicles, assignments, employees)
-		created_summary["fuel_entries"] = fuel_count
-		frappe.db.commit()
-
-		# 7. Refresh Dashboard Metrics & Cost Aggregations
-		from fleet_management.services.vehicle_service import sync_all_vehicles_operational_summary
-		sync_all_vehicles_operational_summary()
-		setup_fleet_dashboards()
-
-		if hasattr(frappe, "db") and frappe.db:
+			# 3. Setup 10 Vehicles
+			vehicles = self._create_demo_vehicles(brands)
+			created_summary["vehicles"] = len(vehicles)
 			frappe.db.commit()
 
-		logger.info("Demo data loading successfully completed.")
-		return {
-			"status": "success",
-			"message": f"Successfully loaded demo dataset for '{DEMO_COMPANY_NAME}'.",
-			"details": created_summary,
-		}
+			# 4. Setup 8 Assignments (Leave 2 Available)
+			assignments = self._create_demo_assignments(vehicles, employees)
+			created_summary["assignments"] = len(assignments)
+			frappe.db.commit()
+
+			# 5. Setup ~20 Maintenance Records
+			maint_count = self._create_demo_maintenance_records(vehicles, assignments)
+			created_summary["maintenance_records"] = maint_count
+			frappe.db.commit()
+
+			# 6. Setup ~150 Fuel Entries across 6 Months
+			fuel_count = self._create_demo_fuel_entries(vehicles, assignments, employees)
+			created_summary["fuel_entries"] = fuel_count
+			frappe.db.commit()
+
+			# 7. Refresh Dashboard Metrics & Cost Aggregations
+			from fleet_management.services.vehicle_service import sync_all_vehicles_operational_summary
+			sync_all_vehicles_operational_summary()
+			setup_fleet_dashboards()
+
+			if hasattr(frappe, "db") and frappe.db:
+				frappe.db.commit()
+
+			logger.info("Demo data loading successfully completed.")
+			return {
+				"status": "success",
+				"message": f"Successfully loaded demo dataset for '{DEMO_COMPANY_NAME}'.",
+				"details": created_summary,
+			}
+		finally:
+			if hasattr(frappe, "flags"):
+				frappe.flags.in_demo_seeding = False
 
 	def remove_demo_data(self) -> Dict[str, Any]:
 		"""
-		Safely purges demo records associated with ABC Logistics and demo vehicles.
+		Safely purges ONLY transactional records (Fuel Entry, Maintenance Entry, Vehicle Assignment)
+		without deleting Master Data (Fleet Vehicle, Fleet Company, Users, Brands, Categories, Models, Templates, Stations, Vendors).
 		"""
-		logger.info(f"Initiating demo data removal for '{DEMO_COMPANY_NAME}'")
+		logger.info(f"Initiating demo transactional data removal for '{DEMO_COMPANY_NAME}'")
 
 		deleted_summary = {}
 
 		if hasattr(frappe, "db") and frappe.db:
-			# Get vehicle names for company
-			v_records = frappe.get_all("Fleet Vehicle", filters=[["company", "=", DEMO_COMPANY_NAME]], fields=["name"])
-			v_names = [r["name"] for r in v_records]
-
 			# 1. Purge Fuel Entries
 			fuel_records = frappe.get_all("Fuel Entry", fields=["name"])
 			for r in fuel_records:
@@ -160,7 +168,7 @@ class DemoDataService(BaseService):
 			deleted_summary["Maintenance Entry"] = len(maint_records)
 
 			# 3. Purge Vehicle Assignments
-			asn_records = frappe.get_all("Vehicle Assignment", filters=[["company", "=", DEMO_COMPANY_NAME]], fields=["name"])
+			asn_records = frappe.get_all("Vehicle Assignment", fields=["name"])
 			for r in asn_records:
 				try:
 					frappe.delete_doc("Vehicle Assignment", r["name"], force=True, ignore_permissions=True)
@@ -168,55 +176,34 @@ class DemoDataService(BaseService):
 					pass
 			deleted_summary["Vehicle Assignment"] = len(asn_records)
 
-			# 4. Purge Vehicles
-			for vn in v_names:
-				if frappe.db.exists("Fleet Vehicle", vn):
-					try:
-						frappe.delete_doc("Fleet Vehicle", vn, force=True, ignore_permissions=True)
-					except Exception:
-						pass
-			deleted_summary["Fleet Vehicle"] = len(v_names)
-
-			# 5. Purge Demo Drivers / Employees
-			demo_users = frappe.get_all("User", filters=[["email", "like", "%demo%@abc-logistics.com"]], fields=["name"])
-			for u in demo_users:
-				try:
-					frappe.delete_doc("User", u["name"], force=True, ignore_permissions=True)
-				except Exception:
-					pass
-
-			# 6. Delete Company
-			if frappe.db.exists("Fleet Company", DEMO_COMPANY_NAME):
-				try:
-					frappe.delete_doc("Fleet Company", DEMO_COMPANY_NAME, force=True, ignore_permissions=True)
-				except Exception:
-					pass
-				deleted_summary["Fleet Company"] = 1
-
-			# Direct SQL cleanup safety net
-			for table in ["Fuel Entry", "Maintenance Entry", "Vehicle Assignment", "Fleet Vehicle"]:
+			# Direct SQL cleanup safety net for transactional tables ONLY
+			for table in ["Fuel Entry", "Maintenance Entry", "Vehicle Assignment"]:
 				try:
 					frappe.db.sql(f"DELETE FROM `tab{table}`")
 				except Exception:
 					pass
+
+			# Reset all Fleet Vehicles status to Available
 			try:
-				frappe.db.sql("DELETE FROM `tabFleet Company` WHERE name LIKE %s OR name = %s OR company_name LIKE %s", ("%ABC Logistics%", DEMO_COMPANY_NAME, "%ABC Logistics%"))
+				frappe.db.sql("UPDATE `tabFleet Vehicle` SET status = 'Available'")
 			except Exception:
 				pass
 
 			frappe.db.commit()
 
 		try:
+			from fleet_management.services.vehicle_service import sync_all_vehicles_operational_summary
+			sync_all_vehicles_operational_summary()
 			setup_fleet_dashboards()
 			if hasattr(frappe, "db") and frappe.db:
 				frappe.db.commit()
 		except Exception:
 			pass
 
-		logger.info("Demo data removal completed.")
+		logger.info("Demo transactional data removal completed successfully.")
 		return {
 			"status": "success",
-			"message": f"Successfully removed demo data for '{DEMO_COMPANY_NAME}'.",
+			"message": f"Successfully removed transactional demo data (Fuel Entries, Maintenance Entries, Vehicle Assignments) for '{DEMO_COMPANY_NAME}'. Master records (Fleet Vehicles, Fleet Company) remain intact.",
 			"details": deleted_summary,
 		}
 
@@ -386,6 +373,17 @@ class DemoDataService(BaseService):
 		created = []
 		for idx, (reg, vname, bname, mname, ftype, cap, eff, init_odo, curr_odo, next_maint) in enumerate(specs, start=1):
 			model_info = brands[bname][mname]
+			cat_name = model_info["category"]
+			tpl_name = "Commercial Heavy Maintenance Template" if cat_name in ["Pickup", "Van", "Commercial"] else "Sedan Standard Maintenance Template"
+
+			v_exist = frappe.db.exists("Fleet Vehicle", {"vehicle_number": reg}) or frappe.db.exists("Fleet Vehicle", reg) if hasattr(frappe, "db") and frappe.db else None
+			if v_exist:
+				if hasattr(frappe, "db") and frappe.db:
+					frappe.db.set_value("Fleet Vehicle", v_exist, "maintenance_template", tpl_name)
+				v_doc = frappe.get_doc("Fleet Vehicle", v_exist)
+				created.append(v_doc.as_dict())
+				continue
+
 			vin = f"PAK{idx:02d}9988776655{idx:02d}"
 
 			v_payload = {
@@ -394,7 +392,8 @@ class DemoDataService(BaseService):
 				"vehicle_name": vname,
 				"vehicle_brand": bname,
 				"vehicle_model": model_info["model_id"],
-				"vehicle_category": model_info["category"],
+				"vehicle_category": cat_name,
+				"maintenance_template": tpl_name,
 				"company": DEMO_COMPANY_NAME,
 				"vin": vin,
 				"engine_number": f"ENG-PK-{idx:04d}",
@@ -419,10 +418,21 @@ class DemoDataService(BaseService):
 	def _create_demo_assignments(self, vehicles: List[Dict[str, Any]], employees: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
 		"""Assigns 8 vehicles to employees, leaving 2 available."""
 		assignments = []
-		for i in range(8):
+		for i in range(min(8, len(vehicles))):
 			v_id = vehicles[i].get("name") or vehicles[i].get("vehicle_number")
-			emp_info = employees[i]
-			curr_odo = float(vehicles[i].get("current_odometer") or 10000.0)
+			emp_info = employees[i % len(employees)]
+			init_odo = float(vehicles[i].get("initial_odometer") or 0.0)
+			curr_odo = max(float(vehicles[i].get("current_odometer") or 0.0), init_odo)
+
+			existing_asn = frappe.db.get_value("Vehicle Assignment", {"vehicle": v_id, "docstatus": 1}, "name") if hasattr(frappe, "db") and frappe.db else None
+			if existing_asn:
+				asn_doc = frappe.get_doc("Vehicle Assignment", existing_asn)
+				assignments.append(asn_doc.as_dict())
+				continue
+
+			# Reset vehicle status to Available if needed before creating assignment
+			if hasattr(frappe, "db") and frappe.db and v_id:
+				frappe.db.set_value("Fleet Vehicle", v_id, "status", "Available")
 
 			asn_payload = {
 				"vehicle": v_id,
@@ -436,13 +446,17 @@ class DemoDataService(BaseService):
 				"purpose": "Logistics Operational Delivery",
 				"opening_odometer": curr_odo,
 			}
-			asn = self.assignment_service.create_assignment(asn_payload)
-			asn_id = asn.get("name")
-			self.assignment_service.assign_vehicle(asn_id, opening_odometer=curr_odo)
-			asn_doc = frappe.get_doc("Vehicle Assignment", asn_id)
-			if asn_doc.docstatus == 0:
-				asn_doc.submit()
-			assignments.append(asn)
+			try:
+				asn = self.assignment_service.create_assignment(asn_payload)
+				asn_id = asn.get("name")
+				self.assignment_service.assign_vehicle(asn_id, opening_odometer=curr_odo)
+				asn_doc = frappe.get_doc("Vehicle Assignment", asn_id)
+				if asn_doc.docstatus == 0:
+					asn_doc.submit()
+				assignments.append(asn_doc.as_dict())
+			except Exception as e:
+				logger.error(f"Failed creating assignment for vehicle {v_id}: {e}")
+				raise
 		return assignments
 
 	def _create_demo_fuel_entries(self, vehicles: List[Dict[str, Any]], assignments: List[Dict[str, Any]], employees: List[Dict[str, Any]]) -> int:
@@ -450,53 +464,52 @@ class DemoDataService(BaseService):
 		count = 0
 		start_date = datetime.now() - timedelta(days=180)
 
-		from unittest.mock import patch
-		with patch("fleet_management.services.maintenance_lock_service.MaintenanceLockService.enforce_maintenance_lock"):
-			for i, v in enumerate(vehicles):
-				v_id = v.get("name") or v.get("vehicle_number")
-				tank_cap = float(v.get("fuel_capacity") or 50.0)
-				curr_odo = float(v.get("current_odometer") or 20000.0)
-				init_odo = float(v.get("initial_odometer") or (curr_odo - 15000.0))
-				odo_step = (curr_odo - init_odo) / 15.0
-				running_odo = init_odo
+		for i, v in enumerate(vehicles):
+			v_id = v.get("name") or v.get("vehicle_number")
+			tank_cap = float(v.get("fuel_capacity") or 50.0)
+			curr_odo = float(v.get("current_odometer") or 20000.0)
+			init_odo = float(v.get("initial_odometer") or (curr_odo - 15000.0))
+			odo_step = max(50.0, (curr_odo - init_odo) / 15.0)
+			running_odo = init_odo
 
-				active_assign = frappe.db.get_value("Vehicle Assignment", {"vehicle": v_id, "docstatus": 1}, "name")
-				if not active_assign and assignments:
-					active_assign = assignments[i % len(assignments)].get("name")
+			active_assign = frappe.db.get_value("Vehicle Assignment", {"vehicle": v_id, "docstatus": 1}, "name") if hasattr(frappe, "db") and frappe.db else None
+			if not active_assign and assignments:
+				active_assign = assignments[i % len(assignments)].get("name")
 
-				for step in range(15):
-					running_odo += odo_step + random.uniform(-20, 30)
-					entry_date = (start_date + timedelta(days=step * 12 + random.randint(0, 2))).strftime("%Y-%m-%d")
+			if not active_assign:
+				continue
 
-					price_per_liter = round(random.uniform(272.50, 289.00), 2)
-					liters = round(random.uniform(tank_cap * 0.5, tank_cap * 0.9), 2)
-					total_cost = round(liters * price_per_liter, 2)
+			for step in range(15):
+				running_odo += odo_step + random.uniform(5, 25)
+				entry_date = (start_date + timedelta(days=step * 12 + random.randint(0, 2))).strftime("%Y-%m-%d")
 
-					if not active_assign:
-						continue
+				price_per_liter = round(random.uniform(272.50, 289.00), 2)
+				liters = round(random.uniform(tank_cap * 0.5, tank_cap * 0.9), 2)
+				total_cost = round(liters * price_per_liter, 2)
 
-					fuel_payload = {
-						"assignment": active_assign,
-						"fuel_date": entry_date,
-						"fuel_qty": liters,
-						"fuel_price": price_per_liter,
-						"total_cost": total_cost,
-						"odometer": round(running_odo, 1),
-					}
-					for attempt in range(3):
-						try:
-							fuel_doc = self.fuel_service.create_fuel_entry(fuel_payload)
-							fuel_id = fuel_doc.get("name")
-							self.fuel_service.submit_fuel_entry(fuel_id)
-							count += 1
+				fuel_payload = {
+					"vehicle": v_id,
+					"assignment": active_assign,
+					"fuel_date": entry_date,
+					"fuel_qty": liters,
+					"fuel_price": price_per_liter,
+					"total_cost": total_cost,
+					"odometer": round(running_odo, 1),
+				}
+				for attempt in range(3):
+					try:
+						fuel_doc = self.fuel_service.create_fuel_entry(fuel_payload)
+						fuel_id = fuel_doc.get("name")
+						self.fuel_service.submit_fuel_entry(fuel_id)
+						count += 1
+						frappe.db.commit()
+						break
+					except Exception as e:
+						if "deadlock" in str(e).lower() and attempt < 2:
+							frappe.db.rollback()
 							frappe.db.commit()
+						else:
 							break
-						except Exception as e:
-							if "deadlock" in str(e).lower() and attempt < 2:
-								frappe.db.rollback()
-								frappe.db.commit()
-							else:
-								break
 
 		return count
 
@@ -508,29 +521,33 @@ class DemoDataService(BaseService):
 
 		for i, v in enumerate(vehicles):
 			v_id = v.get("name") or v.get("vehicle_number")
-			curr_odo = float(v.get("current_odometer") or 20000.0)
+			latest_fuel_odo = frappe.db.get_value("Fuel Entry", {"vehicle": v_id, "docstatus": 1}, "MAX(odometer)") or 0.0 if hasattr(frappe, "db") and frappe.db else 0.0
+			v_curr = frappe.db.get_value("Fleet Vehicle", v_id, "current_odometer") or 0.0 if hasattr(frappe, "db") and frappe.db else 0.0
+			v_init = frappe.db.get_value("Fleet Vehicle", v_id, "initial_odometer") or 0.0 if hasattr(frappe, "db") and frappe.db else 0.0
+			base_odo = max(float(latest_fuel_odo), float(v_curr), float(v_init), 10000.0)
 
 			# Active assignment for vehicle or fallback to assignments pool
-			active_assign = frappe.db.get_value("Vehicle Assignment", {"vehicle": v_id, "docstatus": 1}, "name")
+			active_assign = frappe.db.get_value("Vehicle Assignment", {"vehicle": v_id, "docstatus": 1}, "name") if hasattr(frappe, "db") and frappe.db else None
 			if not active_assign and assignments:
 				active_assign = assignments[i % len(assignments)].get("name")
 
 			for m_idx in range(2):
 				entry_date = (datetime.now() - timedelta(days=90 - m_idx * 40)).strftime("%Y-%m-%d")
-				rate = round(random.uniform(3000, 15000), 2)
+				m_odo = base_odo + (m_idx + 1) * 500.0
 
 				if active_assign:
 					m_payload = {
+						"vehicle": v_id,
 						"assignment": active_assign,
 						"maintenance_date": entry_date,
-						"current_odometer": curr_odo - (5000 * (1 - m_idx)),
+						"current_odometer": m_odo,
 						"remarks": f"Routine Servicing #{m_idx + 1}",
 						"items": [
-							{"maintenance_type": "Engine Oil Change", "cost": 5000.0, "status": "Completed"},
-							{"maintenance_type": "Brake Inspection", "cost": 3500.0, "status": "Completed"},
-							{"maintenance_type": "Transmission Oil", "cost": 9000.0, "status": "Completed"},
-							{"maintenance_type": "Air Filter", "cost": 2500.0, "status": "Completed"},
-							{"maintenance_type": "Tyre Rotation", "cost": 2000.0, "status": "Completed"},
+							{"item_name": "Engine Oil Change", "cost": 5000.0, "is_completed": 1},
+							{"item_name": "Brake Inspection", "cost": 3500.0, "is_completed": 1},
+							{"item_name": "Transmission Oil", "cost": 9000.0, "is_completed": 1},
+							{"item_name": "Air Filter", "cost": 2500.0, "is_completed": 1},
+							{"item_name": "Tyre Rotation", "cost": 2000.0, "is_completed": 1},
 						]
 					}
 					try:

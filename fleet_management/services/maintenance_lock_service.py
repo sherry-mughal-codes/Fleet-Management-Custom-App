@@ -21,6 +21,8 @@ class MaintenanceLockService:
 	@staticmethod
 	def _is_lock_enabled() -> bool:
 		"""Checks if Maintenance Lock on Fuel Entry is enabled in Fleet Settings."""
+		if getattr(frappe.flags, "in_demo_seeding", False):
+			return False
 		if hasattr(frappe, "db") and frappe.db and hasattr(frappe, "get_single"):
 			try:
 				val = frappe.db.get_single_value("Fleet Settings", "fuel_entry_lock_when_maintenance_due")
