@@ -11,7 +11,7 @@ This document defines the enterprise **Vehicle Domain Architecture, Vehicle DocT
 The Vehicle Domain strictly decouples DocType definition from business logic, validation, event dispatching, and security:
 
 ```
-[ Client / Desk Screen ] ──> Form Script (vehicle.js: Quick actions & brand filtering)
+[ Client / Desk Screen ] ──> Form Script (fleet_vehicle.js: Quick actions & brand filtering)
          │
          ▼
 [ API Layer ] ──> (fleet_management.api.vehicle_api: change_vehicle_status, search_vehicles, get_vehicle_summary)

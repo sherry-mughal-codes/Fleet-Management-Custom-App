@@ -8,9 +8,14 @@ This document defines the production-grade **Master Data Architecture** for the 
 
 ## 🏛️ Master Data Overview
 
-The system provides 11 reusable master DocTypes designed for high scalability (100,000+ records) and multi-company enterprise operations.
+The system provides master DocTypes (including `Fleet Company`, `Fleet Vehicle`, `Vehicle Category`, `Vehicle Brand`, `Vehicle Model`, `Fuel Type`, `Fuel Station`, `Maintenance Template`, `Maintenance Vendor`, etc.) designed for high scalability (100,000+ records) and multi-company enterprise operations.
 
 ```
++------------------+       +-------------------+       +--------------------+
+|  Fleet Company   |<------|   Fleet Vehicle   |------>|Maintenance Template|
++------------------+       +-------------------+       +--------------------+
+         |                           |                           |
+         v                           v                           v
 +------------------+       +-------------------+       +--------------------+
 |  Vehicle Brand   |<------|   Vehicle Model   |------>|     Fuel Type      |
 +------------------+       +-------------------+       +--------------------+

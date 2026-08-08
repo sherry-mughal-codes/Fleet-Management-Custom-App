@@ -25,12 +25,12 @@ Phase 11 Part 2 simplifies maintenance management by introducing a **single tran
 
 ---
 
-## 2. Category-Based Template Auto-Resolution
+## 2. Category & Vehicle Level Template Auto-Resolution
 
-When creating a `Maintenance Entry` or `Fuel Entry`:
-$$\text{Vehicle Assignment} \longrightarrow \text{Vehicle} \longrightarrow \text{Vehicle Category} \longrightarrow \text{Maintenance Template}$$
+When creating a `Maintenance Entry` or evaluating Maintenance Locks on `Fuel Entry`:
+$$\text{Fleet Vehicle} \longrightarrow \text{Fleet Vehicle.maintenance\_template} \longrightarrow \text{Category Fallback} \longrightarrow \text{Maintenance Template}$$
 
-The system resolves the active template mapped to the vehicle's `Vehicle Category`.
+The system resolves the active template directly linked on `Fleet Vehicle.maintenance_template` (e.g. `Sedan Standard Maintenance Template` or `Commercial Heavy Maintenance Template`) or falls back to category-mapped templates.
 
 ---
 
@@ -38,7 +38,7 @@ The system resolves the active template mapped to the vehicle's `Vehicle Categor
 
 When a `Maintenance Entry` is submitted:
 1. Permanent history record is created.
-2. **ONLY the completed `maintenance_type` schedule line is reset**.
+2. **ONLY the completed maintenance items** in the child table are reset.
 3. Unrelated maintenance activities retain their previous servicing baselines.
 4. Next due maintenance odometer and vehicle health scores are recalculated.
 5. If all mandatory items are clear, **Fuel Lock is automatically released**.

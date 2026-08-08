@@ -12,13 +12,13 @@ It allows administrators and reviewers to immediately showcase and validate the 
 
 | Entity Domain | Record Count | Description / Details |
 | :--- | :--- | :--- |
-| **Company** | 1 | ABC Logistics (Private) Limited (Karachi, Pakistan, PKR currency) |
+| **Fleet Company** | 1 | ABC Logistics (Private) Limited (Karachi, Pakistan, PKR currency) |
 | **Departments** | 7 | Fleet Management, Operations, Administration, Finance, HR, Workshop, Logistics |
 | **Employees** | 20 | Pakistani staff profiles with designations, phone numbers, and emails |
-| **Vehicles** | 10 | Mixed Pakistani fleet (Corolla, Yaris, Hilux, Hiace, Civic, BR-V, Alto, Bolan, Porter, D-Max) |
-| **Vehicle Assignments** | 8 | 8 active driver handovers with initial odometers; 2 vehicles left available |
+| **Fleet Vehicles** | 10 | Mixed Pakistani fleet (Corolla, Yaris, Hilux, Hiace, Civic, BR-V, Alto, Bolan, Porter, D-Max) linked to Maintenance Templates |
+| **Vehicle Assignments** | 8 | 8 active submitted driver handovers (`docstatus = 1`, `status = "Assigned"`); 2 vehicles left available |
 | **Fuel Entries** | ~150 | 6 months of historical fuel logs (PKR 272–289/L) with fuel average calculations |
-| **Maintenance Records** | ~20 | Requests & Work Orders (Oil change, filters, brake service, battery, tyre rotation, status locks) |
+| **Maintenance Records** | ~20 | Completed maintenance entries with child item lines, vendor invoices, and servicing baselines |
 
 ---
 
@@ -29,10 +29,10 @@ Only users assigned the **System Manager**, **Fleet Manager**, or **Fleet Admini
 ### Fleet Settings Action Center
 Buttons are located in **Fleet Settings** under the **🚀 Demo Data Control Center** section (and top **Demo Actions** menu header):
 - **☁ Load Demo Data** (Button): Triggers confirmation dialog, populates ABC Logistics dataset, and reloads page.
-- **🗑 Remove Demo Data** (Button): Triggers confirmation dialog, purges all demo records, and reloads page.
+- **🗑 Remove Demo Data** (Button): Triggers confirmation dialog, purges transactional records, and reloads page.
 
 ### 1. Load Demo Data
-Idempotently generates the entire ABC Logistics dataset. If demo data is already loaded, creation is safely skipped without throwing errors or creating duplicates.
+Idempotently generates the entire ABC Logistics dataset. If master records already exist, creation is safely reused without throwing errors or creating duplicates.
 
 **Desk Console / Python API:**
 ```python
@@ -47,12 +47,12 @@ docker compose exec backend bench --site fleet.localhost execute fleet_managemen
 ```
 
 **REST API Endpoint:**
-`POST /api/v1/demo/load`
+`POST /api/method/fleet_management.api.demo_api.load_demo_data`
 
 ---
 
 ### 2. Remove Demo Data
-Safely purges demo entities (Company, Employees, Vehicles, Assignments, Fuel Logs, Maintenance Records) associated with `ABC Logistics (Private) Limited` in reverse dependency order. Production user data is left completely untouched.
+Safely purges **transactional demo data** (`Fuel Entry`, `Maintenance Entry`, `Vehicle Assignment`) while preserving master data (`Fleet Vehicle`, `Fleet Company`, `Vehicle Brand`, `Vehicle Category`, `Vehicle Model`, Templates). All `Fleet Vehicle` records are reset to `Available` status.
 
 **Desk Console / Python API:**
 ```python
@@ -67,7 +67,7 @@ docker compose exec backend bench --site fleet.localhost execute fleet_managemen
 ```
 
 **REST API Endpoint:**
-`POST /api/v1/demo/remove`
+`POST /api/method/fleet_management.api.demo_api.remove_demo_data`
 
 ---
 

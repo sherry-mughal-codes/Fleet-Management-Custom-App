@@ -79,33 +79,35 @@ fleet_management/
 │   │   ├── doctype/
 │   │   │   ├── distance_unit/
 │   │   │   ├── expense_category/
-│   │   │   ├── fleet_settings/
-│   │   │   ├── fuel_entry/         # Main Fuel Entry DocType
+│   │   │   ├── fleet_company/             # Main Fleet Company DocType
+│   │   │   ├── fleet_settings/            # System Settings Single DocType
+│   │   │   ├── fleet_vehicle/             # Main Fleet Vehicle DocType
+│   │   │   ├── fuel_entry/                # Main Fuel Entry DocType
 │   │   │   ├── fuel_station/
 │   │   │   ├── fuel_type/
 │   │   │   ├── fuel_unit/
-│   │   │   ├── maintenance_request/    # Main Maintenance Request DocType
-│   │   │   ├── maintenance_task/       # Child Table DocType
-│   │   │   ├── maintenance_task_template/ # Master Reference DocType
+│   │   │   ├── maintenance_entry/         # Main Maintenance Entry DocType
+│   │   │   ├── maintenance_entry_item/    # Child Table DocType for Maintenance Items
+│   │   │   ├── maintenance_schedule_line/ # Child Table DocType for Template Lines
+│   │   │   ├── maintenance_template/      # Master Maintenance Template DocType
+│   │   │   ├── maintenance_template_category/ # Child Table DocType for Template Categories
+│   │   │   ├── maintenance_template_vehicle/  # Child Table DocType for Template Vehicles
 │   │   │   ├── maintenance_type/
 │   │   │   ├── maintenance_vendor/
-│   │   │   ├── maintenance_work_order/ # Main Maintenance Work Order DocType
-│   │   │   ├── vehicle/            # Main Vehicle DocType
-│   │   │   ├── vehicle_assignment/ # Main Vehicle Assignment DocType
+│   │   │   ├── vehicle_assignment/        # Main Vehicle Assignment DocType
 │   │   │   ├── vehicle_brand/
 │   │   │   ├── vehicle_category/
 │   │   │   ├── vehicle_colour/
-│   │   │   ├── vehicle_document_detail/ # Child Table DocType
-│   │   │   ├── vehicle_image_detail/    # Child Table DocType
 │   │   │   └── vehicle_model/
 │   │   ├── report/
 │   │   │   ├── fleet_cost_summary_report/ # Production Script Report
 │   │   │   ├── fuel_efficiency_report/    # Production Script Report
 │   │   │   ├── maintenance_summary_report/ # Production Script Report
+│   │   │   ├── vehicle_activity_log/      # Production Script Report
 │   │   │   └── vehicle_summary_report/    # Production Script Report
 │   │   └── workspace/
-│   │       └── fleet_management/
-│   │           └── fleet_management.json # Desk Workspace homepage fixture definition
+│   │       ├── fleet_dashboard/          # Desk Workspace Dashboard Fixture
+│   │       └── fleet_management/         # Desk Workspace Homepage Fixture
 │   ├── mixins/
 │   │   ├── __init__.py
 │   │   ├── audit_mixin.py       # Document mutation audit tracking mixin

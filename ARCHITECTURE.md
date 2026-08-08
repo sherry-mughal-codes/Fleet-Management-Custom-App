@@ -8,44 +8,38 @@ The **Fleet Management System** is built on top of **Frappe Framework v15** foll
 
 ## 1. Domain Service Layer (`fleet_management/services/`)
 
-The application is governed by 10 dedicated domain service managers:
+The application is governed by dedicated domain service managers:
 
-1. **`VehicleStateManager`** (`vehicle_state_manager.py`):
-   - Single source of truth for dynamic vehicle status calculation (`Available`, `Assigned`, `Maintenance Due`, `Under Maintenance`, `Retired`).
-   - `Vehicle.status` is strictly read-only in the UI.
+1. **`VehicleService`** (`vehicle_service.py`):
+   - Single source of truth for dynamic `Fleet Vehicle` registration, status management, and operational summary sync.
+   - `Fleet Vehicle.status` is managed deterministically via single state-machine transition handlers.
 
-2. **`AssignmentManager`** (`assignment_manager.py`):
-   - Manages vehicle assignment availability, handover, return, and historical tracking.
-   - Enforces atomic database row locks (`SELECT ... FOR UPDATE`) to prevent race conditions during concurrent assignment submissions.
+2. **`AssignmentService`** (`assignment_service.py`):
+   - Manages vehicle assignment availability, handover, return, and historical tracking (`Vehicle Assignment`).
+   - Enforces submittable assignment workflows (`docstatus = 1`, `status = "Assigned"`).
 
-3. **`FuelManager`** (`fuel_manager.py`):
-   - Handles automated fuel entry creation (`Rate Per Litre × Litres`).
-   - Enforces Mandatory Maintenance Fuel Locks.
-   - Handles total transaction reversal on document cancellation.
+3. **`FuelService`** (`fuel_service.py`):
+   - Handles automated fuel entry creation, submission, and validation (`Rate Per Litre × Litres`).
+   - Enforces Mandatory Maintenance Fuel Locks (`FUEL-008`).
 
 4. **`MaintenanceManager`** (`maintenance_manager.py`):
    - Central engine for template-driven `Maintenance Entry` records.
-   - Category-based maintenance template auto-resolution.
+   - Dynamic template auto-resolution via `Fleet Vehicle.maintenance_template` or category mapping.
    - Calculates due, overdue, and remaining distance per template schedule line.
    - Resets ONLY completed maintenance items upon servicing.
 
-5. **`MaintenanceTemplateManager`** (`maintenance_template_manager.py`):
-   - Manages maintenance template master definitions and activity schedules.
-
-6. **`CostManager`** (`cost_manager.py`):
+5. **`FleetCostService`** (`fleet_cost_service.py`):
    - Calculates aggregated fuel spend, maintenance costs, and fleet Cost Per KM.
 
-7. **`DashboardManager`** (`dashboard_manager.py`):
-   - Centralized refresh engine for Desk Workspace Number Cards, Charts, and Quick Links.
+6. **`SettingsService`** (`settings_service.py`):
+   - Resolves global settings defaults from `Fleet Settings` and default `Fleet Company`.
 
-8. **`NotificationManager`** (`notification_manager.py`):
+7. **`NotificationManager`** (`notification_manager.py`):
    - Handles role-based notification dispatches for assignment handovers, returns, maintenance due/overdue, and fuel locks.
 
-9. **`ValidationManager`** (`validation_manager.py`):
-   - Centralized validation rules for duplicate registrations, VINs, and odometer readings.
-
-10. **`DemoDataManager`** (`demo_data_manager.py` / `demo_data_service.py`):
-    - Generates realistic Pakistani logistics datasets for *ABC Logistics (Private) Limited*.
+8. **`DemoDataService`** (`demo_data_service.py`):
+   - Generates realistic Pakistani logistics datasets for *ABC Logistics (Private) Limited*.
+   - Safely removes transactional data (`Fuel Entry`, `Maintenance Entry`, `Vehicle Assignment`) while preserving master data (`Fleet Vehicle`, `Fleet Company`, Templates).
 
 ---
 

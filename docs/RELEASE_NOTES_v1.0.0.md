@@ -25,15 +25,15 @@ Version 1.0.0 represents the complete, production-certified release of the **Fle
 - Base document mixins (`TimestampMixin`, `AuditMixin`, `StatusMixin`, `PermissionMixin`).
 
 ### Phase 2 – Master Data Management
-- Master reference DocTypes: `Vehicle Brand`, `Vehicle Model`, `Vehicle Category`, `Vehicle Colour`, `Fuel Type`, `Maintenance Type`, `Expense Category`, `Distance Unit`, `Fuel Unit`, `Company`.
+- Master reference DocTypes: `Fleet Company`, `Vehicle Brand`, `Vehicle Model`, `Vehicle Category`, `Vehicle Colour`, `Fuel Type`, `Maintenance Type`, `Expense Category`, `Distance Unit`, `Fuel Unit`, `Fuel Station`.
 - Indexed reference tables, unique constraints, and fixture declarations.
 
 ### Phase 3 – Vehicle Intelligence Domain
-- `Vehicle` DocType with 13-state formal lifecycle state machine (`Draft`, `Available`, `Reserved`, `Assigned`, `Maintenance Due`, `Under Maintenance`, `Inspection`, `Out of Service`, `Inactive`, `Sold`, `Scrapped`, `Archived`).
-- Invariant rules `VEH-001..010`, `VehicleService` API, and Digital Asset Management sub-table (`Vehicle Document Detail`, `Vehicle Image Detail`).
+- `Fleet Vehicle` DocType with 13-state formal lifecycle state machine (`Draft`, `Available`, `Reserved`, `Assigned`, `Maintenance Due`, `Under Maintenance`, `Inspection`, `Out of Service`, `Inactive`, `Sold`, `Scrapped`, `Archived`).
+- Invariant rules `VEH-001..010`, `VehicleService` API, and direct `Maintenance Template` linking.
 
 ### Phase 4 – Assignment Intelligence Domain
-- `Vehicle Assignment` DocType with 8-state lifecycle (`Draft`, `Pending Approval`, `Approved`, `Assigned`, `In Use`, `Returned`, `Closed`, `Cancelled`).
+- `Vehicle Assignment` DocType with submittable lifecycle (`docstatus = 1`, `status = "Assigned"`).
 - Invariant rules `ASN-001..010`, Handover/Return workflows, active duplicate assignment protection, and opening/closing odometer validation.
 
 ### Phase 5 – Fuel Intelligence Domain
@@ -41,16 +41,16 @@ Version 1.0.0 represents the complete, production-certified release of the **Fle
 - Invariant rules `FUEL-001..010`, automated fuel average engine (KM/L), vehicle tank capacity validation, and maintenance lock enforcement (`FUEL-008`).
 
 ### Phase 6 – Maintenance Intelligence Domain
-- `Maintenance Request`, `Maintenance Work Order`, `Maintenance Task Template`, `Maintenance Task`, `Maintenance Vendor`.
-- Invariant rules `MAINT-001..010`, 4-tier maintenance due hierarchy (`MaintenanceDueEngine`), and maintenance lock engine (`MaintenanceLockService`).
+- `Maintenance Template`, `Maintenance Entry`, `Maintenance Entry Item`, `Maintenance Vendor`.
+- Invariant rules `MAINT-001..010`, template schedule lines (`MaintenanceScheduleLine`), and maintenance lock engine (`MaintenanceLockService`).
 
 ### Phase 7 – Fleet Cost Intelligence Domain
-- `FleetCostService` aggregating non-cancelled fuel spend and completed maintenance work orders.
+- `FleetCostService` aggregating non-cancelled fuel spend and completed maintenance entries.
 - Invariant rules `COST-001..006`, zero duplicate expense records, Total Operating Cost equation, and Cost Per KM calculation.
 
 ### Phase 8 – Fleet Command Center & Analytics
 - Executive Command Center dashboard, KPI cards, smart severity alerts, chart feeds, vehicle health table, and recent activity timeline (`FleetAnalyticsService`).
-- Production Script Reports (`Vehicle Summary Report`, `Fuel Efficiency Report`, `Maintenance Summary Report`, `Fleet Cost Summary Report`).
+- 5 Production Script Reports (`Vehicle Summary Report`, `Fuel Efficiency Report`, `Maintenance Summary Report`, `Fleet Cost Summary Report`, `Vehicle Activity Log`).
 
 ### Phase 9 – Fleet Automation & Notification Engine
 - `FleetAutomationService` running scheduled maintenance checks, fuel anomaly detection (threshold drops > 20%), assignment expiry checks, and cost refreshes.

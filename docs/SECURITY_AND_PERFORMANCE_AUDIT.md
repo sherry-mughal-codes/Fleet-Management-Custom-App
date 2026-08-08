@@ -31,10 +31,10 @@ This report documents the security hardening, input validation, role-based acces
 
 ### A. Database Indexing & Query Optimisation
 DocTypes include explicit compound database indexes for key query access patterns:
-- `tabVehicle`: Indexes on `status`, `company`, `license_plate`, `current_employee`.
-- `tabVehicle Assignment`: Compound index on `(vehicle, status)`, `(employee, status)`.
-- `tabFuel Entry`: Compound index on `(vehicle, status)`, `(fuel_date, vehicle)`.
-- `tabMaintenance Work Order`: Compound index on `(vehicle, status)`.
+- `tabFleet Vehicle`: Indexes on `status`, `company`, `vehicle_number`, `license_plate`.
+- `tabVehicle Assignment`: Compound index on `(vehicle, status, docstatus)`, `(employee, status)`.
+- `tabFuel Entry`: Compound index on `(vehicle, docstatus)`, `(fuel_date, vehicle)`.
+- `tabMaintenance Entry`: Compound index on `(vehicle, docstatus)`.
 
 ### B. Caching Strategy
 - **Global Settings Cache**: `SettingsService` caches global `Fleet Settings` in Redis (`fleet_management:settings`) with a 1-hour TTL and automatic invalidation on update. Eliminates redundant SQL lookups on every request.
